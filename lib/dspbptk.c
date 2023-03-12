@@ -67,7 +67,27 @@ int blueprint_to_data(bp_data_t* p_bp_data, const char* blueprint) {
     libdeflate_gzip_decompress(p_decompressor, gzip, gzip_len, p_bp_data->raw, BP_LEN, &(p_bp_data->raw_len));
     libdeflate_free_decompressor(p_decompressor);
     debug("gzip dec");
+
     // 解析
+    // char md5f_test[33] = "\0";
+    // md5f(md5f_test, blueprint, strlen(head) + strlen(base64) + 1);
+    // puts(md5f_test);
+    // putchar('\n');
+    p_bp_data->short_desc = calloc(strlen(head), 1);
+    sscanf(head, "BLUEPRINT:0,%llu,%llu,%llu,%llu,%llu,%llu,0,%llu,%llu.%llu.%llu.%llu,%s",
+        &p_bp_data->layout,
+        &p_bp_data->icons[0],
+        &p_bp_data->icons[1],
+        &p_bp_data->icons[2],
+        &p_bp_data->icons[3],
+        &p_bp_data->icons[4],
+        &p_bp_data->time,
+        &p_bp_data->game_version[0],
+        &p_bp_data->game_version[1],
+        &p_bp_data->game_version[2],
+        &p_bp_data->game_version[3],
+        p_bp_data->short_desc
+    );
 
     // free
     free(gzip);
@@ -76,6 +96,55 @@ int blueprint_to_data(bp_data_t* p_bp_data, const char* blueprint) {
     return 0;
 }
 
+int data_to_blueprint(const bp_data_t* p_bp_data, char* blueprint) {
+    char* head = calloc(BP_LEN, 1);
+    char* base64 = calloc(BP_LEN, 1);
+    char* for_md5f = calloc(BP_LEN, 1);
+    char* tail = calloc(33, 1);
+
+    sprintf(head, "BLUEPRINT:0,%llu,%llu,%llu,%llu,%llu,%llu,0,%llu,%llu.%llu.%llu.%llu,%s",
+        p_bp_data->layout,
+        p_bp_data->icons[0],
+        p_bp_data->icons[1],
+        p_bp_data->icons[2],
+        p_bp_data->icons[3],
+        p_bp_data->icons[4],
+        p_bp_data->time,
+        p_bp_data->game_version[0],
+        p_bp_data->game_version[1],
+        p_bp_data->game_version[2],
+        p_bp_data->game_version[3],
+        p_bp_data->short_desc
+    );
+
+    // raw to gzip
+    ZopfliOptions zopfli_opt = {
+        0,
+        0,
+        256,
+        1,
+        0, // No longer used
+        0
+    };
+    unsigned char* gzip;
+    size_t gzip_len;
+    ZopfliCompress(&zopfli_opt, ZOPFLI_FORMAT_GZIP, p_bp_data->raw, p_bp_data->raw_len, &gzip, &gzip_len);
+    size_t base64_len = tb64v256enc(gzip, gzip_len, base64);
+
+    sprintf(for_md5f, "%s\"%s", head, base64);
+    char md5f_hex[33] = { 0 };
+    md5f(md5f_hex, for_md5f, strlen(for_md5f));
+    puts(md5f_hex);
+
+    sprintf(blueprint, "%s\"%s", for_md5f, md5f_hex);
+
+    free(head);
+    free(base64);
+    free(for_md5f);
+    free(tail);
+}
+
 void free_bp_data(bp_data_t* p_bp_data) {
+    free(p_bp_data->short_desc);
     free(p_bp_data->raw);
 }

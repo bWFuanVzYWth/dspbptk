@@ -9,6 +9,9 @@
 #include "Turbo-Base64/conf.h"
 #include "Turbo-Base64/turbob64_.h"
 #include "Turbo-Base64/turbob64.h"
+#include "zopfli/zopfli.h"
+
+#include "md5f.h"
 
 #ifndef DSPBPTK
 #define DSPBPTK
@@ -31,13 +34,13 @@ extern "C" {
 #define BP_LEN 268435456 // 256mb
 
     typedef struct {
-        int64_t layout;             // layout，作用未知
-        int64_t icons[5];           // 蓝图图标
-        int64_t time;               // 时间戳
-        int64_t game_version[4];    // 创建蓝图的游戏版本
+        uint64_t layout;             // layout，作用未知
+        uint64_t icons[5];           // 蓝图图标
+        uint64_t time;               // 时间戳
+        uint64_t game_version[4];    // 创建蓝图的游戏版本
         size_t raw_len;             // 蓝图数据的长度
+        char* short_desc;           // 蓝图简介，注意结尾已经带了','
         void* raw;                  // 指向蓝图数据
-        char* md5;                  // 指向蓝图md5f
     } bp_data_t;
 
     // 内部函数
@@ -68,6 +71,8 @@ extern "C" {
      * @return int 解析是否成功
      */
     int blueprint_to_data(bp_data_t* p_bp_data, const char* blueprint);
+
+    int data_to_blueprint(const bp_data_t* p_bp_data, char* blueprint);
 
     /**
      * @brief 释放bp_data的内存
