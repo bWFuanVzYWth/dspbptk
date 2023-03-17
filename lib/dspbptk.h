@@ -8,6 +8,7 @@
 #include "libdeflate/libdeflate.h"
 #include "Turbo-Base64/turbob64.h"
 #include "zopfli/zopfli.h"
+#include "yyjson/src/yyjson.h"
 
 #include "md5f.h"
 
