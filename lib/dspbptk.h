@@ -6,8 +6,6 @@
 #include <time.h>
 
 #include "libdeflate/libdeflate.h"
-#include "Turbo-Base64/conf.h"
-#include "Turbo-Base64/turbob64_.h"
 #include "Turbo-Base64/turbob64.h"
 #include "zopfli/zopfli.h"
 
@@ -20,24 +18,13 @@
 extern "C" {
 #endif
 
-#ifdef DEBUG
-#define debug_reset() {last_time = 0;}
-#define debug(x) {\
-    long long int now = get_timestamp();\
-    fprintf(stderr, "DEBUG: "x ": %.6lfms\n", last_time == 0 ? 0.0 : (double)(now - last_time) / 1000000.0);\
-    last_time = now;}
-#else
-#define debug_reset()
-#define debug(x)
-#endif
-
-#define BP_LEN 268435456 // 256mb
+#define BP_LEN 268435456 // 256mb // TODO 去掉这个宏
 
     typedef struct {
-        uint64_t layout;             // layout，作用未知
-        uint64_t icons[5];           // 蓝图图标
-        uint64_t time;               // 时间戳
-        uint64_t game_version[4];    // 创建蓝图的游戏版本
+        uint64_t layout;            // layout，作用未知
+        uint64_t icons[5];          // 蓝图图标
+        uint64_t time;              // 时间戳
+        uint64_t game_version[4];   // 创建蓝图的游戏版本
         size_t raw_len;             // 蓝图数据的长度
         char* short_desc;           // 蓝图简介，注意结尾已经带了','
         void* raw;                  // 指向蓝图数据
@@ -50,7 +37,7 @@ extern "C" {
      *
      * @param file_name 待读取的文件名
      * @param p_blueprint 指向蓝图字符串的指针
-     * @return size_t 蓝图的尺寸
+     * @return size_t 如果成功返回蓝图的尺寸；如果失败返回0
      */
     size_t file_to_blueprint(const char* file_name, char** p_blueprint);
 
@@ -59,7 +46,7 @@ extern "C" {
      *
      * @param file_name 待写入的文件名
      * @param blueprint 蓝图字符串
-     * @return int 写入是否成功
+     * @return int 如果成功返回0；如果失败返回-1
      */
     int blueprint_to_file(const char* file_name, const char* blueprint);
 
@@ -72,6 +59,13 @@ extern "C" {
      */
     int blueprint_to_data(bp_data_t* p_bp_data, const char* blueprint);
 
+    /**
+     * @brief 将bp_data编码成蓝图字符串
+     *
+     * @param p_bp_data 指向bp_data的指针
+     * @param blueprint 蓝图字符串
+     * @return int 编码是否成功
+     */
     int data_to_blueprint(const bp_data_t* p_bp_data, char* blueprint);
 
     /**
