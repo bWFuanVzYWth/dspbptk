@@ -17,6 +17,25 @@ int main(void) {
     fwrite(bp_data.raw, 1, bp_data.raw_len, fp);
     fclose(fp);
 
+    char* json;
+    data_to_json(&bp_data, &json);
+    puts(json);
+
+    unsigned char* p_raw = (unsigned char*)bp_data.raw;
+    int area_num = *((int8_t*)(p_raw + _num_area));
+
+    size_t offset = _area_array + area_num * _next_area + 4;
+    printf("offset = %lld\n", offset);
+    p_raw += offset; // 建筑列表的偏移值
+    for(int i = 0; i < 20; i++) {
+        int index = *((int32_t*)(p_raw + _index_bpbd));
+        int itemid = *((int16_t*)(p_raw + _itemId));
+        printf("index=%d,\titemid=%d\n", index, itemid);
+        int para_num = *((int16_t*)(p_raw + _num_bpbd));
+        printf("para_num=%d\n", para_num);
+        p_raw += _parameters_bpbd + 4 * para_num;
+    }
+
     // 输出
     data_to_blueprint(&bp_data, blueprint_out);
     blueprint_to_file("out.txt", blueprint_out);

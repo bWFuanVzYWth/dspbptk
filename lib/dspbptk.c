@@ -156,6 +156,33 @@ int data_to_blueprint(const bp_data_t* p_bp_data, char* blueprint) {
     free(base64);
     free(for_md5f);
     free(md5f_str);
+
+    return 0;
+}
+
+int data_to_json(const bp_data_t* p_bp_data, char** p_json) {
+    // Create a mutable doc
+    yyjson_mut_doc* doc = yyjson_mut_doc_new(NULL);
+    yyjson_mut_val* root = yyjson_mut_obj(doc);
+    yyjson_mut_doc_set_root(doc, root);
+
+    // 蓝图头
+    // TODO 和蓝图头的数据结构绑定
+    yyjson_mut_obj_add_uint(doc, root, "layout", p_bp_data->layout);
+    yyjson_mut_val* icons = yyjson_mut_arr_with_uint(doc, p_bp_data->icons, 5);
+    yyjson_mut_obj_add_val(doc, root, "icons", icons);
+    yyjson_mut_obj_add_uint(doc, root, "time", p_bp_data->time);
+    yyjson_mut_val* game_version = yyjson_mut_arr_with_uint(doc, p_bp_data->game_version, 4);
+    yyjson_mut_obj_add_val(doc, root, "game_version", game_version);
+    yyjson_mut_obj_add_str(doc, root, "short_desc", p_bp_data->short_desc);
+
+    // To string, minified
+    *p_json = yyjson_mut_write(doc, 0, NULL);
+
+    // Free the doc
+    yyjson_mut_doc_free(doc);
+
+    return 0;
 }
 
 void free_bp_data(bp_data_t* p_bp_data) {

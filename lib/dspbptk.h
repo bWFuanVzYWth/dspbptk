@@ -31,6 +31,58 @@ extern "C" {
         void* raw;                  // 指向蓝图数据
     } bp_data_t;
 
+    // TODO 规范命名
+    typedef enum {
+        _index_bpbd = 0,
+        _areaIndex = _index_bpbd + 4, // renamed
+        _localOffset_x = _areaIndex + 1,
+        _localOffset_y = _localOffset_x + 4,
+        _localOffset_z = _localOffset_y + 4,
+        _localOffset_x2 = _localOffset_z + 4,
+        _localOffset_y2 = _localOffset_x2 + 4,
+        _localOffset_z2 = _localOffset_y2 + 4,
+        _yaw = _localOffset_z2 + 4,
+        _yaw2 = _yaw + 4,
+        _itemId = _yaw2 + 4,
+        _modelIndex = _itemId + 2,
+        _tempOutputObjIdx = _modelIndex + 2,
+        _tempInputObjIdx = _tempOutputObjIdx + 4,
+        _outputToSlot = _tempInputObjIdx + 4,
+        _inputFromSlot = _outputToSlot + 1,
+        _outputFromSlot = _inputFromSlot + 1,
+        _inputToSlot = _outputFromSlot + 1,
+        _outputOffset = _inputToSlot + 1,
+        _inputOffset = _outputOffset + 1,
+        _recipeId = _inputOffset + 1,
+        _filterId = _recipeId + 2,
+        _num_bpbd = _filterId + 2, // renamed
+        _parameters_bpbd = _num_bpbd + 2 // renamed
+    }BlueprintBuilding_offset_t;
+
+    typedef enum {
+        _index_area = 0, // renamed
+        _parentIndex = _index_area + 1,
+        _tropicAnchor = _parentIndex + 1,
+        _areaSegments = _tropicAnchor + 2,
+        _anchorLocalOffsetX = _areaSegments + 2,
+        _anchorLocalOffsetY = _anchorLocalOffsetX + 2,
+        _width = _anchorLocalOffsetY + 2,
+        _height = _width + 2,
+        _next_area = _height + 2
+    }area_offset_t;
+
+    typedef enum {
+        _version = 0,
+        _cursorOffset_x = _version + 4,
+        _cursorOffset_y = _cursorOffset_x + 4,
+        _cursorTargetArea = _cursorOffset_y + 4,
+        _dragBoxSize_x = _cursorTargetArea + 4,
+        _dragBoxSize_y = _dragBoxSize_x + 4,
+        _primaryAreaIdx = _dragBoxSize_y + 4,
+        _num_area = _primaryAreaIdx + 4,  // renamed
+        _area_array = _num_area + 1
+    }bin_offset_t;
+
     // 内部函数
 
     /**
@@ -68,6 +120,8 @@ extern "C" {
      * @return int 编码是否成功
      */
     int data_to_blueprint(const bp_data_t* p_bp_data, char* blueprint);
+
+    int data_to_json(const bp_data_t* p_bp_data, char** json);
 
     /**
      * @brief 释放bp_data的内存
