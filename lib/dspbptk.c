@@ -101,9 +101,9 @@ int blueprint_to_data(bp_data_t* p_bp_data, const char* blueprint) {
     base64_dec(base64, base64_len, gzip);
 
     // gzip to bin
-    p_bp_data->bin_len = BLUEPRINT_MAX_LENGTH;
+    size_t bin_len = BLUEPRINT_MAX_LENGTH;
     p_bp_data->bin = calloc(BLUEPRINT_MAX_LENGTH, 1);
-    p_bp_data->bin_len = gzip_dec(gzip, gzip_len, p_bp_data->bin);
+    bin_len = gzip_dec(gzip, gzip_len, p_bp_data->bin);
 
     // 解析头
     p_bp_data->shortDesc = calloc(head_len, 1);
@@ -175,7 +175,8 @@ int data_to_blueprint(const bp_data_t* p_bp_data, char* blueprint) {
 
     // bin to gzip
     unsigned char* gzip;
-    size_t gzip_len = gzip_enc(p_bp_data->bin, p_bp_data->bin_len, &gzip);
+    size_t bin_len = 0; // TODO 计算二进制流长度
+    size_t gzip_len = gzip_enc(p_bp_data->bin, bin_len, &gzip);
 
     // gzip to base64
     size_t base64_len = base64_enc(gzip, gzip_len, base64);
@@ -224,4 +225,6 @@ int data_to_json(const bp_data_t* p_bp_data, char** p_json) {
 void free_bp_data(bp_data_t* p_bp_data) {
     free(p_bp_data->shortDesc);
     free(p_bp_data->bin);
+    free(p_bp_data->area);
+    free(p_bp_data->building);
 }

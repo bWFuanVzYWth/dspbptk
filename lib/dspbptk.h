@@ -26,7 +26,6 @@ extern "C" {
         uint64_t icons[5];          // 蓝图图标
         uint64_t time;              // 时间戳
         uint64_t gameVersion[4];   // 创建蓝图的游戏版本
-        size_t bin_len;             // 蓝图数据的长度
         char* shortDesc;           // 蓝图简介
         size_t area_num;
         size_t building_num;

@@ -13,9 +13,9 @@ int main(void) {
     blueprint_to_data(&bp_data, blueprint_in);
 
     // 在这里修改蓝图
-    FILE* fp = fopen("bin.bin", "wb");
-    fwrite(bp_data.bin, 1, bp_data.bin_len, fp);
-    fclose(fp);
+    // FILE* fp = fopen("bin.bin", "wb");
+    // fwrite(bp_data.bin, 1, bp_data.bin_len, fp);
+    // fclose(fp);
 
     char* json;
     data_to_json(&bp_data, &json);
