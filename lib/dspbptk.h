@@ -19,7 +19,7 @@
 extern "C" {
 #endif
 
-#define BP_LEN 268435456 // 256mb // TODO 去掉这个宏
+#define BLUEPRINT_MAX_LENGTH 134217728 // 128mb. 1048576 * 61 * 3/4 = 85284181.333 < 134217728.
 
     typedef struct {
         uint64_t layout;            // layout，作用未知
@@ -27,60 +27,60 @@ extern "C" {
         uint64_t time;              // 时间戳
         uint64_t game_version[4];   // 创建蓝图的游戏版本
         size_t raw_len;             // 蓝图数据的长度
-        char* short_desc;           // 蓝图简介，注意结尾已经带了','
+        char* short_desc;           // 蓝图简介
+
         void* raw;                  // 指向蓝图数据
     } bp_data_t;
 
-    // TODO 规范命名
     typedef enum {
-        _index_bpbd = 0,
-        _areaIndex = _index_bpbd + 4, // renamed
-        _localOffset_x = _areaIndex + 1,
-        _localOffset_y = _localOffset_x + 4,
-        _localOffset_z = _localOffset_y + 4,
-        _localOffset_x2 = _localOffset_z + 4,
-        _localOffset_y2 = _localOffset_x2 + 4,
-        _localOffset_z2 = _localOffset_y2 + 4,
-        _yaw = _localOffset_z2 + 4,
-        _yaw2 = _yaw + 4,
-        _itemId = _yaw2 + 4,
-        _modelIndex = _itemId + 2,
-        _tempOutputObjIdx = _modelIndex + 2,
-        _tempInputObjIdx = _tempOutputObjIdx + 4,
-        _outputToSlot = _tempInputObjIdx + 4,
-        _inputFromSlot = _outputToSlot + 1,
-        _outputFromSlot = _inputFromSlot + 1,
-        _inputToSlot = _outputFromSlot + 1,
-        _outputOffset = _inputToSlot + 1,
-        _inputOffset = _outputOffset + 1,
-        _recipeId = _inputOffset + 1,
-        _filterId = _recipeId + 2,
-        _num_bpbd = _filterId + 2, // renamed
-        _parameters_bpbd = _num_bpbd + 2 // renamed
-    }BlueprintBuilding_offset_t;
+        building_offset_index = 0,
+        building_offset_areaIndex = building_offset_index + 4,
+        building_offset_localOffset_x = building_offset_areaIndex + 1,
+        building_offset_localOffset_y = building_offset_localOffset_x + 4,
+        building_offset_localOffset_z = building_offset_localOffset_y + 4,
+        building_offset_localOffset_x2 = building_offset_localOffset_z + 4,
+        building_offset_localOffset_y2 = building_offset_localOffset_x2 + 4,
+        building_offset_localOffset_z2 = building_offset_localOffset_y2 + 4,
+        building_offset_yaw = building_offset_localOffset_z2 + 4,
+        building_offset_yaw2 = building_offset_yaw + 4,
+        building_offset_itemId = building_offset_yaw2 + 4,
+        building_offset_modelIndex = building_offset_itemId + 2,
+        building_offset_tempOutputObjIdx = building_offset_modelIndex + 2,
+        building_offset_tempInputObjIdx = building_offset_tempOutputObjIdx + 4,
+        building_offset_outputToSlot = building_offset_tempInputObjIdx + 4,
+        building_offset_inputFromSlot = building_offset_outputToSlot + 1,
+        building_offset_outputFromSlot = building_offset_inputFromSlot + 1,
+        building_offset_inputToSlot = building_offset_outputFromSlot + 1,
+        building_offset_outputOffset = building_offset_inputToSlot + 1,
+        building_offset_inputOffset = building_offset_outputOffset + 1,
+        building_offset_recipeId = building_offset_inputOffset + 1,
+        building_offset_filterId = building_offset_recipeId + 2,
+        building_offset_num = building_offset_filterId + 2,
+        building_offset_parameters = building_offset_num + 2
+    }building_offset_t;
 
     typedef enum {
-        _index_area = 0, // renamed
-        _parentIndex = _index_area + 1,
-        _tropicAnchor = _parentIndex + 1,
-        _areaSegments = _tropicAnchor + 2,
-        _anchorLocalOffsetX = _areaSegments + 2,
-        _anchorLocalOffsetY = _anchorLocalOffsetX + 2,
-        _width = _anchorLocalOffsetY + 2,
-        _height = _width + 2,
-        _next_area = _height + 2
+        area_offset_index = 0,
+        area_offset_parentIndex = area_offset_index + 1,
+        area_offset_tropicAnchor = area_offset_parentIndex + 1,
+        area_offset_areaSegments = area_offset_tropicAnchor + 2,
+        area_offset_anchorLocalOffsetX = area_offset_areaSegments + 2,
+        area_offset_anchorLocalOffsetY = area_offset_anchorLocalOffsetX + 2,
+        area_offset_width = area_offset_anchorLocalOffsetY + 2,
+        area_offset_height = area_offset_width + 2,
+        AREA_OFFSET_AREA_NEXT = area_offset_height + 2
     }area_offset_t;
 
     typedef enum {
-        _version = 0,
-        _cursorOffset_x = _version + 4,
-        _cursorOffset_y = _cursorOffset_x + 4,
-        _cursorTargetArea = _cursorOffset_y + 4,
-        _dragBoxSize_x = _cursorTargetArea + 4,
-        _dragBoxSize_y = _dragBoxSize_x + 4,
-        _primaryAreaIdx = _dragBoxSize_y + 4,
-        _num_area = _primaryAreaIdx + 4,  // renamed
-        _area_array = _num_area + 1
+        bin_offset_version = 0,
+        bin_offset_cursorOffset_x = bin_offset_version + 4,
+        bin_offset_cursorOffset_y = bin_offset_cursorOffset_x + 4,
+        bin_offset_cursorTargetArea = bin_offset_cursorOffset_y + 4,
+        bin_offset_dragBoxSize_x = bin_offset_cursorTargetArea + 4,
+        bin_offset_dragBoxSize_y = bin_offset_dragBoxSize_x + 4,
+        bin_offset_primaryAreaIdx = bin_offset_dragBoxSize_y + 4,
+        BIN_OFFSET_AREA_NUM = bin_offset_primaryAreaIdx + 4,
+        BIN_OFFSET_AREA_ARRAY = BIN_OFFSET_AREA_NUM + 1
     }bin_offset_t;
 
     // 内部函数

@@ -27,7 +27,7 @@ size_t gzip_enc(const unsigned char* in, size_t inlen, unsigned char* out) {
 size_t gzip_dec(const unsigned char* in, size_t inlen, unsigned char* out) {
     size_t raw_len;
     struct libdeflate_decompressor* p_decompressor = libdeflate_alloc_decompressor();
-    libdeflate_gzip_decompress(p_decompressor, in, inlen, out, BP_LEN, &raw_len);
+    libdeflate_gzip_decompress(p_decompressor, in, inlen, out, BLUEPRINT_MAX_LENGTH, &raw_len);
     libdeflate_free_decompressor(p_decompressor);
     return raw_len;
 }
@@ -71,7 +71,7 @@ int blueprint_to_data(bp_data_t* p_bp_data, const char* blueprint) {
     char* str = calloc(bp_len, 1);
     strcpy(str, blueprint);
 
-    // 根据两个冒号，把蓝图分割成头|base64|md5f字符串三部分
+    // 把蓝图分割成 头|base64|md5f字符串 三部分
     const unsigned char* head = strtok(str, "\"");
     const unsigned char* base64 = strtok(NULL, "\"");
     const unsigned char* md5f_str = strtok(NULL, "\"");
@@ -84,13 +84,11 @@ int blueprint_to_data(bp_data_t* p_bp_data, const char* blueprint) {
     base64_dec(base64, base64_len, gzip);
 
     // gzip to raw
-    // TODO 测试能否直接从gzip中读取raw的大小，优化内存占用
-    p_bp_data->raw_len = BP_LEN;
-    p_bp_data->raw = calloc(BP_LEN, 1);
+    p_bp_data->raw_len = BLUEPRINT_MAX_LENGTH;
+    p_bp_data->raw = calloc(BLUEPRINT_MAX_LENGTH, 1);
     p_bp_data->raw_len = gzip_dec(gzip, gzip_len, p_bp_data->raw);
 
     // 解析
-    // TODO 封装成单独的函数
     p_bp_data->short_desc = calloc(head_len, 1);
     sscanf(head, "BLUEPRINT:0,%llu,%llu,%llu,%llu,%llu,%llu,0,%llu,%llu.%llu.%llu.%llu,%s",
         &p_bp_data->layout,
@@ -115,13 +113,12 @@ int blueprint_to_data(bp_data_t* p_bp_data, const char* blueprint) {
 }
 
 int data_to_blueprint(const bp_data_t* p_bp_data, char* blueprint) {
-    char* head = calloc(BP_LEN, 1);
-    char* base64 = calloc(BP_LEN, 1);
-    char* for_md5f = calloc(BP_LEN, 1);
+    char* head = calloc(BLUEPRINT_MAX_LENGTH, 1);
+    char* base64 = calloc(BLUEPRINT_MAX_LENGTH, 1);
+    char* for_md5f = calloc(BLUEPRINT_MAX_LENGTH, 1);
     char* md5f_str = calloc(33, 1);
 
     // 编码
-    // TODO 封装成单独的函数
     sprintf(head, "BLUEPRINT:0,%llu,%llu,%llu,%llu,%llu,%llu,0,%llu,%llu.%llu.%llu.%llu,%s",
         p_bp_data->layout,
         p_bp_data->icons[0],
@@ -167,7 +164,7 @@ int data_to_json(const bp_data_t* p_bp_data, char** p_json) {
     yyjson_mut_doc_set_root(doc, root);
 
     // 蓝图头
-    // TODO 和蓝图头的数据结构绑定
+    // TODO 从蓝图头的结构自动生成
     yyjson_mut_obj_add_uint(doc, root, "layout", p_bp_data->layout);
     yyjson_mut_val* icons = yyjson_mut_arr_with_uint(doc, p_bp_data->icons, 5);
     yyjson_mut_obj_add_val(doc, root, "icons", icons);

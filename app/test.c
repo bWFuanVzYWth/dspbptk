@@ -4,7 +4,7 @@ int main(void) {
 
     // 读取蓝图
     char* blueprint_in;
-    char* blueprint_out = calloc(BP_LEN, 1);
+    char* blueprint_out = calloc(BLUEPRINT_MAX_LENGTH, 1);
     size_t length = file_to_blueprint("in.txt", &blueprint_in);
     printf("蓝图大小：%lld\n", length);
 
@@ -22,19 +22,19 @@ int main(void) {
     puts(json);
 
     unsigned char* p_raw = (unsigned char*)bp_data.raw;
-    int area_num = *((int8_t*)(p_raw + _num_area));
+    int area_num = *((int8_t*)(p_raw + BIN_OFFSET_AREA_NUM));
 
-    size_t offset = _area_array + area_num * _next_area + 4;
-    printf("offset = %lld\n", offset);
-    p_raw += offset; // 建筑列表的偏移值
-    for(int i = 0; i < 20; i++) {
-        int index = *((int32_t*)(p_raw + _index_bpbd));
-        int itemid = *((int16_t*)(p_raw + _itemId));
-        printf("index=%d,\titemid=%d\n", index, itemid);
-        int para_num = *((int16_t*)(p_raw + _num_bpbd));
-        printf("para_num=%d\n", para_num);
-        p_raw += _parameters_bpbd + 4 * para_num;
-    }
+    // size_t offset = BIN_OFFSET_AREA_ARRAY + area_num * AREA_OFFSET_AREA_NEXT + 4;
+    // printf("offset = %lld\n", offset);
+    // p_raw += offset; // 建筑列表的偏移值
+    // for(int i = 0; i < 650; i++) {
+    //     int index = *((int32_t*)(p_raw + building_offset_index));
+    //     int itemid = *((int16_t*)(p_raw +building_offset_itemId));
+    //     printf("index=%d,\titemid=%d\n", index, itemid);
+    //     int para_num = *((int16_t*)(p_raw + building_offset_num));
+    //     printf("para_num=%d\n", para_num);
+    //     p_raw += building_offset_parameters + 4 * para_num;
+    // }
 
     // 输出
     data_to_blueprint(&bp_data, blueprint_out);
