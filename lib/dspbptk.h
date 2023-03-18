@@ -71,7 +71,8 @@ extern "C" {
         area_offset_anchorLocalOffsetY = area_offset_anchorLocalOffsetX + 2,
         area_offset_width = area_offset_anchorLocalOffsetY + 2,
         area_offset_height = area_offset_width + 2,
-        AREA_OFFSET_AREA_NEXT = area_offset_height + 2
+        AREA_OFFSET_AREA_NEXT = area_offset_height + 2,
+        AREA_OFFSET_BUILDING_ARRAY = AREA_OFFSET_AREA_NEXT + 4
     }area_offset_t;
 
     typedef enum {

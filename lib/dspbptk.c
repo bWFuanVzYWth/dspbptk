@@ -61,6 +61,23 @@ int blueprint_to_file(const char* file_name, const char* blueprint) {
     return 0;
 }
 
+size_t get_area_num(void* p_area_num) {
+    return (size_t) * ((int8_t*)p_area_num);
+}
+
+size_t get_building_num(void* p_building_num) {
+    return (size_t) * ((int32_t*)p_building_num);
+}
+
+size_t get_building_size(void* p_building) {
+    int16_t* p_num = (int16_t*)((unsigned char*)p_building + building_offset_num);
+    return (size_t)(building_offset_parameters + 4 * (*p_num));
+}
+
+int16_t get_building_itemID(void* p_building) {
+    return *((int16_t*)(p_building + building_offset_itemId));
+}
+
 // TODO 蓝图格式检查
 int blueprint_to_data(bp_data_t* p_bp_data, const char* blueprint) {
     if(blueprint == NULL)
@@ -106,7 +123,27 @@ int blueprint_to_data(bp_data_t* p_bp_data, const char* blueprint) {
     );
 
     // 解析二进制流
-
+    unsigned char* ptr = p_bp_data->bin;
+    // 解析区域数组
+    ptr += BIN_OFFSET_AREA_NUM;
+    p_bp_data->area_num = get_area_num(ptr);
+    printf("area_num = %lld\n", p_bp_data->area_num);
+    p_bp_data->area = calloc(p_bp_data->area_num, sizeof(void*));
+    ptr += BIN_OFFSET_AREA_ARRAY - BIN_OFFSET_AREA_NUM;
+    for(int i = 0; i < p_bp_data->area_num; i++) {
+        p_bp_data->area[i] = ptr;
+        ptr += AREA_OFFSET_AREA_NEXT;
+    }
+    // 解析建筑数组
+    p_bp_data->building_num = get_building_num(ptr);
+    printf("building_num = %lld\n", p_bp_data->building_num);
+    p_bp_data->building = calloc(p_bp_data->building_num, sizeof(void*));
+    ptr += AREA_OFFSET_BUILDING_ARRAY - AREA_OFFSET_AREA_NEXT;
+    for(int i = 0; i < p_bp_data->building_num; i++) {
+        p_bp_data->building[i] = ptr;
+        printf("%d,", get_building_itemID(ptr));
+        ptr += get_building_size(ptr);
+    }
     // free
     free(gzip);
     free(str);
@@ -149,7 +186,6 @@ int data_to_blueprint(const bp_data_t* p_bp_data, char* blueprint) {
     md5f(md5f_hex, for_md5f, strlen(for_md5f));
     sprintf(blueprint, "%s\"%s", for_md5f, md5f_hex);
     // puts(md5f_hex); // for debug
-
 
     free(head);
     free(base64);
