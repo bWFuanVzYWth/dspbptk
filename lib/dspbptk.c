@@ -25,11 +25,11 @@ size_t gzip_enc(const unsigned char* in, size_t inlen, unsigned char* out) {
 }
 
 size_t gzip_dec(const unsigned char* in, size_t inlen, unsigned char* out) {
-    size_t raw_len;
+    size_t bin_len;
     struct libdeflate_decompressor* p_decompressor = libdeflate_alloc_decompressor();
-    libdeflate_gzip_decompress(p_decompressor, in, inlen, out, BLUEPRINT_MAX_LENGTH, &raw_len);
+    libdeflate_gzip_decompress(p_decompressor, in, inlen, out, BLUEPRINT_MAX_LENGTH, &bin_len);
     libdeflate_free_decompressor(p_decompressor);
-    return raw_len;
+    return bin_len;
 }
 
 // time in ns
@@ -83,13 +83,13 @@ int blueprint_to_data(bp_data_t* p_bp_data, const char* blueprint) {
     unsigned char* gzip = calloc(gzip_len, 1);
     base64_dec(base64, base64_len, gzip);
 
-    // gzip to raw
-    p_bp_data->raw_len = BLUEPRINT_MAX_LENGTH;
-    p_bp_data->raw = calloc(BLUEPRINT_MAX_LENGTH, 1);
-    p_bp_data->raw_len = gzip_dec(gzip, gzip_len, p_bp_data->raw);
+    // gzip to bin
+    p_bp_data->bin_len = BLUEPRINT_MAX_LENGTH;
+    p_bp_data->bin = calloc(BLUEPRINT_MAX_LENGTH, 1);
+    p_bp_data->bin_len = gzip_dec(gzip, gzip_len, p_bp_data->bin);
 
-    // 解析
-    p_bp_data->short_desc = calloc(head_len, 1);
+    // 解析头
+    p_bp_data->shortDesc = calloc(head_len, 1);
     sscanf(head, "BLUEPRINT:0,%llu,%llu,%llu,%llu,%llu,%llu,0,%llu,%llu.%llu.%llu.%llu,%s",
         &p_bp_data->layout,
         &p_bp_data->icons[0],
@@ -98,12 +98,14 @@ int blueprint_to_data(bp_data_t* p_bp_data, const char* blueprint) {
         &p_bp_data->icons[3],
         &p_bp_data->icons[4],
         &p_bp_data->time,
-        &p_bp_data->game_version[0],
-        &p_bp_data->game_version[1],
-        &p_bp_data->game_version[2],
-        &p_bp_data->game_version[3],
-        p_bp_data->short_desc
+        &p_bp_data->gameVersion[0],
+        &p_bp_data->gameVersion[1],
+        &p_bp_data->gameVersion[2],
+        &p_bp_data->gameVersion[3],
+        p_bp_data->shortDesc
     );
+
+    // 解析二进制流
 
     // free
     free(gzip);
@@ -127,16 +129,16 @@ int data_to_blueprint(const bp_data_t* p_bp_data, char* blueprint) {
         p_bp_data->icons[3],
         p_bp_data->icons[4],
         p_bp_data->time,
-        p_bp_data->game_version[0],
-        p_bp_data->game_version[1],
-        p_bp_data->game_version[2],
-        p_bp_data->game_version[3],
-        p_bp_data->short_desc
+        p_bp_data->gameVersion[0],
+        p_bp_data->gameVersion[1],
+        p_bp_data->gameVersion[2],
+        p_bp_data->gameVersion[3],
+        p_bp_data->shortDesc
     );
 
-    // raw to gzip
+    // bin to gzip
     unsigned char* gzip;
-    size_t gzip_len = gzip_enc(p_bp_data->raw, p_bp_data->raw_len, &gzip);
+    size_t gzip_len = gzip_enc(p_bp_data->bin, p_bp_data->bin_len, &gzip);
 
     // gzip to base64
     size_t base64_len = base64_enc(gzip, gzip_len, base64);
@@ -157,6 +159,7 @@ int data_to_blueprint(const bp_data_t* p_bp_data, char* blueprint) {
     return 0;
 }
 
+// TODO 还没写完
 int data_to_json(const bp_data_t* p_bp_data, char** p_json) {
     // Create a mutable doc
     yyjson_mut_doc* doc = yyjson_mut_doc_new(NULL);
@@ -169,9 +172,9 @@ int data_to_json(const bp_data_t* p_bp_data, char** p_json) {
     yyjson_mut_val* icons = yyjson_mut_arr_with_uint(doc, p_bp_data->icons, 5);
     yyjson_mut_obj_add_val(doc, root, "icons", icons);
     yyjson_mut_obj_add_uint(doc, root, "time", p_bp_data->time);
-    yyjson_mut_val* game_version = yyjson_mut_arr_with_uint(doc, p_bp_data->game_version, 4);
-    yyjson_mut_obj_add_val(doc, root, "game_version", game_version);
-    yyjson_mut_obj_add_str(doc, root, "short_desc", p_bp_data->short_desc);
+    yyjson_mut_val* gameVersion = yyjson_mut_arr_with_uint(doc, p_bp_data->gameVersion, 4);
+    yyjson_mut_obj_add_val(doc, root, "gameVersion", gameVersion);
+    yyjson_mut_obj_add_str(doc, root, "shortDesc", p_bp_data->shortDesc);
 
     // To string, minified
     *p_json = yyjson_mut_write(doc, 0, NULL);
@@ -183,6 +186,6 @@ int data_to_json(const bp_data_t* p_bp_data, char** p_json) {
 }
 
 void free_bp_data(bp_data_t* p_bp_data) {
-    free(p_bp_data->short_desc);
-    free(p_bp_data->raw);
+    free(p_bp_data->shortDesc);
+    free(p_bp_data->bin);
 }

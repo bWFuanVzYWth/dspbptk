@@ -25,11 +25,14 @@ extern "C" {
         uint64_t layout;            // layout，作用未知
         uint64_t icons[5];          // 蓝图图标
         uint64_t time;              // 时间戳
-        uint64_t game_version[4];   // 创建蓝图的游戏版本
-        size_t raw_len;             // 蓝图数据的长度
-        char* short_desc;           // 蓝图简介
-
-        void* raw;                  // 指向蓝图数据
+        uint64_t gameVersion[4];   // 创建蓝图的游戏版本
+        size_t bin_len;             // 蓝图数据的长度
+        char* shortDesc;           // 蓝图简介
+        size_t area_num;
+        size_t building_num;
+        void* bin;                  // 指向蓝图头，也是二进制数据流的起始
+        void** area;                // 指向每一个区域
+        void** building;            // 指向每一个建筑
     } bp_data_t;
 
     typedef enum {
