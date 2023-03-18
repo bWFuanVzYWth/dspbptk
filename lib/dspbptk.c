@@ -1,5 +1,57 @@
 #include "dspbptk.h"
 
+typedef enum {
+    building_offset_index = 0,
+    building_offset_areaIndex = building_offset_index + 4,
+    building_offset_localOffset_x = building_offset_areaIndex + 1,
+    building_offset_localOffset_y = building_offset_localOffset_x + 4,
+    building_offset_localOffset_z = building_offset_localOffset_y + 4,
+    building_offset_localOffset_x2 = building_offset_localOffset_z + 4,
+    building_offset_localOffset_y2 = building_offset_localOffset_x2 + 4,
+    building_offset_localOffset_z2 = building_offset_localOffset_y2 + 4,
+    building_offset_yaw = building_offset_localOffset_z2 + 4,
+    building_offset_yaw2 = building_offset_yaw + 4,
+    building_offset_itemId = building_offset_yaw2 + 4,
+    building_offset_modelIndex = building_offset_itemId + 2,
+    building_offset_tempOutputObjIdx = building_offset_modelIndex + 2,
+    building_offset_tempInputObjIdx = building_offset_tempOutputObjIdx + 4,
+    building_offset_outputToSlot = building_offset_tempInputObjIdx + 4,
+    building_offset_inputFromSlot = building_offset_outputToSlot + 1,
+    building_offset_outputFromSlot = building_offset_inputFromSlot + 1,
+    building_offset_inputToSlot = building_offset_outputFromSlot + 1,
+    building_offset_outputOffset = building_offset_inputToSlot + 1,
+    building_offset_inputOffset = building_offset_outputOffset + 1,
+    building_offset_recipeId = building_offset_inputOffset + 1,
+    building_offset_filterId = building_offset_recipeId + 2,
+    building_offset_num = building_offset_filterId + 2,
+    building_offset_parameters = building_offset_num + 2
+}building_offset_t;
+
+typedef enum {
+    area_offset_index = 0,
+    area_offset_parentIndex = area_offset_index + 1,
+    area_offset_tropicAnchor = area_offset_parentIndex + 1,
+    area_offset_areaSegments = area_offset_tropicAnchor + 2,
+    area_offset_anchorLocalOffsetX = area_offset_areaSegments + 2,
+    area_offset_anchorLocalOffsetY = area_offset_anchorLocalOffsetX + 2,
+    area_offset_width = area_offset_anchorLocalOffsetY + 2,
+    area_offset_height = area_offset_width + 2,
+    AREA_OFFSET_AREA_NEXT = area_offset_height + 2,
+    AREA_OFFSET_BUILDING_ARRAY = AREA_OFFSET_AREA_NEXT + 4
+}area_offset_t;
+
+typedef enum {
+    bin_offset_version = 0,
+    bin_offset_cursorOffset_x = bin_offset_version + 4,
+    bin_offset_cursorOffset_y = bin_offset_cursorOffset_x + 4,
+    bin_offset_cursorTargetArea = bin_offset_cursorOffset_y + 4,
+    bin_offset_dragBoxSize_x = bin_offset_cursorTargetArea + 4,
+    bin_offset_dragBoxSize_y = bin_offset_dragBoxSize_x + 4,
+    bin_offset_primaryAreaIdx = bin_offset_dragBoxSize_y + 4,
+    BIN_OFFSET_AREA_NUM = bin_offset_primaryAreaIdx + 4,
+    BIN_OFFSET_AREA_ARRAY = BIN_OFFSET_AREA_NUM + 1
+}bin_offset_t;
+
 // 内部函数
 
 // 这些函数用于解耦dspbptk与base64库
@@ -65,8 +117,16 @@ size_t get_area_num(void* p_area_num) {
     return (size_t) * ((int8_t*)p_area_num);
 }
 
+void set_area_num(void* p_area_num, size_t n) {
+    *((int8_t*)p_area_num) = (int8_t)n;
+}
+
 size_t get_building_num(void* p_building_num) {
     return (size_t) * ((int32_t*)p_building_num);
+}
+
+void set_building_num(void* p_building_num, size_t n) {
+    *((int32_t*)p_building_num) = (int32_t)n;
 }
 
 size_t get_building_size(void* p_building) {
@@ -127,7 +187,6 @@ int blueprint_to_data(bp_data_t* p_bp_data, const char* blueprint) {
     // 解析区域数组
     ptr += BIN_OFFSET_AREA_NUM;
     p_bp_data->area_num = get_area_num(ptr);
-    printf("area_num = %lld\n", p_bp_data->area_num);
     p_bp_data->area = calloc(p_bp_data->area_num, sizeof(void*));
     ptr += BIN_OFFSET_AREA_ARRAY - BIN_OFFSET_AREA_NUM;
     for(int i = 0; i < p_bp_data->area_num; i++) {
@@ -136,7 +195,6 @@ int blueprint_to_data(bp_data_t* p_bp_data, const char* blueprint) {
     }
     // 解析建筑数组
     p_bp_data->building_num = get_building_num(ptr);
-    printf("building_num = %lld\n", p_bp_data->building_num);
     p_bp_data->building = calloc(p_bp_data->building_num, sizeof(void*));
     ptr += AREA_OFFSET_BUILDING_ARRAY - AREA_OFFSET_AREA_NEXT;
     for(int i = 0; i < p_bp_data->building_num; i++) {
@@ -144,6 +202,7 @@ int blueprint_to_data(bp_data_t* p_bp_data, const char* blueprint) {
         printf("%d,", get_building_itemID(ptr));
         ptr += get_building_size(ptr);
     }
+
     // free
     free(gzip);
     free(str);
@@ -173,10 +232,33 @@ int data_to_blueprint(const bp_data_t* p_bp_data, char* blueprint) {
         p_bp_data->shortDesc
     );
 
+    // data to bin
+    unsigned char* bin = calloc(BLUEPRINT_MAX_LENGTH, 1);
+    unsigned char* ptr = bin;
+    // 生成蓝图头
+    memcpy(ptr, p_bp_data->bin, BIN_OFFSET_AREA_NUM);
+    // 生成区域数组
+    ptr += BIN_OFFSET_AREA_NUM;
+    set_area_num(ptr, p_bp_data->area_num);
+    ptr += BIN_OFFSET_AREA_ARRAY - BIN_OFFSET_AREA_NUM;
+    for(int i = 0; i < p_bp_data->area_num; i++) {
+        memcpy(ptr, p_bp_data->area[i], AREA_OFFSET_AREA_NEXT);
+        ptr += AREA_OFFSET_AREA_NEXT;
+    }
+    // 生成建筑数组
+    set_building_num(ptr, p_bp_data->building_num);
+    ptr += AREA_OFFSET_BUILDING_ARRAY - AREA_OFFSET_AREA_NEXT;
+    // TODO 自动重设index
+    for(int i = 0; i < p_bp_data->building_num; i++) {
+        size_t building_size = get_building_size(p_bp_data->building[i]);
+        memcpy(ptr, p_bp_data->building[i], building_size);
+        ptr += building_size;
+    }
+    size_t bin_len = ptr - bin;
+
     // bin to gzip
     unsigned char* gzip;
-    size_t bin_len = 0; // TODO 计算二进制流长度
-    size_t gzip_len = gzip_enc(p_bp_data->bin, bin_len, &gzip);
+    size_t gzip_len = gzip_enc(bin, bin_len, &gzip);
 
     // gzip to base64
     size_t base64_len = base64_enc(gzip, gzip_len, base64);
@@ -186,8 +268,9 @@ int data_to_blueprint(const bp_data_t* p_bp_data, char* blueprint) {
     char md5f_hex[33] = { 0 };
     md5f(md5f_hex, for_md5f, strlen(for_md5f));
     sprintf(blueprint, "%s\"%s", for_md5f, md5f_hex);
-    // puts(md5f_hex); // for debug
+    fprintf(stderr, "%s\n", md5f_hex); // for debug
 
+    free(bin);
     free(head);
     free(base64);
     free(for_md5f);
