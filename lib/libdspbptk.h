@@ -13,13 +13,22 @@ extern "C" {
 
 #include "libdeflate/libdeflate.h"
 #include "Turbo-Base64/turbob64.h"
-
-#include "zopfli-KrzYmod/zopfli.h"
 #include "yyjson/yyjson.h"
 
 #include "md5f.h"
 
 #define BLUEPRINT_MAX_LENGTH 134217728 // 128mb. 1048576 * 61 * 3/4 = 85284181.333 < 134217728.
+
+    typedef enum{
+        no_error = 0,
+
+        error_argc,
+        null_ptr,
+        file_no_found,
+        cannot_write,
+        out_of_memory,
+        not_a_blueprint
+    }dspbptk_err_t;
 
     typedef struct {
         uint64_t layout;            // layout，作用未知
@@ -52,16 +61,16 @@ extern "C" {
      * @param blueprint 蓝图字符串
      * @return int 如果成功返回0；如果失败返回-1
      */
-    int blueprint_to_file(const char* file_name, const char* blueprint);
+    dspbptk_err_t blueprint_to_file(const char* file_name, const char* blueprint);
 
     /**
      * @brief 从蓝图字符串解析其中的数据到bp_data。会给bp_data分配内存，别忘了free_bp_data(&bp_data);
      *
      * @param p_bp_data 指向bp_data的指针
      * @param blueprint 蓝图字符串
-     * @return int 解析是否成功
+     * @return dspbptk_err_t 解析是否成功
      */
-    int blueprint_to_data(bp_data_t* p_bp_data, const char* blueprint);
+    dspbptk_err_t blueprint_to_data(bp_data_t* p_bp_data, const char* blueprint);
 
     /**
      * @brief 将bp_data编码成蓝图字符串

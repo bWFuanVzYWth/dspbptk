@@ -1,5 +1,6 @@
 #include "libdspbptk.h"
 
+// 定义了一系列的偏移值，通过这些偏移值即可使用指针快速访问蓝图中的特定数据
 typedef enum {
     building_offset_index = 0,
     building_offset_areaIndex = building_offset_index + 4,
@@ -52,8 +53,6 @@ typedef enum {
     BIN_OFFSET_AREA_ARRAY = BIN_OFFSET_AREA_NUM + 1
 }bin_offset_t;
 
-// 内部函数
-
 // 这些函数用于解耦dspbptk与base64库
 // TODO base64格式异常处理
 // TODO 非avx256兼容
@@ -71,21 +70,12 @@ size_t base64_dec(const unsigned char* in, size_t inlen, unsigned char* out) {
 size_t gzip_enc(const unsigned char* in, size_t inlen, unsigned char** out) {
     size_t gzip_len;
 
-#define GZIP_ENC 0 // 0 = zopfli, 1 = libdeflate
-
-#if GZIP_ENC == 0
-    // zopfli似乎很玄学，经常不稳定，先不用这个了
-    // ZopfliOptions zopfli_opt;
-    // ZopfliInitOptions(&zopfli_opt);
-    ZopfliCompress(NULL, ZOPFLI_FORMAT_GZIP, in, inlen, out, &gzip_len, NULL, NULL);
-#elif GZIP_ENC == 1
     size_t out_nbytes_avail = BLUEPRINT_MAX_LENGTH;
     *out = calloc(out_nbytes_avail, 1);
     struct libdeflate_compressor* p_compressor = libdeflate_alloc_compressor(12);
     gzip_len = libdeflate_gzip_compress(p_compressor, in, inlen, *out, out_nbytes_avail);
     libdeflate_free_compressor(p_compressor);
-#endif
-    printf("gzip enc finish\n");
+
     return gzip_len;
 }
 
@@ -95,13 +85,6 @@ size_t gzip_dec(const unsigned char* in, size_t inlen, unsigned char* out) {
     libdeflate_gzip_decompress(p_decompressor, in, inlen, out, BLUEPRINT_MAX_LENGTH, &bin_len);
     libdeflate_free_decompressor(p_decompressor);
     return bin_len;
-}
-
-// time in ns
-uint64_t get_timestamp(void) {
-    struct timespec t;
-    clock_gettime(0, &t);
-    return (uint64_t)t.tv_sec * 1000000000 + (uint64_t)t.tv_nsec;
 }
 
 size_t file_to_blueprint(const char* file_name, char** p_blueprint) {
@@ -117,13 +100,13 @@ size_t file_to_blueprint(const char* file_name, char** p_blueprint) {
     return length;
 }
 
-int blueprint_to_file(const char* file_name, const char* blueprint) {
+dspbptk_err_t blueprint_to_file(const char* file_name, const char* blueprint) {
     FILE* fp = fopen(file_name, "w");
     if(fp == NULL)
-        return -1;
+        return cannot_write;
     fprintf(fp, "%s", blueprint);
     fclose(fp);
-    return 0;
+    return no_error;
 }
 
 size_t get_area_num(void* p_area_num) {
@@ -153,19 +136,20 @@ int16_t get_building_itemID(void* p_building) {
 
 // TODO 蓝图格式检查
 // TODO 返回值枚举
-int blueprint_to_data(bp_data_t* p_bp_data, const char* blueprint) {
+dspbptk_err_t blueprint_to_data(bp_data_t* p_bp_data, const char* blueprint) {
     if(blueprint == NULL)
-        return -1;
+        return null_ptr;
 
     const char* HEADER = "BLUEPRINT:";
     if(memcmp(blueprint, HEADER, strlen(HEADER))) {
-        fprintf(stderr, "ERROR: 不是蓝图\n");
-        return -1;
+        return not_a_blueprint;
     }
 
     // 复制蓝图字符串，否则会破坏原蓝图的数据
     size_t bp_len = strlen(blueprint);
     char* str = calloc(bp_len, 1);
+    if(str == NULL)
+        return out_of_memory;
     strcpy(str, blueprint);
 
     // 把蓝图分割成 头|base64|md5f字符串 三部分
@@ -178,15 +162,21 @@ int blueprint_to_data(bp_data_t* p_bp_data, const char* blueprint) {
     // base64 to gzip
     size_t gzip_len = tb64declen(base64, base64_len);
     unsigned char* gzip = calloc(gzip_len, 1);
+    if(gzip == NULL)
+        return out_of_memory;
     base64_dec(base64, base64_len, gzip);
 
     // gzip to bin
     size_t bin_len = BLUEPRINT_MAX_LENGTH;
     p_bp_data->bin = calloc(BLUEPRINT_MAX_LENGTH, 1);
+    if(p_bp_data->bin == NULL)
+        return out_of_memory;
     bin_len = gzip_dec(gzip, gzip_len, p_bp_data->bin);
 
     // 解析头
     p_bp_data->shortDesc = calloc(head_len, 1);
+    if(p_bp_data->shortDesc == NULL)
+        return out_of_memory;
     sscanf(head, "BLUEPRINT:0,%llu,%llu,%llu,%llu,%llu,%llu,0,%llu,%llu.%llu.%llu.%llu,%s",
         &p_bp_data->layout,
         &p_bp_data->icons[0],
@@ -208,6 +198,8 @@ int blueprint_to_data(bp_data_t* p_bp_data, const char* blueprint) {
     ptr += BIN_OFFSET_AREA_NUM;
     p_bp_data->area_num = get_area_num(ptr);
     p_bp_data->area = calloc(p_bp_data->area_num, sizeof(void*));
+    if(p_bp_data->area == NULL)
+        return out_of_memory;
     ptr += BIN_OFFSET_AREA_ARRAY - BIN_OFFSET_AREA_NUM;
     for(int i = 0; i < p_bp_data->area_num; i++) {
         p_bp_data->area[i] = ptr;
@@ -216,6 +208,8 @@ int blueprint_to_data(bp_data_t* p_bp_data, const char* blueprint) {
     // 解析建筑数组
     p_bp_data->building_num = get_building_num(ptr);
     p_bp_data->building = calloc(p_bp_data->building_num, sizeof(void*));
+    if(p_bp_data->building == NULL)
+        return out_of_memory;
     ptr += AREA_OFFSET_BUILDING_ARRAY - AREA_OFFSET_AREA_NEXT;
     for(int i = 0; i < p_bp_data->building_num; i++) {
         p_bp_data->building[i] = ptr;
@@ -226,14 +220,13 @@ int blueprint_to_data(bp_data_t* p_bp_data, const char* blueprint) {
     free(gzip);
     free(str);
 
-    return 0;
+    return no_error;
 }
 
 int data_to_blueprint(const bp_data_t* p_bp_data, char* blueprint) {
     char* head = calloc(BLUEPRINT_MAX_LENGTH, 1);
     char* base64 = calloc(BLUEPRINT_MAX_LENGTH, 1);
     char* for_md5f = calloc(BLUEPRINT_MAX_LENGTH, 1);
-    char* md5f_str = calloc(33, 1);
 
     // 编码
     sprintf(head, "BLUEPRINT:0,%llu,%llu,%llu,%llu,%llu,%llu,0,%llu,%llu.%llu.%llu.%llu,%s",
@@ -256,20 +249,16 @@ int data_to_blueprint(const bp_data_t* p_bp_data, char* blueprint) {
     unsigned char* ptr = bin;
     // 生成蓝图头
     memcpy(ptr, p_bp_data->bin, BIN_OFFSET_AREA_NUM);
-    puts("1");
     // 生成区域数组
     ptr += BIN_OFFSET_AREA_NUM;
     set_area_num(ptr, p_bp_data->area_num);
-    puts("2");
     ptr += BIN_OFFSET_AREA_ARRAY - BIN_OFFSET_AREA_NUM;
     for(int i = 0; i < p_bp_data->area_num; i++) {
         memcpy(ptr, p_bp_data->area[i], AREA_OFFSET_AREA_NEXT);
         ptr += AREA_OFFSET_AREA_NEXT;
     }
-    puts("3");
     // 生成建筑数组
     set_building_num(ptr, p_bp_data->building_num);
-    puts("4");
     ptr += AREA_OFFSET_BUILDING_ARRAY - AREA_OFFSET_AREA_NEXT;
     // TODO 自动重设index
     for(int i = 0; i < p_bp_data->building_num; i++) {
@@ -277,32 +266,26 @@ int data_to_blueprint(const bp_data_t* p_bp_data, char* blueprint) {
         memcpy(ptr, p_bp_data->building[i], building_size);
         ptr += building_size;
     }
-    puts("5");
     size_t bin_len = ptr - bin;
 
     // bin to gzip
     unsigned char* gzip = NULL;
     size_t gzip_len = gzip_enc(bin, bin_len, &gzip);
-    puts("6");
 
     // gzip to base64
     size_t base64_len = base64_enc(gzip, gzip_len, base64);
-    puts("7");
 
     // md5f
     sprintf(for_md5f, "%s\"%s", head, base64);
     char md5f_hex[33] = { 0 };
     md5f(md5f_hex, for_md5f, strlen(for_md5f));
     sprintf(blueprint, "%s\"%s", for_md5f, md5f_hex);
-    fprintf(stderr, "%s\n", md5f_hex); // for debug
-    puts("8");
 
     free(bin);
     free(head);
     free(base64);
     free(gzip);
     free(for_md5f);
-    free(md5f_str);
 
     return 0;
 }
