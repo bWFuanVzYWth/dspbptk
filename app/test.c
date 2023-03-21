@@ -1,4 +1,4 @@
-#include "../lib/dspbptk.h"
+#include "../lib/libdspbptk.h"
 
 int main(void) {
 

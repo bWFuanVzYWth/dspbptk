@@ -13,8 +13,9 @@ extern "C" {
 
 #include "libdeflate/libdeflate.h"
 #include "Turbo-Base64/turbob64.h"
-#include "zopfli-KrzYmod/src/zopfli/zopfli.h"
-#include "yyjson/src/yyjson.h"
+
+#include "zopfli-KrzYmod/zopfli.h"
+#include "yyjson/yyjson.h"
 
 #include "md5f.h"
 
