@@ -63,7 +63,7 @@ int main(int argc, char* argv[]) {
     state = blueprint_to_data(&bp_data, blueprint_in);
     uint64_t time_1_blueprint_to_data = get_timestamp();
     fprintf(log, "parsing blueprint in %lf ms.\n", ns_to_ms(time_1_blueprint_to_data - time_0_blueprint_to_data));
-    
+
     if(state)
         goto error;
     fprintf(log, "building_num=%lld\n", bp_data.building_num);

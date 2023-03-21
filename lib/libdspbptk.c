@@ -104,7 +104,7 @@ dspbptk_err_t blueprint_to_file(const char* file_name, const char* blueprint) {
     FILE* fp = fopen(file_name, "w");
     if(fp == NULL)
         return cannot_write;
-    fprintf(fp, "%s", blueprint);
+    fwrite(blueprint, 1, strlen(blueprint), fp);
     fclose(fp);
     return no_error;
 }
@@ -141,9 +141,8 @@ dspbptk_err_t blueprint_to_data(bp_data_t* p_bp_data, const char* blueprint) {
         return null_ptr;
 
     const char* HEADER = "BLUEPRINT:";
-    if(memcmp(blueprint, HEADER, strlen(HEADER))) {
+    if(memcmp(blueprint, HEADER, 10))
         return not_a_blueprint;
-    }
 
     // 复制蓝图字符串，否则会破坏原蓝图的数据
     size_t bp_len = strlen(blueprint);
@@ -223,13 +222,12 @@ dspbptk_err_t blueprint_to_data(bp_data_t* p_bp_data, const char* blueprint) {
     return no_error;
 }
 
+// TODO 检查蓝图是不是野指针，是否被初始化为0
 int data_to_blueprint(const bp_data_t* p_bp_data, char* blueprint) {
-    char* head = calloc(BLUEPRINT_MAX_LENGTH, 1);
-    char* base64 = calloc(BLUEPRINT_MAX_LENGTH, 1);
-    char* for_md5f = calloc(BLUEPRINT_MAX_LENGTH, 1);
+    char* blueprint_ptr = blueprint;
 
-    // 编码
-    sprintf(head, "BLUEPRINT:0,%llu,%llu,%llu,%llu,%llu,%llu,0,%llu,%llu.%llu.%llu.%llu,%s",
+    // 输出蓝图头
+    sprintf(blueprint, "BLUEPRINT:0,%llu,%llu,%llu,%llu,%llu,%llu,0,%llu,%llu.%llu.%llu.%llu,%s\"",
         p_bp_data->layout,
         p_bp_data->icons[0],
         p_bp_data->icons[1],
@@ -243,11 +241,13 @@ int data_to_blueprint(const bp_data_t* p_bp_data, char* blueprint) {
         p_bp_data->gameVersion[3],
         p_bp_data->shortDesc
     );
+    size_t head_len = strlen(blueprint);
+    blueprint_ptr += head_len;
 
     // data to bin
     unsigned char* bin = calloc(BLUEPRINT_MAX_LENGTH, 1);
     unsigned char* ptr = bin;
-    // 生成蓝图头
+    // 生成建筑头
     memcpy(ptr, p_bp_data->bin, BIN_OFFSET_AREA_NUM);
     // 生成区域数组
     ptr += BIN_OFFSET_AREA_NUM;
@@ -273,19 +273,16 @@ int data_to_blueprint(const bp_data_t* p_bp_data, char* blueprint) {
     size_t gzip_len = gzip_enc(bin, bin_len, &gzip);
 
     // gzip to base64
-    size_t base64_len = base64_enc(gzip, gzip_len, base64);
+    size_t base64_len = base64_enc(gzip, gzip_len, blueprint_ptr);
+    blueprint_ptr += base64_len;
 
     // md5f
-    sprintf(for_md5f, "%s\"%s", head, base64);
     char md5f_hex[33] = { 0 };
-    md5f(md5f_hex, for_md5f, strlen(for_md5f));
-    sprintf(blueprint, "%s\"%s", for_md5f, md5f_hex);
+    md5f(md5f_hex, blueprint, head_len + base64_len);
+    sprintf(blueprint_ptr, "\"%s", md5f_hex);
 
     free(bin);
-    free(head);
-    free(base64);
     free(gzip);
-    free(for_md5f);
 
     return 0;
 }
