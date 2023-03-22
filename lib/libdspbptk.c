@@ -146,7 +146,7 @@ dspbptk_err_t blueprint_to_data(bp_data_t* p_bp_data, const char* blueprint) {
 
     // 复制蓝图字符串，否则会破坏原蓝图的数据
     size_t bp_len = strlen(blueprint);
-    char* str = calloc(bp_len, 1);
+    char* str = calloc(bp_len + 1, 1);
     if(str == NULL)
         return out_of_memory;
     strcpy(str, blueprint);
