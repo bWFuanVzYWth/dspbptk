@@ -242,12 +242,13 @@ dspbptk_err_t blueprint_to_data(bp_data_t* p_bp_data, const char* blueprint) {
         return broken_blueprint;
 
     // gzip to bin
-    p_bp_data->bin = calloc(BLUEPRINT_MAX_LENGTH, 1);
-    if(p_bp_data->bin == NULL)
-        return out_of_memory;
-    const size_t bin_length = gzip_dec(gzip, gzip_length, p_bp_data->bin);
+    const size_t bin_length = *((int32_t*)(gzip + gzip_length - 4));
     if(bin_length <= 3)
         return broken_blueprint;
+    p_bp_data->bin = calloc(bin_length, 1);
+    if(p_bp_data->bin == NULL)
+        return out_of_memory;
+    gzip_dec(gzip, gzip_length, p_bp_data->bin);
 
     // 解析蓝图头部明文段的数据
     p_bp_data->shortDesc = calloc(head_length + 1, 1);

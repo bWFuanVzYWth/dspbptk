@@ -1,4 +1,9 @@
+dspbptk
 *.exe
+*.so
+*.dll
+*.a
+*.lib
 
 *.bin
 *.txt
