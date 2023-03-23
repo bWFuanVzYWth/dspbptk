@@ -197,6 +197,10 @@ int16_t get_building_itemID(void* p_building) {
     return *((int16_t*)(p_building + building_offset_itemId));
 }
 
+void set_building_itemID(void* p_building, int16_t itemID) {
+    *((int16_t*)(p_building + building_offset_itemId)) = (int16_t)itemID;
+}
+
 int32_t get_building_index(void* p_building) {
     return *((int32_t*)(p_building + building_offset_index));
 }
@@ -450,7 +454,7 @@ dspbptk_err_t data_to_blueprint(const bp_data_t* p_bp_data, char* blueprint) {
     blueprint_ptr += base64_length;
     char md5f_hex[33] = { 0 };
     md5f(md5f_hex, blueprint, head_length + base64_length);
-    sprintf(blueprint_ptr, "\"%s\0", md5f_hex);
+    sprintf(blueprint_ptr, "\"%s%c", md5f_hex, '\0');
 
     // free
     free(bin);
@@ -490,4 +494,23 @@ void free_bp_data(bp_data_t* p_bp_data) {
     free(p_bp_data->bin);
     free(p_bp_data->area);
     free(p_bp_data->building);
+}
+
+
+
+
+
+
+// 常用的修改
+
+size_t building_replace(int32_t from, int32_t to, bp_data_t* p_bp_data) {
+    size_t count = 0;
+    for(int i = 0; i < p_bp_data->building_num; i++) {
+        void* p_building = p_bp_data->building[i];
+        if(get_building_itemID(p_building) == from){
+            set_building_itemID(p_building, to);
+            count++;
+        }
+    }
+    return count;
 }

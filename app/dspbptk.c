@@ -28,6 +28,11 @@ int main(int argc, char* argv[]) {
     for(int i = 0; i < argc; i++)
         fprintf(log, "arg%d=\"%s\"\n", i, argv[i]);
 
+    int replace_flag = 0;
+    int32_t replace_from;
+    int32_t replace_to;
+
+    // 命令格式检查
     for(int i = 0; i < argc; i++) {
         if(argv[i][0] == '-') {
             switch(argv[i][1]) {
@@ -37,6 +42,11 @@ int main(int argc, char* argv[]) {
 
             case 'o':
             sscanf(argv[i], "-o=%s", file_out);
+            break;
+
+            case 'r':
+            sscanf(argv[i], "-r%d=>%d", &replace_from, &replace_to);
+            replace_flag = 1;
             break;
             }
         }
@@ -64,11 +74,18 @@ int main(int argc, char* argv[]) {
     uint64_t time_1_blueprint_to_data = get_timestamp();
     fprintf(log, "parsing blueprint in %lf ms.\n", ns_to_ms(time_1_blueprint_to_data - time_0_blueprint_to_data));
 
+    // 输出蓝图信息
     if(state)
         goto error;
     fprintf(log, "building_num=%lld\n", bp_data.building_num);
 
-    // 输出
+    // 修改蓝图
+    if(replace_flag) {
+        size_t replace_count = building_replace(replace_from, replace_to, &bp_data);
+        fprintf(stderr, "note: replaced %llu building.\n", replace_count);
+    }
+
+    // 编码蓝图
     uint64_t time_0_data_to_blueprint = get_timestamp();
     data_to_blueprint(&bp_data, blueprint_out);
     uint64_t time_1_data_to_blueprint = get_timestamp();

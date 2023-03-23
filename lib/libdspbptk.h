@@ -107,6 +107,7 @@ extern "C" {
     size_t get_building_size(void* p_building);
 
     int16_t get_building_itemID(void* p_building);
+    void set_building_itemID(void* p_building, int16_t itemID);
 
     int32_t get_building_index(void* p_building);
     void set_building_index(void* p_building, int32_t index);
@@ -115,6 +116,18 @@ extern "C" {
     void set_building_tempInputObjIdx(void* p_building, int32_t index);
 
 
+
+    // 常用操作
+
+    /**
+     * @brief 强制转换某蓝图中所有特定建筑的itemId，不检查正确性
+     *
+     * @param from 被转换
+     * @param to 转换成
+     * @param p_bp_data 指针
+     * @return 被转换的建筑数量
+     */
+    size_t building_replace(int32_t from, int32_t to, bp_data_t* p_bp_data);
 
 #ifdef __cplusplus
 }
