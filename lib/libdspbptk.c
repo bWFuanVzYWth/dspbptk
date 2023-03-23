@@ -1,5 +1,8 @@
 #include "libdspbptk.h"
 
+// 原版游戏蓝图中的空建筑被定义为-1
+#define OBJ_NULL ((int32_t)-1)
+
 // 枚举了一系列的偏移值，通过这些偏移值移动指针即可快速访问蓝图中的特定数据
 
 // 二进制流的头部数据块中各元素的偏移值定义
@@ -71,8 +74,8 @@ typedef enum {
  * @param out 编码后的二进制流
  * @return size_t 编码后的二进制流长度
  */
-size_t base64_enc(const unsigned char* in, size_t inlen, unsigned char* out) {
-    return tb64v256enc(in, inlen, out);
+size_t base64_enc(const void* in, size_t inlen, char* out) {
+    return tb64v256enc((unsigned char*)in, inlen, (unsigned char*)out);
 }
 
 /**
@@ -83,8 +86,15 @@ size_t base64_enc(const unsigned char* in, size_t inlen, unsigned char* out) {
  * @param out 解码后的二进制流
  * @return size_t 当返回值<=0时表示解码错误；当返回值>=1时，表示成功并返回解码后的二进制流长度
  */
-size_t base64_dec(const unsigned char* in, size_t inlen, unsigned char* out) {
-    return tb64v256dec(in, inlen, out);
+size_t base64_dec(const char* in, size_t inlen, void* out) {
+    return tb64v256dec((unsigned char*)in, inlen, (unsigned char*)out);
+}
+
+/**
+ * @brief 返回base64解码后的准确长度。用于解耦dspbptk与更底层的base64库
+ */
+size_t base64_declen(const char* base64, size_t base64_length) {
+    return tb64declen((unsigned char*)base64, base64_length);
 }
 
 // 这些函数用于解耦dspbptk与gzip库
@@ -187,8 +197,20 @@ int16_t get_building_itemID(void* p_building) {
     return *((int16_t*)(p_building + building_offset_itemId));
 }
 
+int32_t get_building_index(void* p_building) {
+    return *((int32_t*)(p_building + building_offset_index));
+}
+
 void set_building_index(void* p_building, int32_t index) {
-    *((int32_t*)p_building) = (int32_t)index;
+    *((int32_t*)(p_building + building_offset_index)) = (int32_t)index;
+}
+
+void set_building_tempOutputObjIdx(void* p_building, int32_t index) {
+    *((int32_t*)(p_building + building_offset_tempOutputObjIdx)) = (int32_t)index;
+}
+
+void set_building_tempInputObjIdx(void* p_building, int32_t index) {
+    *((int32_t*)(p_building + building_offset_tempInputObjIdx)) = (int32_t)index;
 }
 
 
@@ -226,14 +248,14 @@ dspbptk_err_t blueprint_to_data(bp_data_t* p_bp_data, const char* blueprint) {
     strcpy(str, blueprint);
 
     // 把蓝图分割成 head|base64|md5f_str 三部分
-    const unsigned char* head = strtok(str, "\"");
-    const unsigned char* base64 = strtok(NULL, "\"");
-    const unsigned char* md5f_str = strtok(NULL, "\"");
+    const char* head = strtok(str, "\"");
+    const char* base64 = strtok(NULL, "\"");
+    // const char* md5f_str = strtok(NULL, "\"");
     const size_t head_length = strlen(head);
     const size_t base64_length = strlen(base64);
 
     // base64 to gzip
-    size_t gzip_length = tb64declen(base64, base64_length);
+    size_t gzip_length = base64_declen(base64, base64_length);
     unsigned char* gzip = (unsigned char*)calloc(gzip_length, 1);
     if(gzip == NULL)
         return out_of_memory;
@@ -301,7 +323,47 @@ dspbptk_err_t blueprint_to_data(bp_data_t* p_bp_data, const char* blueprint) {
     return no_error;
 }
 
-// TODO 检查蓝图是不是野指针，是否被初始化为0
+
+
+
+
+
+typedef struct {
+    int32_t id;
+    int32_t index;
+}id_t;
+
+int cmp_building(const void* p_a, const void* p_b) {
+    void* a = *((void**)p_a);
+    void* b = *((void**)p_b);
+    return get_building_itemID(a) - get_building_itemID(b);
+}
+
+int cmp_id(const void* p_a, const void* p_b) {
+    id_t* a = ((id_t*)p_a);
+    id_t* b = ((id_t*)p_b);
+    return a->id - b->id;
+}
+
+int cmp_index(const void* p_a, const void* p_b) {
+    id_t* a = ((id_t*)p_a);
+    id_t* b = ((id_t*)p_b);
+    return a->index - b->index;
+}
+
+void re_index(int32_t* ObjIdx, id_t* id_lut, size_t building_num) {
+    if(*ObjIdx == OBJ_NULL)
+        return;
+    id_t* p_id = bsearch(ObjIdx, id_lut, building_num, sizeof(id_t), cmp_id);
+    if(p_id == NULL) {
+        fprintf(stderr, "Warning: index %d no found! Reindex index to OBJ_NULL(-1).\n", *ObjIdx);
+        *ObjIdx = OBJ_NULL;
+    }
+    else {
+        *ObjIdx = p_id->index;
+    }
+}
+
 dspbptk_err_t data_to_blueprint(const bp_data_t* p_bp_data, char* blueprint) {
     // 指针指向蓝图明文段
     char* blueprint_ptr = blueprint;
@@ -349,14 +411,32 @@ dspbptk_err_t data_to_blueprint(const bp_data_t* p_bp_data, char* blueprint) {
     // 写入建筑总数
     set_building_num(bin_ptr, p_bp_data->building_num);
 
+#if 1 // 对建筑按建筑类型排序，有利于进一步压缩，非必要步骤
+    qsort(p_bp_data->building, p_bp_data->building_num, sizeof(void*), cmp_building);
+#endif
+
+    // 重新生成index
+    id_t* id_lut = (id_t*)calloc(p_bp_data->building_num, sizeof(id_t));
+    for(int i = 0; i < p_bp_data->building_num; i++) {
+        id_lut[i].id = get_building_index(p_bp_data->building[i]);
+        id_lut[i].index = i;
+    }
+    qsort(id_lut, p_bp_data->building_num, sizeof(id_t), cmp_id);
+
     // 写入建筑数组
     bin_ptr += AREA_OFFSET_BUILDING_ARRAY - AREA_OFFSET_AREA_NEXT;
     for(int32_t i = 0; i < p_bp_data->building_num; i++) {
+        // 写入单个建筑
         size_t building_size = get_building_size(p_bp_data->building[i]);
         memcpy(bin_ptr, p_bp_data->building[i], building_size);
-        set_building_index(bin_ptr, i);
+        // 重新编码index
+        re_index((int32_t*)(bin_ptr + building_offset_index), id_lut, p_bp_data->building_num);
+        re_index((int32_t*)(bin_ptr + building_offset_tempOutputObjIdx), id_lut, p_bp_data->building_num);
+        re_index((int32_t*)(bin_ptr + building_offset_tempInputObjIdx), id_lut, p_bp_data->building_num);
+        // 移动指针
         bin_ptr += building_size;
     }
+    free(id_lut);
 
     // bin to gzip
     size_t bin_length = bin_ptr - bin;
@@ -370,7 +450,7 @@ dspbptk_err_t data_to_blueprint(const bp_data_t* p_bp_data, char* blueprint) {
     blueprint_ptr += base64_length;
     char md5f_hex[33] = { 0 };
     md5f(md5f_hex, blueprint, head_length + base64_length);
-    sprintf(blueprint_ptr, "\"%s", md5f_hex);
+    sprintf(blueprint_ptr, "\"%s\0", md5f_hex);
 
     // free
     free(bin);

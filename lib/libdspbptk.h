@@ -108,7 +108,11 @@ extern "C" {
 
     int16_t get_building_itemID(void* p_building);
 
+    int32_t get_building_index(void* p_building);
     void set_building_index(void* p_building, int32_t index);
+
+    void set_building_tempOutputObjIdx(void* p_building, int32_t index);
+    void set_building_tempInputObjIdx(void* p_building, int32_t index);
 
 
 

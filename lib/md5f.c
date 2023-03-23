@@ -16,27 +16,27 @@ uint32_t I(uint32_t x, uint32_t y, uint32_t z) {
     return y ^ (x | ~z);
 }
 
-uint32_t FF(uint32_t* a, uint32_t b, uint32_t c, uint32_t d, uint32_t mj, int32_t s, uint32_t ti) {
+void FF(uint32_t* a, uint32_t b, uint32_t c, uint32_t d, uint32_t mj, int32_t s, uint32_t ti) {
     *a = *a + F(b, c, d) + mj + ti;
-    *a = (*a << s) | (*a >> 32 - s);
+    *a = (*a << s) | (*a >> (32 - s));
     *a += b;
 }
 
-uint32_t GG(uint32_t* a, uint32_t b, uint32_t c, uint32_t d, uint32_t mj, int32_t s, uint32_t ti) {
+void GG(uint32_t* a, uint32_t b, uint32_t c, uint32_t d, uint32_t mj, int32_t s, uint32_t ti) {
     *a = *a + G(b, c, d) + mj + ti;
-    *a = (*a << s) | (*a >> 32 - s);
+    *a = (*a << s) | (*a >> (32 - s));
     *a += b;
 }
 
-uint32_t HH(uint32_t* a, uint32_t b, uint32_t c, uint32_t d, uint32_t mj, int32_t s, uint32_t ti) {
+void HH(uint32_t* a, uint32_t b, uint32_t c, uint32_t d, uint32_t mj, int32_t s, uint32_t ti) {
     *a = *a + H(b, c, d) + mj + ti;
-    *a = (*a << s) | (*a >> 32 - s);
+    *a = (*a << s) | (*a >> (32 - s));
     *a += b;
 }
 
-uint32_t II(uint32_t* a, uint32_t b, uint32_t c, uint32_t d, uint32_t mj, int32_t s, uint32_t ti) {
+void II(uint32_t* a, uint32_t b, uint32_t c, uint32_t d, uint32_t mj, int32_t s, uint32_t ti) {
     *a = *a + I(b, c, d) + mj + ti;
-    *a = (*a << s) | (*a >> 32 - s);
+    *a = (*a << s) | (*a >> (32 - s));
     *a += b;
 }
 

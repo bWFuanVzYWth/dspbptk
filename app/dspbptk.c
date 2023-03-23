@@ -81,7 +81,7 @@ int main(int argc, char* argv[]) {
     fprintf(log, "md5f_new=%s\n", blueprint_out + blueprint_out_size - 32);
 
     uint64_t time_0_blueprint_to_file = get_timestamp();
-    state = blueprint_to_file("out.txt", blueprint_out);
+    state = blueprint_to_file(file_out, blueprint_out);
     uint64_t time_1_blueprint_to_file = get_timestamp();
     fprintf(log, "write file in %lf ms.\n", ns_to_ms(time_1_blueprint_to_file - time_0_blueprint_to_file));
 
@@ -98,5 +98,5 @@ int main(int argc, char* argv[]) {
 
 error:
     fprintf(log, "error_code=%d\n", state);
-    return -1;
+    return state;
 }
