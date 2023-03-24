@@ -223,6 +223,39 @@ void set_building_tempInputObjIdx(void* p_building, int32_t index) {
     *((int32_t*)(p_building + building_offset_tempInputObjIdx)) = (int32_t)index;
 }
 
+void get_building_pos1(void* p_building, double pos1[3]) {
+    pos1[0] = (double)*((float*)(p_building + building_offset_localOffset_x));
+    pos1[1] = (double)*((float*)(p_building + building_offset_localOffset_y));
+    pos1[2] = (double)*((float*)(p_building + building_offset_localOffset_z));
+}
+
+void set_building_pos1(void* p_building, double pos1[3]) {
+    *((float*)(p_building + building_offset_localOffset_x)) = (float)pos1[0];
+    *((float*)(p_building + building_offset_localOffset_y)) = (float)pos1[1];
+    *((float*)(p_building + building_offset_localOffset_z)) = (float)pos1[2];
+}
+
+void get_building_pos2(void* p_building, double pos2[3]) {
+    pos2[0] = (double)*((float*)(p_building + building_offset_localOffset_x2));
+    pos2[1] = (double)*((float*)(p_building + building_offset_localOffset_y2));
+    pos2[2] = (double)*((float*)(p_building + building_offset_localOffset_z2));
+}
+
+void set_building_pos2(void* p_building, double pos2[3]) {
+    *((float*)(p_building + building_offset_localOffset_x2)) = (float)pos2[0];
+    *((float*)(p_building + building_offset_localOffset_y2)) = (float)pos2[1];
+    *((float*)(p_building + building_offset_localOffset_z2)) = (float)pos2[2];
+}
+
+int16_t get_building_parameters_num(void* p_building) {
+    return *((int16_t*)(p_building + building_offset_num));
+}
+
+void set_building_parameter(void* p_building, size_t n, int32_t parameter){
+    int32_t* p = (int32_t*)(p_building + building_offset_parameters) + n;
+    *p = parameter;
+}
+
 
 
 
@@ -543,15 +576,4 @@ void free_bp_data(bp_data_t* p_bp_data) {
 // Function 蓝图工具
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-size_t building_replace(int32_t from, int32_t to, bp_data_t* p_bp_data) {
-    size_t count = 0;
-    for(int i = 0; i < p_bp_data->building_num; i++) {
-        void* p_building = p_bp_data->building[i];
-        if(get_building_itemID(p_building) == from) {
-            // TODO 把ModelID也一起换掉，现在这个功能似乎不太符合实际使用习惯
-            set_building_itemID(p_building, to);
-            count++;
-        }
-    }
-    return count;
-}
+// 施工中，也可能不写了

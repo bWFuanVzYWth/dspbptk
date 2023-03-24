@@ -20,12 +20,15 @@ extern "C" {
 #define BLUEPRINT_MAX_LENGTH 134217728  // 128mb. 1048576 * 61 * 3/4 = 85284181.333 < 134217728.
 
 // 可选的宏
+
 // #define DSPBPTK_DONT_SORT_BUILDING
 // #define DSPBPTK_NO_WARNING
 
     typedef enum {
+        error_arg = -1,
+
         no_error = 0,
-        error_argc,
+
         file_no_found,
         cannot_write,
         out_of_memory,
@@ -52,8 +55,6 @@ extern "C" {
 
 
     // API
-
-
 
     /**
      * @brief 从文件读取蓝图，不检查蓝图正确性。会给blueprint分配内存，别忘了free(blueprint);
@@ -122,19 +123,14 @@ extern "C" {
     void set_building_tempOutputObjIdx(void* p_building, int32_t index);
     void set_building_tempInputObjIdx(void* p_building, int32_t index);
 
+    void get_building_pos1(void* p_building, double pos1[3]);
+    void set_building_pos1(void* p_building, double pos1[3]);
+    void get_building_pos2(void* p_building, double pos2[3]);
+    void set_building_pos2(void* p_building, double pos2[3]);
 
+    int16_t get_building_parameters_num(void* p_building);
 
-    // 常用操作
-
-    /**
-     * @brief 强制转换某蓝图中所有特定建筑的itemId，不检查正确性
-     *
-     * @param from 被转换
-     * @param to 转换成
-     * @param p_bp_data 指针
-     * @return 被转换的建筑数量
-     */
-    size_t building_replace(int32_t from, int32_t to, bp_data_t* p_bp_data);
+    void set_building_parameter(void* p_building, size_t n, int32_t parameter);
 
 #ifdef __cplusplus
 }
