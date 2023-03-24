@@ -1,9 +1,11 @@
 #include "libdspbptk.h"
 
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// 蓝图编码中的重要常量
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 // 原版游戏蓝图中的空建筑被定义为-1
 #define OBJ_NULL ((int32_t)-1)
-
-// 枚举了一系列的偏移值，通过这些偏移值移动指针即可快速访问蓝图中的特定数据
 
 // 二进制流的头部数据块中各元素的偏移值定义
 typedef enum {
@@ -64,10 +66,12 @@ typedef enum {
 
 
 
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // 这些函数用于解耦dspbptk与底层库依赖，如果需要更换底层库时只要换掉这几个函数里就行
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 /**
- * @brief 通用的base64编码。用于解耦dspbptk与更底层的base64库
+ * @brief 通用的base64编码。用于解耦dspbptk与更底层的base64库。假定out有足够的空间。
  *
  * @param in 编码前的二进制流
  * @param inlen 编码前的二进制流长度
@@ -79,7 +83,7 @@ size_t base64_enc(const void* in, size_t inlen, char* out) {
 }
 
 /**
- * @brief 通用的base64解码。用于解耦dspbptk与更底层的base64库
+ * @brief 通用的base64解码。用于解耦dspbptk与更底层的base64库。假定out有足够的空间。
  *
  * @param in 解码前的二进制流
  * @param inlen 解码前的二进制流长度
@@ -97,8 +101,6 @@ size_t base64_declen(const char* base64, size_t base64_length) {
     return tb64declen((unsigned char*)base64, base64_length);
 }
 
-// 这些函数用于解耦dspbptk与gzip库
-// TODO 更多压缩选项
 /**
  * @brief 通用的gzip压缩。用于解耦dspbptk与更底层的gzip库
  *
@@ -107,17 +109,16 @@ size_t base64_declen(const char* base64, size_t base64_length) {
  * @param out 压缩后的二进制流
  * @return size_t 压缩后的二进制流长度
  */
-size_t gzip_enc(const unsigned char* in, size_t in_nbytes, unsigned char** out) {
-    size_t out_nbytes_avail = BLUEPRINT_MAX_LENGTH;
-    *out = calloc(out_nbytes_avail, 1);
+size_t gzip_enc(const unsigned char* in, size_t in_nbytes, unsigned char* out) {
     struct libdeflate_compressor* p_compressor = libdeflate_alloc_compressor(12);
-    size_t gzip_length = libdeflate_gzip_compress(p_compressor, in, in_nbytes, *out, out_nbytes_avail);
+    size_t gzip_length = libdeflate_gzip_compress(
+        p_compressor, in, in_nbytes, out, BLUEPRINT_MAX_LENGTH);
     libdeflate_free_compressor(p_compressor);
     return gzip_length;
 }
 
 /**
- * @brief 通用的gzip解压。用于解耦dspbptk与更底层的gzip库
+ * @brief 通用的gzip解压。用于解耦dspbptk与更底层的gzip库。假定out有足够的空间。
  *
  * @param in 解压前的二进制流
  * @param in_nbytes 解压前的二进制流的长度
@@ -127,7 +128,8 @@ size_t gzip_enc(const unsigned char* in, size_t in_nbytes, unsigned char** out) 
 size_t gzip_dec(const unsigned char* in, size_t in_nbytes, unsigned char* out) {
     size_t actual_out_nbytes_ret;
     struct libdeflate_decompressor* p_decompressor = libdeflate_alloc_decompressor();
-    enum libdeflate_result result = libdeflate_gzip_decompress(p_decompressor, in, in_nbytes, out, BLUEPRINT_MAX_LENGTH, &actual_out_nbytes_ret);
+    enum libdeflate_result result = libdeflate_gzip_decompress(
+        p_decompressor, in, in_nbytes, out, BLUEPRINT_MAX_LENGTH, &actual_out_nbytes_ret);
     libdeflate_free_decompressor(p_decompressor);
     if(result != LIBDEFLATE_SUCCESS)
         return (size_t)result;
@@ -139,7 +141,9 @@ size_t gzip_dec(const unsigned char* in, size_t in_nbytes, unsigned char* out) {
 
 
 
-// I/O 与文件交互
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// File I/O
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 size_t file_to_blueprint(const char* file_name, char** p_blueprint) {
     FILE* fp = fopen(file_name, "r");
@@ -170,7 +174,9 @@ dspbptk_err_t blueprint_to_file(const char* file_name, const char* blueprint) {
 
 
 
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // API 封装一些读写蓝图中的数据块的常用操作，可以自己拓展
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 size_t get_area_num(void* p_area_num) {
     return (size_t) * ((int8_t*)p_area_num);
@@ -189,7 +195,7 @@ void set_building_num(void* p_building_num, size_t num) {
 }
 
 size_t get_building_size(void* p_building) {
-    int16_t* p_num = (int16_t*)((unsigned char*)p_building + building_offset_num);
+    int16_t* p_num = (int16_t*)(p_building + building_offset_num);
     return (size_t)(building_offset_parameters + 4 * (*p_num));
 }
 
@@ -221,10 +227,9 @@ void set_building_tempInputObjIdx(void* p_building, int32_t index) {
 
 
 
-
-
-
-
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// 蓝图解析
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 /**
  * @brief 检查字符串的头部的蓝图标识
@@ -238,15 +243,25 @@ int is_blueprint(const char* str) {
     return !memcmp(str, "BLUEPRINT:", 10);
 }
 
-// TODO 蓝图格式检查
-// TODO 返回值枚举
+// 检查内存越界访问
+int check_bin_ptr(bp_data_t* p_bp_data, void* bin_ptr, size_t bin_length) {
+    // 越界
+    if(bin_ptr < p_bp_data->bin)
+        return bin_ptr - p_bp_data->bin;
+    if(bin_ptr > p_bp_data->bin + bin_length)
+        return bin_ptr - (p_bp_data->bin + bin_length);
+    // 正常
+    return 0;
+}
+
 dspbptk_err_t blueprint_to_data(bp_data_t* p_bp_data, const char* blueprint) {
     // 检查当前字符串是否是蓝图
     if(!is_blueprint(blueprint))
         return not_a_blueprint;
 
     // 复制蓝图字符串，否则会破坏原蓝图的数据
-    char* str = calloc(strlen(blueprint) + 1, 1);
+    size_t blueprint_length = strlen(blueprint);
+    char* str = calloc(blueprint_length + 1, 1);
     if(str == NULL)
         return out_of_memory;
     strcpy(str, blueprint);
@@ -254,33 +269,41 @@ dspbptk_err_t blueprint_to_data(bp_data_t* p_bp_data, const char* blueprint) {
     // 把蓝图分割成 head|base64|md5f_str 三部分
     const char* head = strtok(str, "\"");
     const char* base64 = strtok(NULL, "\"");
-    // const char* md5f_str = strtok(NULL, "\"");
+    const char* md5f_hex = strtok(NULL, "\0");
     const size_t head_length = strlen(head);
     const size_t base64_length = strlen(base64);
 
+    // md5校验
+#ifndef DSPBPTK_NO_WARNING
+    char md5f_real[33] = { 0 };
+    md5f_str(md5f_real, blueprint, head_length + base64_length + 1);
+    if(strcmp(md5f_real, md5f_hex))
+        fprintf(stderr, "Warning: MD5 abnormal.\n");
+#endif
+
     // base64 to gzip
     size_t gzip_length = base64_declen(base64, base64_length);
-    unsigned char* gzip = (unsigned char*)calloc(gzip_length, 1);
+    void* gzip = calloc(gzip_length, 1);
     if(gzip == NULL)
         return out_of_memory;
     gzip_length = base64_dec(base64, base64_length, gzip);
     if(gzip_length <= 0)
-        return broken_blueprint;
+        return blueprint_base64_broken;
 
     // gzip to bin
-    const size_t bin_length = *((int32_t*)(gzip + gzip_length - 4));
-    if(bin_length <= 3)
-        return broken_blueprint;
+    size_t bin_length = *((int32_t*)(gzip + gzip_length - 4));
     p_bp_data->bin = calloc(bin_length, 1);
     if(p_bp_data->bin == NULL)
         return out_of_memory;
-    gzip_dec(gzip, gzip_length, p_bp_data->bin);
+    bin_length = gzip_dec(gzip, gzip_length, p_bp_data->bin);
+    if(bin_length <= 3)
+        return blueprint_gzip_broken;
 
     // 解析蓝图头部明文段的数据
     p_bp_data->shortDesc = calloc(head_length + 1, 1);
     if(p_bp_data->shortDesc == NULL)
         return out_of_memory;
-    sscanf(head, "BLUEPRINT:0,%llu,%llu,%llu,%llu,%llu,%llu,0,%llu,%llu.%llu.%llu.%llu,%s",
+    size_t parameter = sscanf(head, "BLUEPRINT:0,%llu,%llu,%llu,%llu,%llu,%llu,0,%llu,%llu.%llu.%llu.%llu,%s",
         &p_bp_data->layout,
         &p_bp_data->icons[0],
         &p_bp_data->icons[1],
@@ -294,29 +317,38 @@ dspbptk_err_t blueprint_to_data(bp_data_t* p_bp_data, const char* blueprint) {
         &p_bp_data->gameVersion[3],
         p_bp_data->shortDesc
     );
+    if(parameter != 12)
+        return blueprint_head_broken;
+
+#define BIN_PTR_SAFE_MOVE(p, offset) {\
+        p += offset;\
+        if(offset < 0 || p > p_bp_data->bin + bin_length)\
+            return blueprint_data_broken;\
+    }
 
     // 解析二进制流
-    unsigned char* ptr = p_bp_data->bin;
+    void* ptr = p_bp_data->bin;
     // 解析区域数组
-    ptr += BIN_OFFSET_AREA_NUM;
+    BIN_PTR_SAFE_MOVE(ptr, BIN_OFFSET_AREA_NUM);
     p_bp_data->area_num = get_area_num(ptr);
     p_bp_data->area = calloc(p_bp_data->area_num, sizeof(void*));
     if(p_bp_data->area == NULL)
         return out_of_memory;
-    ptr += BIN_OFFSET_AREA_ARRAY - BIN_OFFSET_AREA_NUM;
+    BIN_PTR_SAFE_MOVE(ptr, BIN_OFFSET_AREA_ARRAY - BIN_OFFSET_AREA_NUM);
     for(int i = 0; i < p_bp_data->area_num; i++) {
         p_bp_data->area[i] = ptr;
-        ptr += AREA_OFFSET_AREA_NEXT;
+        BIN_PTR_SAFE_MOVE(ptr, AREA_OFFSET_AREA_NEXT);
     }
     // 解析建筑数组
     p_bp_data->building_num = get_building_num(ptr);
     p_bp_data->building = calloc(p_bp_data->building_num, sizeof(void*));
     if(p_bp_data->building == NULL)
         return out_of_memory;
-    ptr += AREA_OFFSET_BUILDING_ARRAY - AREA_OFFSET_AREA_NEXT;
+    BIN_PTR_SAFE_MOVE(ptr, AREA_OFFSET_BUILDING_ARRAY - AREA_OFFSET_AREA_NEXT);
     for(int i = 0; i < p_bp_data->building_num; i++) {
         p_bp_data->building[i] = ptr;
-        ptr += get_building_size(ptr);
+        size_t building_size = get_building_size(ptr);
+        BIN_PTR_SAFE_MOVE(ptr, building_size);
     }
 
     // free
@@ -331,6 +363,9 @@ dspbptk_err_t blueprint_to_data(bp_data_t* p_bp_data, const char* blueprint) {
 
 
 
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// 蓝图编码
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 typedef struct {
     int32_t id;
@@ -360,8 +395,10 @@ void re_index(int32_t* ObjIdx, id_t* id_lut, size_t building_num) {
         return;
     id_t* p_id = bsearch(ObjIdx, id_lut, building_num, sizeof(id_t), cmp_id);
     if(p_id == NULL) {
+    #ifndef DSPBPTK_NO_WARNING
         fprintf(stderr, "Warning: index %d no found! Reindex index to OBJ_NULL(-1).\n", *ObjIdx);
-        *ObjIdx = OBJ_NULL;
+    #endif
+        * ObjIdx = OBJ_NULL;
     }
     else {
         *ObjIdx = p_id->index;
@@ -393,12 +430,12 @@ dspbptk_err_t data_to_blueprint(const bp_data_t* p_bp_data, char* blueprint) {
     blueprint_ptr += head_length;
 
     // data to bin
-    unsigned char* bin = calloc(BLUEPRINT_MAX_LENGTH, 1);
+    void* bin = calloc(BLUEPRINT_MAX_LENGTH, 1);
     if(bin == NULL)
         return out_of_memory;
 
     // 指针指向二进制流头部，写入
-    unsigned char* bin_ptr = bin;
+    void* bin_ptr = bin;
     memcpy(bin_ptr, p_bp_data->bin, BIN_OFFSET_AREA_NUM);
 
     // 写入有区域总数
@@ -415,7 +452,8 @@ dspbptk_err_t data_to_blueprint(const bp_data_t* p_bp_data, char* blueprint) {
     // 写入建筑总数
     set_building_num(bin_ptr, p_bp_data->building_num);
 
-#if 1 // 对建筑按建筑类型排序，有利于进一步压缩，非必要步骤
+#ifndef DSPBPTK_DONT_SORT_BUILDING
+    // 对建筑按建筑类型排序，有利于进一步压缩，非必要步骤
     qsort(p_bp_data->building, p_bp_data->building_num, sizeof(void*), cmp_building);
 #endif
 
@@ -433,7 +471,7 @@ dspbptk_err_t data_to_blueprint(const bp_data_t* p_bp_data, char* blueprint) {
         // 写入单个建筑
         size_t building_size = get_building_size(p_bp_data->building[i]);
         memcpy(bin_ptr, p_bp_data->building[i], building_size);
-        // 重新编码index
+        // 重新写入index
         re_index((int32_t*)(bin_ptr + building_offset_index), id_lut, p_bp_data->building_num);
         re_index((int32_t*)(bin_ptr + building_offset_tempOutputObjIdx), id_lut, p_bp_data->building_num);
         re_index((int32_t*)(bin_ptr + building_offset_tempInputObjIdx), id_lut, p_bp_data->building_num);
@@ -444,8 +482,8 @@ dspbptk_err_t data_to_blueprint(const bp_data_t* p_bp_data, char* blueprint) {
 
     // bin to gzip
     size_t bin_length = bin_ptr - bin;
-    unsigned char* gzip = NULL;
-    size_t gzip_length = gzip_enc(bin, bin_length, &gzip);
+    void* gzip = calloc(BLUEPRINT_MAX_LENGTH, 1);
+    size_t gzip_length = gzip_enc(bin, bin_length, gzip);
 
     // gzip to base64
     size_t base64_length = base64_enc(gzip, gzip_length, blueprint_ptr);
@@ -453,7 +491,7 @@ dspbptk_err_t data_to_blueprint(const bp_data_t* p_bp_data, char* blueprint) {
     // md5f
     blueprint_ptr += base64_length;
     char md5f_hex[33] = { 0 };
-    md5f(md5f_hex, blueprint, head_length + base64_length);
+    md5f_str(md5f_hex, blueprint, head_length + base64_length);
     sprintf(blueprint_ptr, "\"%s%c", md5f_hex, '\0');
 
     // free
@@ -501,13 +539,16 @@ void free_bp_data(bp_data_t* p_bp_data) {
 
 
 
-// 常用的修改
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// Function 蓝图工具
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 size_t building_replace(int32_t from, int32_t to, bp_data_t* p_bp_data) {
     size_t count = 0;
     for(int i = 0; i < p_bp_data->building_num; i++) {
         void* p_building = p_bp_data->building[i];
-        if(get_building_itemID(p_building) == from){
+        if(get_building_itemID(p_building) == from) {
+            // TODO 把ModelID也一起换掉，现在这个功能似乎不太符合实际使用习惯
             set_building_itemID(p_building, to);
             count++;
         }

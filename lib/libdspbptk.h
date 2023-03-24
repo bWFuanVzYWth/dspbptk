@@ -19,6 +19,10 @@ extern "C" {
 
 #define BLUEPRINT_MAX_LENGTH 134217728  // 128mb. 1048576 * 61 * 3/4 = 85284181.333 < 134217728.
 
+// 可选的宏
+// #define DSPBPTK_DONT_SORT_BUILDING
+// #define DSPBPTK_NO_WARNING
+
     typedef enum {
         no_error = 0,
         error_argc,
@@ -26,7 +30,10 @@ extern "C" {
         cannot_write,
         out_of_memory,
         not_a_blueprint,
-        broken_blueprint
+        blueprint_head_broken,
+        blueprint_base64_broken,
+        blueprint_gzip_broken,
+        blueprint_data_broken
     }dspbptk_err_t;
 
     typedef struct {
@@ -71,7 +78,7 @@ extern "C" {
      *
      * @param p_bp_data 指向bp_data的指针
      * @param blueprint 蓝图字符串
-     * @return dspbptk_err_t 错误类型
+     * @return dspbptk_err_t 错误类型：注意只检查数据结构是否合理，不检查数据是否合法
      */
     dspbptk_err_t blueprint_to_data(bp_data_t* p_bp_data, const char* blueprint);
 

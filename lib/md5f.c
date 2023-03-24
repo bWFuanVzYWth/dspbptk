@@ -40,7 +40,7 @@ void II(uint32_t* a, uint32_t b, uint32_t c, uint32_t d, uint32_t mj, int32_t s,
     *a += b;
 }
 
-void MD5_Append(uint32_t* array2, size_t* array2_len, const char* input, size_t input_len) {
+void MD5_Append(uint32_t** array2, size_t* array2_len, const char* input, size_t input_len) {
     int32_t num = 0;
     int32_t num2 = 1;
     int32_t num3 = 0;
@@ -61,7 +61,9 @@ void MD5_Append(uint32_t* array2, size_t* array2_len, const char* input, size_t 
         num3 = num4 + 64 - num5 + 64;
     }
 
-    uint8_t* array = (uint8_t*)calloc(input_len + 256, sizeof(uint8_t)); // TODO 检查
+    uint8_t* array = (uint8_t*)calloc(num3, 1);
+    *array2 = (uint32_t*)calloc(num3, 1);
+
     for(int32_t i = 0; i < input_len; i++)
         array[i] = input[i];
     size_t index = input_len;
@@ -93,7 +95,7 @@ void MD5_Append(uint32_t* array2, size_t* array2_len, const char* input, size_t 
     int64_t num7 = 0L;
     int64_t num8 = 0L;
     for(; num7 < num3; num7 += 4) {
-        array2[num8] = (uint32_t)(array[num7] | (array[num7 + 1] << 8) | (array[num7 + 2] << 16) | (array[num7 + 3] << 24));
+        (*array2)[num8] = (uint32_t)(array[num7] | (array[num7 + 1] << 8) | (array[num7 + 2] << 16) | (array[num7 + 3] << 24));
         num8++;
     }
     *array2_len = num8;
@@ -190,24 +192,25 @@ void MD5_Trasform(uint32_t array[4], uint32_t* x, size_t x_len) {
     array[3] = D;
 }
 
-void md5f(char* md5f_hex, const char* stream, size_t stream_len) {
-    size_t array2_len = stream_len / 4 + 32;
-    uint32_t* array2 = (uint32_t*)calloc(array2_len, sizeof(uint32_t));
+void md5f(uint32_t md5f_u32[4], const char* stream, size_t stream_len) {
+    size_t array2_len;
+    uint32_t* array2;
 
-    uint32_t md5f[4];
-
-    MD5_Append(array2, &array2_len, stream, stream_len);
-    MD5_Trasform(md5f, array2, array2_len);
-
-    // const char[16] = "0123456789ABCDEF";
-
-    for(int i = 0; i < 4; i++) {
-        sprintf(md5f_hex + 8 * i, "%02X", (uint8_t)(md5f[i] & 0xFFu));
-        sprintf(md5f_hex + 8 * i + 2, "%02X", (uint8_t)((md5f[i] >> 8) & 0xFFu));
-        sprintf(md5f_hex + 8 * i + 4, "%02X", (uint8_t)((md5f[i] >> 16) & 0xFFu));
-        sprintf(md5f_hex + 8 * i + 6, "%02X", (uint8_t)((md5f[i] >> 24) & 0xFFu));
-    }
+    MD5_Append(&array2, &array2_len, stream, stream_len);
+    MD5_Trasform(md5f_u32, array2, array2_len);
 
     free(array2);
+}
 
+void md5f_str(char* md5f_hex, const char* stream, size_t stream_len) {
+    uint32_t md5f_u32[4];
+    md5f(md5f_u32, stream, stream_len);
+
+    for(int i = 0; i < 4; i++) {
+        sprintf(md5f_hex + 8 * i, "%02X%02X%02X%02X",
+            (uint8_t)((md5f_u32[i]) & 0xFFu),
+            (uint8_t)((md5f_u32[i] >> 8) & 0xFFu),
+            (uint8_t)((md5f_u32[i] >> 16) & 0xFFu),
+            (uint8_t)((md5f_u32[i] >> 24) & 0xFFu));
+    }
 }

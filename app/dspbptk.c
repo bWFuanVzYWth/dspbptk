@@ -26,7 +26,7 @@ int main(int argc, char* argv[]) {
     char file_out[4096] = { 0 };
 
     for(int i = 0; i < argc; i++)
-        fprintf(log, "arg%d=\"%s\"\n", i, argv[i]);
+        fprintf(log, "Info: arg%d=\"%s\"\n", i, argv[i]);
 
     int replace_flag = 0;
     int32_t replace_from;
@@ -58,13 +58,13 @@ int main(int argc, char* argv[]) {
     uint64_t time_0_file_to_blueprint = get_timestamp();
     size_t blueprint_in_size = file_to_blueprint(file_in, &blueprint_in);
     uint64_t time_1_file_to_blueprint = get_timestamp();
-    fprintf(log, "read file in %lf ms.\n", ns_to_ms(time_1_file_to_blueprint - time_0_file_to_blueprint));
+    fprintf(log, "Info: read file in %lf ms.\n", ns_to_ms(time_1_file_to_blueprint - time_0_file_to_blueprint));
     if(blueprint_in_size <= 0) {
         state = file_no_found;
         goto error;
     }
-    fprintf(log, "blueprint_in_size=%lld\n", blueprint_in_size);
-    fprintf(log, "md5f_old=%s\n", blueprint_in + blueprint_in_size - 32);
+    fprintf(log, "Info: blueprint_in_size=%lld\n", blueprint_in_size);
+    fprintf(log, "Info: md5f_old=%s\n", blueprint_in + blueprint_in_size - 32);
 
 
     // 解析蓝图
@@ -72,39 +72,39 @@ int main(int argc, char* argv[]) {
     uint64_t time_0_blueprint_to_data = get_timestamp();
     state = blueprint_to_data(&bp_data, blueprint_in);
     uint64_t time_1_blueprint_to_data = get_timestamp();
-    fprintf(log, "parsing blueprint in %lf ms.\n", ns_to_ms(time_1_blueprint_to_data - time_0_blueprint_to_data));
+    fprintf(log, "Info: parsing blueprint in %lf ms.\n", ns_to_ms(time_1_blueprint_to_data - time_0_blueprint_to_data));
 
     // 输出蓝图信息
     if(state)
         goto error;
-    fprintf(log, "building_num=%lld\n", bp_data.building_num);
+    fprintf(log, "Info: building_num=%lld\n", bp_data.building_num);
 
     // 修改蓝图
     if(replace_flag) {
         size_t replace_count = building_replace(replace_from, replace_to, &bp_data);
-        fprintf(stderr, "note: replaced %llu building.\n", replace_count);
+        fprintf(stderr, "Note: replaced %llu building.\n", replace_count);
     }
 
     // 编码蓝图
     uint64_t time_0_data_to_blueprint = get_timestamp();
     data_to_blueprint(&bp_data, blueprint_out);
     uint64_t time_1_data_to_blueprint = get_timestamp();
-    fprintf(log, "encode blueprint in %lf ms.\n", ns_to_ms(time_1_data_to_blueprint - time_0_data_to_blueprint));
+    fprintf(log, "Info: encode blueprint in %lf ms.\n", ns_to_ms(time_1_data_to_blueprint - time_0_data_to_blueprint));
 
     size_t blueprint_out_size = strlen(blueprint_out);
-    fprintf(log, "blueprint_out_size=%lld\n", blueprint_out_size);
+    fprintf(log, "Info: blueprint_out_size=%lld\n", blueprint_out_size);
     int64_t size_change = blueprint_out_size - blueprint_in_size;
-    fprintf(log, "size_change=%lld,%.2lf%%\n", size_change, (double)size_change / (double)blueprint_in_size * 100.0);
-    fprintf(log, "md5f_new=%s\n", blueprint_out + blueprint_out_size - 32);
+    fprintf(log, "Info: size_change=%lld,%.2lf%%\n", size_change, (double)size_change / (double)blueprint_in_size * 100.0);
+    fprintf(log, "Info: md5f_new=%s\n", blueprint_out + blueprint_out_size - 32);
 
     uint64_t time_0_blueprint_to_file = get_timestamp();
     state = blueprint_to_file(file_out, blueprint_out);
     uint64_t time_1_blueprint_to_file = get_timestamp();
-    fprintf(log, "write file in %lf ms.\n", ns_to_ms(time_1_blueprint_to_file - time_0_blueprint_to_file));
+    fprintf(log, "Info: write file in %lf ms.\n", ns_to_ms(time_1_blueprint_to_file - time_0_blueprint_to_file));
 
     if(state)
         goto error;
-    fprintf(log, "finish\n");
+    fprintf(log, "Info: finish\n");
 
     // free
     free(blueprint_out);
@@ -114,6 +114,6 @@ int main(int argc, char* argv[]) {
     return 0;
 
 error:
-    fprintf(log, "error_code=%d\n", state);
+    fprintf(log, "Error: %d\n", state);
     return state;
 }
