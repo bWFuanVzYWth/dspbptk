@@ -6,7 +6,7 @@ APPSRC := app/dspbptk.c
 <<<<<<< HEAD
 CFLAGS := -static -fexec-charset=GBK -Ofast -flto -pipe -march=native -mtune=native -fsanitize=address
 =======
-CFLAGS := -static -s -fexec-charset=GBK -Ofast -flto -march=native -mtune=native -Wall -Wextra
+CFLAGS := -static -fexec-charset=GBK -Ofast -flto -march=native -mtune=native -Wall -Wextra
 >>>>>>> e10ee1b386ffc00f01ef994c086b96323d8aa0ed
 
 dspbptk: $(LIBSRC) $(APPSRC)
