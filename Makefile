@@ -2,7 +2,7 @@ CC := gcc
 
 SRC_DSPBPTK := app/dspbptk.c
 SRC_LIBDSPBPTK := lib/*.c
-SRC_LIBDEFLATE := lib/libdeflate-1.18/lib/*.c lib/libdeflate-1.18/lib/*/*.c
+SRC_LIBDEFLATE := lib/libdeflate/lib/*.c lib/libdeflate/lib/*/*.c
 SRC_TURBO_BASE64 := lib/Turbo-Base64/turbob64c.c lib/Turbo-Base64/turbob64d.c lib/Turbo-Base64/turbob64v128.c lib/Turbo-Base64/turbob64v256.c
 
 # Use -flto so no need *.o

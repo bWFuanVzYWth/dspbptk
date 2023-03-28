@@ -7,11 +7,27 @@ extern "C" {
 
 #include <stdlib.h>
 #include <stdint.h>
+#include <stdio.h>
+#include <string.h>
+
+#include "libdeflate/libdeflate.h"
+#include "Turbo-Base64/turbob64.h"
+
+#include "md5f.h"
 
 // 可选的宏
 
 // #define DSPBPTK_DONT_SORT_BUILDING
 // #define DSPBPTK_NO_WARNING
+// #define DSPBPTK_NO_CHECK
+
+#define DSPBPTK_DEBUG
+
+#ifdef DSPBPTK_DEBUG
+#define DBG(x) {fprintf(stderr,x);}
+#else
+#define DBG(x)
+#endif
 
     ////////////////////////////////////////////////////////////////////////////
     // dspbptk errorlevel
@@ -34,7 +50,10 @@ extern "C" {
     // dspbptk defines
     ////////////////////////////////////////////////////////////////////////////
 
-#define BLUEPRINT_MAX_LENGTH 134217728      // 1048576 * 61 * (3/4)  < 134217728
+#define MD5F_LENGTH 32
+#define SHORTDESC_MAX_LENGTH 4096
+#define BLUEPRINT_MAX_LENGTH 134217728  // 128mb. 1048576 * 61 * 3/4 = 85284181.333 < 134217728.
+
 #define OBJ_NULL (-1)
 
     typedef enum {
@@ -97,8 +116,12 @@ extern "C" {
 
     // TODO 检查数据类型是否合理正确
 
+    typedef int8_t i8_t;
+    typedef int16_t i16_t;
+    typedef int32_t i32_t;
     typedef int64_t i64_t;
-    typedef uint64_t u64_t;
+
+    typedef float f32_t;
     typedef double f64_t;
 
     typedef struct {
@@ -143,6 +166,13 @@ extern "C" {
     }building_t;
 
     typedef struct {
+        // head
+        i64_t layout;
+        i64_t icons[5];
+        i64_t time;
+        i64_t gameVersion[4];
+        char* shortDesc;
+        // base64
         i64_t version;
         i64_t cursorOffset_x;
         i64_t cursorOffset_y;
@@ -154,6 +184,8 @@ extern "C" {
         area_t* area;
         size_t BUILDING_NUM;
         building_t* building;
+        // md5f
+        char* md5f;
     }blueprint_t;
 
 
@@ -164,6 +196,7 @@ extern "C" {
 
     dspbptk_error_t blueprint_decode(blueprint_t* blueprint, const char* string);
     dspbptk_error_t blueprint_encode(const blueprint_t* blueprint, char* string);
+    void free_blueprint(blueprint_t* blueprint);
 
 
 
