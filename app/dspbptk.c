@@ -17,7 +17,7 @@ z*=[num]            沿z轴方向放缩。 | Zoom along the z-axis direction.\n\
 z+=[num]            沿z轴方向平移。 | Translate along the z-axis direction.\n\
 sp[id]:[n]=[num]    将某种建筑的第n个附加参数设置成特定值。 | Set parameter.\n\
 示例 | Examples:\n\
-dspbptk -i=i.txt -o=o.txt c sp2301:5=\n\
+dspbptk -i=i.txt -o=o.txt c sp2301:5=114514\n\
 dspbptk -i=i.txt -o=o.txt x*=1.1 y+=-1 z+=0.05\n\
 "
 
@@ -143,6 +143,8 @@ void lexer(int argc, char** argv,
                 ERROR_ARG;
             }
 
+            default:
+            ERROR_ARG;
             }
         }
     }
@@ -221,6 +223,8 @@ int main(int argc, char* argv[]) {
 
     FILE* log = stdout;
     dspbptk_err_t state = no_error;
+    int* processed = (int*)calloc(argc, sizeof(int));
+    processed[0] = 1;
 
     // 检查是不是忘了输入参数
     if(argc <= 1) {
@@ -231,8 +235,6 @@ int main(int argc, char* argv[]) {
     // 初始化
     char file_i[4096] = { 0 };
     char file_o[4096] = { 0 };
-    int* processed = (int*)calloc(argc, sizeof(int));
-    processed[0] = 1;
     size_t command_count = 0;
     operate_t* command = (operate_t*)calloc(argc, sizeof(operate_t));
     void* command_arg = calloc(argc, sizeof(int64_t) * 32);
@@ -312,5 +314,6 @@ error_arg:
         if(processed[i] == -1)
             fprintf(log, "Error: Options/Commands error at \"%s\"\n", argv[i]);
     }
+    _sleep(3600000);
     return state;
 }

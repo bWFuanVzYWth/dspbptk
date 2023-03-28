@@ -13,7 +13,6 @@ extern "C" {
 
 #include "libdeflate/libdeflate.h"
 #include "Turbo-Base64/turbob64.h"
-#include "yyjson/yyjson.h"
 
 #include "md5f.h"
 
@@ -91,9 +90,6 @@ extern "C" {
      * @return dspbptk_err_t 错误类型
      */
     dspbptk_err_t data_to_blueprint(const bp_data_t* p_bp_data, char* blueprint);
-
-    // 施工中
-    // size_t data_to_json(const bp_data_t* p_bp_data, char** json);
 
     /**
      * @brief 释放bp_data的内存

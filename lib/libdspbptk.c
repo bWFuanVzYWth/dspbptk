@@ -535,31 +535,6 @@ dspbptk_err_t data_to_blueprint(const bp_data_t* p_bp_data, char* blueprint) {
     return no_error;
 }
 
-// TODO 还没写完
-size_t data_to_json(const bp_data_t* p_bp_data, char** p_json) {
-    // Create a mutable doc
-    yyjson_mut_doc* doc = yyjson_mut_doc_new(NULL);
-    yyjson_mut_val* root = yyjson_mut_obj(doc);
-    yyjson_mut_doc_set_root(doc, root);
-
-    // 只能生成蓝图头，以后再写
-    yyjson_mut_obj_add_uint(doc, root, "layout", p_bp_data->layout);
-    yyjson_mut_val* icons = yyjson_mut_arr_with_uint(doc, p_bp_data->icons, 5);
-    yyjson_mut_obj_add_val(doc, root, "icons", icons);
-    yyjson_mut_obj_add_uint(doc, root, "time", p_bp_data->time);
-    yyjson_mut_val* gameVersion = yyjson_mut_arr_with_uint(doc, p_bp_data->gameVersion, 4);
-    yyjson_mut_obj_add_val(doc, root, "gameVersion", gameVersion);
-    yyjson_mut_obj_add_str(doc, root, "shortDesc", p_bp_data->shortDesc);
-
-    // To string, minified
-    *p_json = yyjson_mut_write(doc, 0, NULL);
-
-    // Free the doc
-    yyjson_mut_doc_free(doc);
-
-    return 0;
-}
-
 void free_bp_data(bp_data_t* p_bp_data) {
     free(p_bp_data->shortDesc);
     free(p_bp_data->bin);

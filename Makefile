@@ -1,9 +1,9 @@
 CC := gcc
 
-LIBSRC := lib/*.c lib/libdeflate/lib/*.c lib/libdeflate/lib/*/*.c lib/Turbo-Base64/*.c lib/yyjson/*.c
+LIBSRC := lib/*.c lib/libdeflate/lib/*.c lib/libdeflate/lib/*/*.c lib/Turbo-Base64/*.c
 APPSRC := app/dspbptk.c
 
-CFLAGS := -static -s -fexec-charset=GBK -Ofast -flto -march=native -mtune=native -Wall
+CFLAGS := -static -s -fexec-charset=GBK -Ofast -flto -march=native -mtune=native -Wall -Wextra
 
 dspbptk: $(LIBSRC) $(APPSRC)
 	$(CC) -o $@ $^ $(CFLAGS)

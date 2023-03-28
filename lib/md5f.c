@@ -63,6 +63,7 @@ void MD5_Append(uint32_t** array2, size_t* array2_len, const char* input, size_t
 
     uint8_t* array = (uint8_t*)calloc(num3, 1);
     *array2 = (uint32_t*)calloc(num3, 1);
+    *array2_len = num3 / 4;
 
     for(int32_t i = 0; i < input_len; i++)
         array[i] = input[i];
@@ -98,7 +99,6 @@ void MD5_Append(uint32_t** array2, size_t* array2_len, const char* input, size_t
         (*array2)[num8] = (uint32_t)(array[num7] | (array[num7 + 1] << 8) | (array[num7 + 2] << 16) | (array[num7 + 3] << 24));
         num8++;
     }
-    *array2_len = num8;
 
     free(array);
 }
