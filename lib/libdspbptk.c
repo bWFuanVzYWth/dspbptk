@@ -133,6 +133,7 @@ dspbptk_error_t blueprint_decode(blueprint_t* blueprint, const char* string) {
     const size_t head_length = (size_t)(base64 - head - 1);
     const size_t base64_length = (size_t)(md5f - base64 - 1);
     MSG("split string");
+    DBG(base64_length);
 
     // 解析md5f
 #ifndef DSPBPTK_NO_WARNING
