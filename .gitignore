@@ -1,3 +1,5 @@
+FactoryBluePrints/
+
 dspbptk
 *.exe
 *.so
@@ -12,3 +14,7 @@ dspbptk
 *.zip
 *.rar
 *.7z
+
+*.cmd
+*.bat
+*.ps1

@@ -4,23 +4,38 @@
 #include "../lib/libdspbptk.h"
 
 int main(int argc, char* argv[]) {
-    char* str = (char*)calloc(1 << 24, sizeof(char));
+#ifdef DSPBPTK_DEBUG
+    for(int i = 0; i < argc; i++)
+        printf("argv[%d]=%s\n", i, argv[i]);
+#endif
+    char* str = (char*)calloc(1 << 28, sizeof(char));
     FILE* fp = fopen(argv[1], "rw");
 
-    fscanf(fp, "%s", str);
+    size_t parameters_count = fscanf(fp, "%s", str);
+    if(parameters_count < 1)
+        printf("warning: no string\n");
 
     blueprint_t bp;
-    dspbptk_error_t errorlevel_dec = blueprint_decode(&bp, str);
-    dspbptk_error_t errorlevel_enc = blueprint_encode(&bp, str);
-    if(errorlevel_dec)
-        fprintf(stderr, "dec err: %d\n", errorlevel_dec);
-    if(errorlevel_enc)
-        fprintf(stderr, "enc err: %d\n", errorlevel_enc);
+    dspbptk_error_t errorlevel;
+    errorlevel = blueprint_decode(&bp, str);
+    if(errorlevel) {
+        printf("dec err: %d\n", errorlevel);
+        goto error;
+    }
+
+    errorlevel = blueprint_encode(&bp, str);
+    if(errorlevel) {
+        printf("enc err: %d\n", errorlevel);
+        goto error;
+    }
 
     free_blueprint(&bp);
 
     fclose(fp);
     free(str);
-    fprintf(stderr, "Finish.\n");
+    printf("Finish.\n");
     return 0;
+
+error:
+    return errorlevel;
 }

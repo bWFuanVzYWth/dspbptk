@@ -6,7 +6,7 @@ extern "C" {
 #endif
 
 #include <stdlib.h>
-#include <stdint.h>
+#include <inttypes.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -24,8 +24,10 @@ extern "C" {
 #define DSPBPTK_DEBUG
 
 #ifdef DSPBPTK_DEBUG
-#define DBG(x) {fprintf(stderr,x);}
+#define MSG(x) {puts("Message:\t"x);}
+#define DBG(x) {printf("Debug:\t\t"#x"=%"PRId64"\n",x);}
 #else
+#define MSG(x)
 #define DBG(x)
 #endif
 

@@ -103,7 +103,7 @@ size_t gzip_dec(const unsigned char* in, size_t in_nbytes, unsigned char* out) {
  * @return size_t 解压后的二进制流长度
  */
 size_t gzip_declen(const unsigned char* in, size_t in_nbytes) {
-    return (size_t)((uint32_t*)(in + in_nbytes - 4));
+    return (size_t) * ((uint32_t*)(in + in_nbytes - 4));
 }
 
 
@@ -123,6 +123,7 @@ dspbptk_error_t blueprint_decode(blueprint_t* blueprint, const char* string) {
     if(memcmp(string, "BLUEPRINT:", 10) != 0)
         return not_blueprint;
 #endif
+    MSG("is blueprint");
 
     // 标记字符串
     const char* head = string;
@@ -131,6 +132,7 @@ dspbptk_error_t blueprint_decode(blueprint_t* blueprint, const char* string) {
 
     const size_t head_length = (size_t)(base64 - head - 1);
     const size_t base64_length = (size_t)(md5f - base64 - 1);
+    MSG("split string");
 
     // 解析md5f
 #ifndef DSPBPTK_NO_WARNING
@@ -141,10 +143,11 @@ dspbptk_error_t blueprint_decode(blueprint_t* blueprint, const char* string) {
 #endif
     blueprint->md5f = (char*)calloc(32 + 1, sizeof(char));
     memcpy(blueprint->md5f, md5f, 32);
+    MSG("md5f check");
 
     // 解析head
     blueprint->shortDesc = (char*)calloc(SHORTDESC_MAX_LENGTH + 1, sizeof(char));
-    int argument_count = sscanf(string, "BLUEPRINT:0,%llu,%llu,%llu,%llu,%llu,%llu,0,%llu,%llu.%llu.%llu.%llu,%[^\"]",
+    int argument_count = sscanf(string, "BLUEPRINT:0,%"PRId64",%"PRId64",%"PRId64",%"PRId64",%"PRId64",%"PRId64",0,%"PRId64",%"PRId64".%"PRId64".%"PRId64".%"PRId64",%[^\"]",
         &blueprint->layout,
         &blueprint->icons[0],
         &blueprint->icons[1],
@@ -162,32 +165,39 @@ dspbptk_error_t blueprint_decode(blueprint_t* blueprint, const char* string) {
     if(argument_count != 12)
         return blueprint_head_broken;
 #endif
+    MSG("head parsing");
 
     // 解析base64
     {
         size_t gzip_length = base64_declen(base64, base64_length);
+        DBG(gzip_length);
         void* gzip = calloc(gzip_length, 1);
     #ifndef DSPBPTK_NO_CHECK
         if(gzip == NULL)
             return out_of_memory;
     #endif
         gzip_length = base64_dec(base64, base64_length, gzip);
+        DBG(gzip_length);
     #ifndef DSPBPTK_NO_CHECK
         if(gzip_length <= 0)
             return blueprint_base64_broken;
     #endif
+        MSG("base64 dec");
 
         size_t bin_length = gzip_declen(gzip, gzip_length);
+        DBG(bin_length);
         void* bin = calloc(bin_length, 1);
     #ifndef DSPBPTK_NO_CHECK
         if(bin == NULL)
             return out_of_memory;
     #endif
         bin_length = gzip_dec(gzip, gzip_length, bin);
+        DBG(bin_length);
     #ifndef DSPBP_NO_CHECK
         if(bin_length <= 3)
             return blueprint_gzip_broken;
     #endif
+        MSG("gzip dec");
 
         // 解析二进制流
         // TODO double free
@@ -202,6 +212,8 @@ dspbptk_error_t blueprint_decode(blueprint_t* blueprint, const char* string) {
             blueprint->dragBoxSize_y = (i64_t)read_i32(p + bin_offset_dragBoxSize_y);
             blueprint->primaryAreaIdx = (i64_t)read_i32(p + bin_offset_primaryAreaIdx);
 
+            MSG("bin parsing");
+
             const size_t AREA_NUM = (size_t)read_i8(p + BIN_OFFSET_AREA_NUM);
             blueprint->AREA_NUM = AREA_NUM;
             blueprint->area = (area_t*)calloc(AREA_NUM, sizeof(area_t));
@@ -209,6 +221,8 @@ dspbptk_error_t blueprint_decode(blueprint_t* blueprint, const char* string) {
             if(blueprint->area == NULL)
                 return out_of_memory;
         #endif
+
+            DBG(AREA_NUM);
 
             p += BIN_OFFSET_AREA_ARRAY;
 
@@ -225,6 +239,8 @@ dspbptk_error_t blueprint_decode(blueprint_t* blueprint, const char* string) {
                 p += AREA_OFFSET_AREA_NEXT;
             }
 
+            MSG("area parsing");
+
             const size_t BUILDING_NUM = (size_t)read_i32(p);
             blueprint->BUILDING_NUM = BUILDING_NUM;
             blueprint->building = (building_t*)calloc(BUILDING_NUM, sizeof(building_t));
@@ -232,6 +248,8 @@ dspbptk_error_t blueprint_decode(blueprint_t* blueprint, const char* string) {
             if(blueprint->building == NULL)
                 return out_of_memory;
         #endif
+
+            DBG(BUILDING_NUM);
 
             p += sizeof(int32_t);
 
@@ -269,13 +287,20 @@ dspbptk_error_t blueprint_decode(blueprint_t* blueprint, const char* string) {
                 blueprint->building[i].recipeId = (i64_t)read_i16(p + building_offset_recipeId);
                 blueprint->building[i].filterId = (i64_t)read_i16(p + building_offset_filterId);
 
+                // DBG(blueprint->building[i].itemId);
+
                 const size_t PARAMETERS_NUM = (i64_t)read_i16(p + building_offset_num);
                 blueprint->building[i].PARAMETERS_NUM = PARAMETERS_NUM;
-                blueprint->building[i].parameters = (i64_t*)calloc(PARAMETERS_NUM, sizeof(i64_t));
-            #ifndef DSPBP_NO_CHECK
-                if(blueprint->building[i].parameters == NULL)
-                    return out_of_memory;
-            #endif
+                if(PARAMETERS_NUM > 0) {
+                    blueprint->building[i].parameters = (i64_t*)calloc(PARAMETERS_NUM, sizeof(i64_t));
+                #ifndef DSPBP_NO_CHECK
+                    if(blueprint->building[i].parameters == NULL)
+                        return out_of_memory;
+                #endif
+                }
+                else {
+                    blueprint->building[i].parameters = NULL;
+                }
 
                 p += building_offset_parameters;
 
@@ -285,6 +310,8 @@ dspbptk_error_t blueprint_decode(blueprint_t* blueprint, const char* string) {
 
                 p += PARAMETERS_NUM * sizeof(i32_t);
             }
+            MSG("building parsing");
+
         }
 
         free(gzip);
@@ -302,4 +329,10 @@ dspbptk_error_t blueprint_encode(const blueprint_t* blueprint, char* string) {
 void free_blueprint(blueprint_t* blueprint) {
     free(blueprint->shortDesc);
     free(blueprint->md5f);
+    free(blueprint->area);
+    for(size_t i = 0; i < blueprint->BUILDING_NUM; i++) {
+        if(blueprint->building[i].PARAMETERS_NUM > 0)
+            free(blueprint->building[i].parameters);
+    }
+    free(blueprint->building);
 }
