@@ -19,7 +19,7 @@ extern "C" {
 
 // #define DSPBPTK_DONT_SORT_BUILDING
 // #define DSPBPTK_NO_WARNING
-// #define DSPBPTK_NO_CHECK
+// #define DSPBPTK_NO_ERROR // 不建议
 
 #define DSPBPTK_DEBUG
 
@@ -43,7 +43,8 @@ extern "C" {
         blueprint_head_broken,
         blueprint_base64_broken,
         blueprint_gzip_broken,
-        blueprint_data_broken
+        blueprint_data_broken,
+        blueprint_md5f_broken
     }dspbptk_error_t;
 
 

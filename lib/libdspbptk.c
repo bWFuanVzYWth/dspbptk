@@ -117,7 +117,8 @@ dspbptk_error_t blueprint_decode(blueprint_t* blueprint, const char* string) {
 
     const size_t string_length = strlen(string);
 
-#ifndef DSPBPTK_NO_CHECK
+    // 不是蓝图就可以直接返回了
+#ifndef DSPBPTK_NO_ERROR
     if(string_length < 10)
         return not_blueprint;
     if(memcmp(string, "BLUEPRINT:", 10) != 0)
@@ -125,17 +126,22 @@ dspbptk_error_t blueprint_decode(blueprint_t* blueprint, const char* string) {
 #endif
     MSG("is blueprint");
 
-    // 标记字符串
+    // 分割字符串
     const char* head = string;
     const char* base64 = strchr(string, (int)'\"') + 1;
     const char* md5f = string + string_length - MD5F_LENGTH;
+
+#ifndef DSPBPTK_NO_ERROR
+    if(*(md5f - 1) != '\"')
+        return blueprint_md5f_broken;
+#endif
 
     const size_t head_length = (size_t)(base64 - head - 1);
     const size_t base64_length = (size_t)(md5f - base64 - 1);
     MSG("split string");
     DBG(base64_length);
 
-    // 解析md5f
+    // 解析md5f(并校验)
 #ifndef DSPBPTK_NO_WARNING
     char md5f_check[MD5F_LENGTH + 1] = "\0";
     md5f_str(md5f_check, string, head_length + 1 + base64_length);
@@ -162,7 +168,7 @@ dspbptk_error_t blueprint_decode(blueprint_t* blueprint, const char* string) {
         &blueprint->gameVersion[3],
         blueprint->shortDesc
     );
-#ifndef DSPBPTK_NO_CHECK
+#ifndef DSPBPTK_NO_ERROR
     if(argument_count != 12)
         return blueprint_head_broken;
 #endif
@@ -173,13 +179,13 @@ dspbptk_error_t blueprint_decode(blueprint_t* blueprint, const char* string) {
         size_t gzip_length = base64_declen(base64, base64_length);
         DBG(gzip_length);
         void* gzip = calloc(gzip_length, 1);
-    #ifndef DSPBPTK_NO_CHECK
+    #ifndef DSPBPTK_NO_ERROR
         if(gzip == NULL)
             return out_of_memory;
     #endif
         gzip_length = base64_dec(base64, base64_length, gzip);
         DBG(gzip_length);
-    #ifndef DSPBPTK_NO_CHECK
+    #ifndef DSPBPTK_NO_ERROR
         if(gzip_length <= 0)
             return blueprint_base64_broken;
     #endif
@@ -188,7 +194,7 @@ dspbptk_error_t blueprint_decode(blueprint_t* blueprint, const char* string) {
         size_t bin_length = gzip_declen(gzip, gzip_length);
         DBG(bin_length);
         void* bin = calloc(bin_length, 1);
-    #ifndef DSPBPTK_NO_CHECK
+    #ifndef DSPBPTK_NO_ERROR
         if(bin == NULL)
             return out_of_memory;
     #endif
@@ -201,7 +207,6 @@ dspbptk_error_t blueprint_decode(blueprint_t* blueprint, const char* string) {
         MSG("gzip dec");
 
         // 解析二进制流
-        // TODO double free
         {
             void* p = bin;
 
@@ -257,34 +262,26 @@ dspbptk_error_t blueprint_decode(blueprint_t* blueprint, const char* string) {
             for(size_t i = 0; i < BUILDING_NUM; i++) {
                 blueprint->building[i].index = (i64_t)read_i32(p + building_offset_index);
                 blueprint->building[i].areaIndex = (i64_t)read_i8(p + building_offset_areaIndex);
-
                 blueprint->building[i].localOffset.x = (f64_t)read_f32(p + building_offset_localOffset_x);
                 blueprint->building[i].localOffset.y = (f64_t)read_f32(p + building_offset_localOffset_y);
                 blueprint->building[i].localOffset.z = (f64_t)read_f32(p + building_offset_localOffset_z);
                 blueprint->building[i].localOffset.w = (f64_t)1.0;
-
                 blueprint->building[i].localOffset2.x = (f64_t)read_f32(p + building_offset_localOffset_x2);
                 blueprint->building[i].localOffset2.y = (f64_t)read_f32(p + building_offset_localOffset_y2);
                 blueprint->building[i].localOffset2.z = (f64_t)read_f32(p + building_offset_localOffset_z2);
                 blueprint->building[i].localOffset2.w = (f64_t)1.0;
-
                 blueprint->building[i].yaw = (f64_t)read_f32(p + building_offset_yaw);
                 blueprint->building[i].yaw2 = (f64_t)read_f32(p + building_offset_yaw2);
-
                 blueprint->building[i].itemId = (i64_t)read_i16(p + building_offset_itemId);
                 blueprint->building[i].modelIndex = (i64_t)read_i16(p + building_offset_modelIndex);
-
                 blueprint->building[i].tempOutputObjIdx = (i64_t)read_i32(p + building_offset_tempOutputObjIdx);
                 blueprint->building[i].tempInputObjIdx = (i64_t)read_i32(p + building_offset_tempInputObjIdx);
-
                 blueprint->building[i].outputToSlot = (i64_t)read_i8(p + building_offset_tempInputObjIdx);
                 blueprint->building[i].inputFromSlot = (i64_t)read_i8(p + building_offset_inputFromSlot);
                 blueprint->building[i].outputFromSlot = (i64_t)read_i8(p + building_offset_outputFromSlot);
                 blueprint->building[i].inputToSlot = (i64_t)read_i8(p + building_offset_inputToSlot);
-
                 blueprint->building[i].outputOffset = (i64_t)read_i8(p + building_offset_outputOffset);
                 blueprint->building[i].inputOffset = (i64_t)read_i8(p + building_offset_inputOffset);
-
                 blueprint->building[i].recipeId = (i64_t)read_i16(p + building_offset_recipeId);
                 blueprint->building[i].filterId = (i64_t)read_i16(p + building_offset_filterId);
 
