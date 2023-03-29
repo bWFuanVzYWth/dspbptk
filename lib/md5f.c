@@ -76,7 +76,22 @@ void MD5_Append(uint32_t** buffer, size_t* buffer_len, const char* input, size_t
         array[index++] = (uint8_t)0;
     }
     int64_t num6 = (int64_t)num4 * 8L;
-    *((int64_t*)(array + index)) = num6;
+    uint8_t b = (uint8_t)(num6 & 0xFF);
+    uint8_t b2 = (uint8_t)(((uint64_t)num6 >> 8) & 0xFF);
+    uint8_t b3 = (uint8_t)(((uint64_t)num6 >> 16) & 0xFF);
+    uint8_t b4 = (uint8_t)(((uint64_t)num6 >> 24) & 0xFF);
+    uint8_t b5 = (uint8_t)(((uint64_t)num6 >> 32) & 0xFF);
+    uint8_t b6 = (uint8_t)(((uint64_t)num6 >> 40) & 0xFF);
+    uint8_t b7 = (uint8_t)(((uint64_t)num6 >> 48) & 0xFF);
+    uint8_t b8 = (uint8_t)((uint64_t)num6 >> 56);
+    array[index++] = (b);
+    array[index++] = (b2);
+    array[index++] = (b3);
+    array[index++] = (b4);
+    array[index++] = (b5);
+    array[index++] = (b6);
+    array[index++] = (b7);
+    array[index++] = (b8);
 
     *buffer = (uint32_t*)array;
 
