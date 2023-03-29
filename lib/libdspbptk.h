@@ -1,132 +1,215 @@
-#ifndef DSPBPTK
-#define DSPBPTK
+#ifndef LIBDSBPBTK
+#define LIBDSBPBTK
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-#include <inttypes.h>
-#include <string.h>
 #include <stdlib.h>
+#include <inttypes.h>
 #include <stdio.h>
-#include <time.h>
+#include <string.h>
 
 #include "libdeflate/libdeflate.h"
 #include "Turbo-Base64/turbob64.h"
 
 #include "md5f.h"
 
-#define BLUEPRINT_MAX_LENGTH 134217728  // 128mb. 1048576 * 61 * 3/4 = 85284181.333 < 134217728.
-
 // 可选的宏
 
 // #define DSPBPTK_DONT_SORT_BUILDING
 // #define DSPBPTK_NO_WARNING
+// #define DSPBPTK_NO_ERROR // 不建议
+
+#define DSPBPTK_DEBUG
+
+#ifdef DSPBPTK_DEBUG
+#define MSG(x) {puts("Message:\t"x);}
+#define DBG(x) {printf("Debug:\t\t"#x"=%"PRId64"\n",(int64_t)x);}
+#else
+#define MSG(x)
+#define DBG(x)
+#endif
+
+    ////////////////////////////////////////////////////////////////////////////
+    // dspbptk errorlevel
+    ////////////////////////////////////////////////////////////////////////////
 
     typedef enum {
-        error_arg = -1,
-
         no_error = 0,
 
-        file_no_found,
-        cannot_write,
         out_of_memory,
-        not_a_blueprint,
+        not_blueprint,
         blueprint_head_broken,
         blueprint_base64_broken,
         blueprint_gzip_broken,
-        blueprint_data_broken
-    }dspbptk_err_t;
+        blueprint_data_broken,
+        blueprint_md5f_broken
+    }dspbptk_error_t;
+
+
+
+    ////////////////////////////////////////////////////////////////////////////
+    // dspbptk defines
+    ////////////////////////////////////////////////////////////////////////////
+
+#define MD5F_LENGTH 32
+#define SHORTDESC_MAX_LENGTH 4096
+#define BLUEPRINT_MAX_LENGTH 134217728  // 128mb. 1048576 * 61 * 3/4 = 85284181.333 < 134217728.
+
+#define OBJ_NULL (-1)
+
+    typedef enum {
+        bin_offset_version = 0,
+        bin_offset_cursorOffset_x = bin_offset_version + 4,
+        bin_offset_cursorOffset_y = bin_offset_cursorOffset_x + 4,
+        bin_offset_cursorTargetArea = bin_offset_cursorOffset_y + 4,
+        bin_offset_dragBoxSize_x = bin_offset_cursorTargetArea + 4,
+        bin_offset_dragBoxSize_y = bin_offset_dragBoxSize_x + 4,
+        bin_offset_primaryAreaIdx = bin_offset_dragBoxSize_y + 4,
+        BIN_OFFSET_AREA_NUM = bin_offset_primaryAreaIdx + 4,
+        BIN_OFFSET_AREA_ARRAY = BIN_OFFSET_AREA_NUM + 1
+    }bin_offset_t;
+
+    typedef enum {
+        area_offset_index = 0,
+        area_offset_parentIndex = area_offset_index + 1,
+        area_offset_tropicAnchor = area_offset_parentIndex + 1,
+        area_offset_areaSegments = area_offset_tropicAnchor + 2,
+        area_offset_anchorLocalOffsetX = area_offset_areaSegments + 2,
+        area_offset_anchorLocalOffsetY = area_offset_anchorLocalOffsetX + 2,
+        area_offset_width = area_offset_anchorLocalOffsetY + 2,
+        area_offset_height = area_offset_width + 2,
+        AREA_OFFSET_AREA_NEXT = area_offset_height + 2,
+        AREA_OFFSET_BUILDING_ARRAY = AREA_OFFSET_AREA_NEXT + 4
+    }area_offset_t;
+
+    typedef enum {
+        building_offset_index = 0,
+        building_offset_areaIndex = building_offset_index + 4,
+        building_offset_localOffset_x = building_offset_areaIndex + 1,
+        building_offset_localOffset_y = building_offset_localOffset_x + 4,
+        building_offset_localOffset_z = building_offset_localOffset_y + 4,
+        building_offset_localOffset_x2 = building_offset_localOffset_z + 4,
+        building_offset_localOffset_y2 = building_offset_localOffset_x2 + 4,
+        building_offset_localOffset_z2 = building_offset_localOffset_y2 + 4,
+        building_offset_yaw = building_offset_localOffset_z2 + 4,
+        building_offset_yaw2 = building_offset_yaw + 4,
+        building_offset_itemId = building_offset_yaw2 + 4,
+        building_offset_modelIndex = building_offset_itemId + 2,
+        building_offset_tempOutputObjIdx = building_offset_modelIndex + 2,
+        building_offset_tempInputObjIdx = building_offset_tempOutputObjIdx + 4,
+        building_offset_outputToSlot = building_offset_tempInputObjIdx + 4,
+        building_offset_inputFromSlot = building_offset_outputToSlot + 1,
+        building_offset_outputFromSlot = building_offset_inputFromSlot + 1,
+        building_offset_inputToSlot = building_offset_outputFromSlot + 1,
+        building_offset_outputOffset = building_offset_inputToSlot + 1,
+        building_offset_inputOffset = building_offset_outputOffset + 1,
+        building_offset_recipeId = building_offset_inputOffset + 1,
+        building_offset_filterId = building_offset_recipeId + 2,
+        building_offset_num = building_offset_filterId + 2,
+        building_offset_parameters = building_offset_num + 2
+    }building_offset_t;
+
+
+
+    ////////////////////////////////////////////////////////////////////////////
+    // dspbptk struct
+    ////////////////////////////////////////////////////////////////////////////
+
+    // TODO 检查数据类型是否合理正确
+
+    typedef int8_t i8_t;
+    typedef int16_t i16_t;
+    typedef int32_t i32_t;
+    typedef int64_t i64_t;
+
+    typedef float f32_t;
+    typedef double f64_t;
 
     typedef struct {
-        uint64_t layout;            // layout，作用未知
-        uint64_t icons[5];          // 蓝图图标
-        uint64_t time;              // 时间
-        uint64_t gameVersion[4];    // 创建蓝图的游戏版本
-        char* shortDesc;            // 蓝图简介
-        size_t area_num;            // 区域总数
-        size_t building_num;        // 建筑总数
-        void* bin;                  // 指向二进制流的头部
-        void** area;                // 指向每一个区域
-        void** building;            // 指向每一个建筑
-    } bp_data_t;
+        f64_t x;
+        f64_t y;
+        f64_t z;
+        f64_t w;
+    }f64x4_t;
+
+    typedef struct {
+        i64_t index;
+        i64_t parentIndex;
+        i64_t tropicAnchor;
+        i64_t areaSegments;
+        i64_t anchorLocalOffsetX;
+        i64_t anchorLocalOffsetY;
+        i64_t width;
+        i64_t height;
+    }area_t;
+
+    typedef struct {
+        i64_t index;
+        i64_t areaIndex;
+        f64x4_t localOffset;
+        f64x4_t localOffset2;
+        f64_t yaw;
+        f64_t yaw2;
+        i64_t itemId;
+        i64_t modelIndex;
+        i64_t tempOutputObjIdx;
+        i64_t tempInputObjIdx;
+        i64_t outputToSlot;
+        i64_t inputFromSlot;
+        i64_t outputFromSlot;
+        i64_t inputToSlot;
+        i64_t outputOffset;
+        i64_t inputOffset;
+        i64_t recipeId;
+        i64_t filterId;
+        size_t num;
+        i64_t* parameters;
+    }building_t;
+
+    typedef struct {
+        // head
+        i64_t layout;
+        i64_t icons[5];
+        i64_t time;
+        i64_t gameVersion[4];
+        char* shortDesc;
+        // base64
+        i64_t version;
+        i64_t cursorOffset_x;
+        i64_t cursorOffset_y;
+        i64_t cursorTargetArea;
+        i64_t dragBoxSize_x;
+        i64_t dragBoxSize_y;
+        i64_t primaryAreaIdx;
+        size_t AREA_NUM;
+        area_t* area;
+        size_t BUILDING_NUM;
+        building_t* building;
+        // md5f
+        char* md5f;
+    }blueprint_t;
 
 
 
-    // API
+    ////////////////////////////////////////////////////////////////////////////
+    // dspbptk function
+    ////////////////////////////////////////////////////////////////////////////
 
-    /**
-     * @brief 从文件读取蓝图，不检查蓝图正确性。会给blueprint分配内存，别忘了free(blueprint);
-     *
-     * @param file_name 待读取的文件名
-     * @param p_blueprint 指向蓝图字符串的指针
-     * @return size_t 如果成功返回蓝图的尺寸；如果失败返回0
-     */
-    size_t file_to_blueprint(const char* file_name, char** p_blueprint);
-
-    /**
-     * @brief 将蓝图写入文件，不检查蓝图正确性
-     *
-     * @param file_name 待写入的文件名
-     * @param blueprint 蓝图字符串
-     * @return dspbptk_err_t 错误类型
-     */
-    dspbptk_err_t blueprint_to_file(const char* file_name, const char* blueprint);
-
-    /**
-     * @brief 从蓝图字符串解析其中的数据到bp_data。会给bp_data分配内存，别忘了free_bp_data(&bp_data);
-     *
-     * @param p_bp_data 指向bp_data的指针
-     * @param blueprint 蓝图字符串
-     * @return dspbptk_err_t 错误类型：注意只检查数据结构是否合理，不检查数据是否合法
-     */
-    dspbptk_err_t blueprint_to_data(bp_data_t* p_bp_data, const char* blueprint);
-
-    /**
-     * @brief 将bp_data编码成蓝图字符串
-     *
-     * @param p_bp_data 指向bp_data的指针
-     * @param blueprint 蓝图字符串
-     * @return dspbptk_err_t 错误类型
-     */
-    dspbptk_err_t data_to_blueprint(const bp_data_t* p_bp_data, char* blueprint);
-
-    /**
-     * @brief 释放bp_data的内存
-     *
-     * @param p_bp_data 指向bp_data的指针
-     */
-    void free_bp_data(bp_data_t* p_bp_data);
+    dspbptk_error_t blueprint_decode(blueprint_t* blueprint, const char* string);
+    dspbptk_error_t blueprint_encode(const blueprint_t* blueprint, char* string);
+    void free_blueprint(blueprint_t* blueprint);
 
 
 
-    // 懒所以只加常用的，有需要可以自己添加（顺便pr）
+    ////////////////////////////////////////////////////////////////////////////
+    // dspbptk API
+    ////////////////////////////////////////////////////////////////////////////
 
-    size_t get_area_num(void* p_area_num);
-    void set_area_num(void* p_area_num, size_t num);
+    // TODO
 
-    size_t get_building_num(void* p_building_num);
-    void set_building_num(void* p_building_num, size_t num);
 
-    size_t get_building_size(void* p_building);
-
-    int16_t get_building_itemID(void* p_building);
-    void set_building_itemID(void* p_building, int16_t itemID);
-
-    int32_t get_building_index(void* p_building);
-    void set_building_index(void* p_building, int32_t index);
-
-    void set_building_tempOutputObjIdx(void* p_building, int32_t index);
-    void set_building_tempInputObjIdx(void* p_building, int32_t index);
-
-    void get_building_pos1(void* p_building, double pos1[3]);
-    void set_building_pos1(void* p_building, double pos1[3]);
-    void get_building_pos2(void* p_building, double pos2[3]);
-    void set_building_pos2(void* p_building, double pos2[3]);
-
-    int16_t get_building_parameters_num(void* p_building);
-
-    void set_building_parameter(void* p_building, size_t n, int32_t parameter);
 
 #ifdef __cplusplus
 }
