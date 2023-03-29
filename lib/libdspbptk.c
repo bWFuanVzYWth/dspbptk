@@ -68,7 +68,7 @@ size_t base64_declen(const char* base64, size_t base64_length) {
  * @return size_t 压缩后的二进制流长度
  */
 size_t gzip_enc(const unsigned char* in, size_t in_nbytes, unsigned char* out) {
-    struct libdeflate_compressor* p_compressor = libdeflate_alloc_compressor(12);
+    struct libdeflate_compressor* p_compressor = libdeflate_alloc_compressor(0);
     size_t gzip_length = libdeflate_gzip_compress(
         p_compressor, in, in_nbytes, out, BLUEPRINT_MAX_LENGTH);
     libdeflate_free_compressor(p_compressor);
@@ -274,7 +274,7 @@ dspbptk_error_t blueprint_decode(blueprint_t* blueprint, const char* string) {
                 blueprint->building[i].modelIndex = (i64_t)read_i16(p + building_offset_modelIndex);
                 blueprint->building[i].tempOutputObjIdx = (i64_t)read_i32(p + building_offset_tempOutputObjIdx);
                 blueprint->building[i].tempInputObjIdx = (i64_t)read_i32(p + building_offset_tempInputObjIdx);
-                blueprint->building[i].outputToSlot = (i64_t)read_i8(p + building_offset_tempInputObjIdx);
+                blueprint->building[i].outputToSlot = (i64_t)read_i8(p + building_offset_outputToSlot);
                 blueprint->building[i].inputFromSlot = (i64_t)read_i8(p + building_offset_inputFromSlot);
                 blueprint->building[i].outputFromSlot = (i64_t)read_i8(p + building_offset_outputFromSlot);
                 blueprint->building[i].inputToSlot = (i64_t)read_i8(p + building_offset_inputToSlot);
@@ -460,7 +460,7 @@ dspbptk_error_t blueprint_encode(const blueprint_t* blueprint, char* string) {
         MACRO_ENCODE(filterId, i16_t);
 
         // TODO 统一命名
-        *((i32_t*)(ptr_bin + building_offset_num)) = (i32_t)blueprint->building[i].PARAMETERS_NUM;
+        *((i16_t*)(ptr_bin + building_offset_num)) = (i16_t)blueprint->building[i].PARAMETERS_NUM;
 
         ptr_bin += building_offset_parameters;
         for(size_t j = 0; j < blueprint->building[i].PARAMETERS_NUM; j++) {
