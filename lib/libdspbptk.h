@@ -164,7 +164,7 @@ extern "C" {
         i64_t inputOffset;
         i64_t recipeId;
         i64_t filterId;
-        size_t PARAMETERS_NUM;
+        size_t num;
         i64_t* parameters;
     }building_t;
 

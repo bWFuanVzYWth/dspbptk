@@ -268,7 +268,7 @@ dspbptk_error_t blueprint_decode(blueprint_t* blueprint, const char* string) {
                 // DBG(blueprint->building[i].itemId);
 
                 const size_t PARAMETERS_NUM = (i64_t) * ((i16_t*)(p + building_offset_num));
-                blueprint->building[i].PARAMETERS_NUM = PARAMETERS_NUM;
+                blueprint->building[i].num = PARAMETERS_NUM;
                 if(PARAMETERS_NUM > 0) {
                     blueprint->building[i].parameters = (i64_t*)calloc(PARAMETERS_NUM, sizeof(i64_t));
                 #ifndef DSPBP_NO_CHECK
@@ -305,15 +305,15 @@ dspbptk_error_t blueprint_decode(blueprint_t* blueprint, const char* string) {
 ////////////////////////////////////////////////////////////////////////////////
 
 typedef struct {
-    int32_t id;
-    int32_t index;
+    i64_t id;
+    i64_t index;
 }id_t;
 
-// int cmp_building(const void* p_a, const void* p_b) {
-//     void* a = *((void**)p_a);
-//     void* b = *((void**)p_b);
-//     return get_building_itemID(a) - get_building_itemID(b);
-// }
+int cmp_building(const void* p_a, const void* p_b) {
+    building_t* a = (building_t*)p_a;
+    building_t* b = (building_t*)p_b;
+    return a->itemId - b->itemId;
+}
 
 int cmp_id(const void* p_a, const void* p_b) {
     id_t* a = ((id_t*)p_a);
@@ -327,13 +327,13 @@ int cmp_index(const void* p_a, const void* p_b) {
     return a->index - b->index;
 }
 
-void re_index(int32_t* ObjIdx, id_t* id_lut, size_t building_num) {
+void re_index(i64_t* ObjIdx, id_t* id_lut, size_t BUILDING_NUM) {
     if(*ObjIdx == OBJ_NULL)
         return;
-    id_t* p_id = bsearch(ObjIdx, id_lut, building_num, sizeof(id_t), cmp_id);
+    id_t* p_id = bsearch(ObjIdx, id_lut, BUILDING_NUM, sizeof(id_t), cmp_id);
     if(p_id == NULL) {
     #ifndef DSPBPTK_NO_WARNING
-        fprintf(stderr, "Warning: index %d no found! Reindex index to OBJ_NULL(-1).\n", *ObjIdx);
+        fprintf(stderr, "Warning: index %"PRId64" no found! Reindex index to OBJ_NULL(-1).\n", *ObjIdx);
     #endif
         * ObjIdx = OBJ_NULL;
     }
@@ -403,13 +403,31 @@ dspbptk_error_t blueprint_encode(const blueprint_t* blueprint, char* string) {
         AREA_ENCODE(width, i16_t);
         AREA_ENCODE(height, i16_t);
 
-
         ptr_bin += AREA_OFFSET_AREA_NEXT;
     }
 
     // 编码建筑总数
     *((i32_t*)(ptr_bin)) = (i32_t)blueprint->BUILDING_NUM;
     DBG(*((i32_t*)(ptr_bin)));
+
+#ifndef DSPBPTK_DONT_SORT_BUILDING
+    // 对建筑按建筑类型排序，有利于进一步压缩，非必要步骤
+    qsort(blueprint->building, blueprint->BUILDING_NUM, sizeof(building_t), cmp_building);
+#endif
+
+    // 重新生成index
+    id_t* id_lut = (id_t*)calloc(blueprint->BUILDING_NUM, sizeof(id_t));
+    for(size_t i = 0; i < blueprint->BUILDING_NUM; i++) {
+        id_lut[i].id = blueprint->building[i].index;
+        id_lut[i].index = i;
+    }
+    qsort(id_lut, blueprint->BUILDING_NUM, sizeof(id_t), cmp_id);
+
+    for(size_t i = 0; i < blueprint->BUILDING_NUM; i++) {
+        re_index(&blueprint->building[i].index, id_lut, blueprint->BUILDING_NUM);
+        re_index(&blueprint->building[i].tempOutputObjIdx, id_lut, blueprint->BUILDING_NUM);
+        re_index(&blueprint->building[i].tempInputObjIdx, id_lut, blueprint->BUILDING_NUM);
+    }
 
     // 编码建筑数组
     ptr_bin += sizeof(i32_t);
@@ -447,14 +465,13 @@ dspbptk_error_t blueprint_encode(const blueprint_t* blueprint, char* string) {
         BUILDING_ENCODE(recipeId, i16_t);
         BUILDING_ENCODE(filterId, i16_t);
 
-        // TODO 统一命名
-        *((i16_t*)(ptr_bin + building_offset_num)) = (i16_t)blueprint->building[i].PARAMETERS_NUM;
+        BUILDING_ENCODE(num, i16_t);
 
         ptr_bin += building_offset_parameters;
-        for(size_t j = 0; j < blueprint->building[i].PARAMETERS_NUM; j++) {
+        for(size_t j = 0; j < blueprint->building[i].num; j++) {
             *((i32_t*)(ptr_bin + sizeof(i32_t) * j)) = (i32_t)blueprint->building[i].parameters[j];
         }
-        ptr_bin += sizeof(i32_t) * blueprint->building[i].PARAMETERS_NUM;
+        ptr_bin += sizeof(i32_t) * blueprint->building[i].num;
     }
 
     // 计算二进制流长度
@@ -481,7 +498,7 @@ void free_blueprint(blueprint_t* blueprint) {
     free(blueprint->md5f);
     free(blueprint->area);
     for(size_t i = 0; i < blueprint->BUILDING_NUM; i++) {
-        if(blueprint->building[i].PARAMETERS_NUM > 0)
+        if(blueprint->building[i].num > 0)
             free(blueprint->building[i].parameters);
     }
     free(blueprint->building);
