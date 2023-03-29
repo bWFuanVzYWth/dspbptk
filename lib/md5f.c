@@ -183,10 +183,7 @@ void md5f(uint32_t md5f_u32[4], const char* stream, size_t stream_len) {
 
 }
 
-void md5f_str(char* md5f_hex, const char* stream, size_t stream_len) {
-    uint32_t md5f_u32[4];
-    md5f(md5f_u32, stream, stream_len);
-
+void to_str(char* md5f_hex, uint32_t md5f_u32[4]) {
     for(int i = 0; i < 4; i++) {
         sprintf(md5f_hex + 8 * i, "%02X%02X%02X%02X",
             (uint8_t)((md5f_u32[i]) & 0xFFu),
@@ -194,4 +191,11 @@ void md5f_str(char* md5f_hex, const char* stream, size_t stream_len) {
             (uint8_t)((md5f_u32[i] >> 16) & 0xFFu),
             (uint8_t)((md5f_u32[i] >> 24) & 0xFFu));
     }
+}
+
+void md5f_str(char* md5f_hex, const char* stream, size_t stream_len) {
+    uint32_t md5f_u32[4];
+    md5f(md5f_u32, stream, stream_len);
+    to_str(md5f_hex, md5f_u32);
+
 }
