@@ -110,7 +110,7 @@ size_t base64_declen(const char* base64, size_t base64_length) {
  * @return size_t 压缩后的二进制流长度
  */
 size_t gzip_enc(const unsigned char* in, size_t in_nbytes, unsigned char* out) {
-    struct libdeflate_compressor* p_compressor = libdeflate_alloc_compressor(12);
+    struct libdeflate_compressor* p_compressor = libdeflate_alloc_compressor(0);
     size_t gzip_length = libdeflate_gzip_compress(
         p_compressor, in, in_nbytes, out, BLUEPRINT_MAX_LENGTH);
     libdeflate_free_compressor(p_compressor);
@@ -484,6 +484,8 @@ dspbptk_err_t data_to_blueprint(const bp_data_t* p_bp_data, char* blueprint) {
 
     // 写入建筑总数
     set_building_num(bin_ptr, p_bp_data->building_num);
+
+#define DSPBPTK_DONT_SORT_BUILDING
 
 #ifndef DSPBPTK_DONT_SORT_BUILDING
     // 对建筑按建筑类型排序，有利于进一步压缩，非必要步骤
