@@ -91,14 +91,13 @@ size_t gzip_declen(const unsigned char* in, size_t in_nbytes) {
 dspbptk_error_t blueprint_decode(blueprint_t* blueprint, const char* string) {
     const size_t string_length = strlen(string);
 
-    // 不是蓝图就可以直接返回了
+    // 不是蓝图就没必要再解析了
 #ifndef DSPBPTK_NO_ERROR
     if(string_length < 10)
         return not_blueprint;
     if(memcmp(string, "BLUEPRINT:", 10) != 0)
         return not_blueprint;
 #endif
-    MSG("is blueprint");
 
     // 分割字符串
     const char* head = string;
@@ -112,10 +111,9 @@ dspbptk_error_t blueprint_decode(blueprint_t* blueprint, const char* string) {
 
     const size_t head_length = (size_t)(base64 - head - 1);
     const size_t base64_length = (size_t)(md5f - base64 - 1);
-    MSG("split string");
     DBG(base64_length);
 
-    // 解析md5f(并校验)
+// 解析md5f(并校验)
 #ifndef DSPBPTK_NO_WARNING
     char md5f_check[MD5F_LENGTH + 1] = "\0";
     md5f_str(md5f_check, string, head_length + 1 + base64_length);
@@ -124,7 +122,6 @@ dspbptk_error_t blueprint_decode(blueprint_t* blueprint, const char* string) {
 #endif
     blueprint->md5f = (char*)calloc(32 + 1, sizeof(char));
     memcpy(blueprint->md5f, md5f, 32);
-    MSG("md5f check");
 
     // 解析head
     blueprint->shortDesc = (char*)calloc(SHORTDESC_MAX_LENGTH + 1, sizeof(char));
@@ -146,7 +143,6 @@ dspbptk_error_t blueprint_decode(blueprint_t* blueprint, const char* string) {
     if(argument_count != 12)
         return blueprint_head_broken;
 #endif
-    MSG("head parsing");
 
     // 解析base64
     {
@@ -163,7 +159,6 @@ dspbptk_error_t blueprint_decode(blueprint_t* blueprint, const char* string) {
         if(gzip_length <= 0)
             return blueprint_base64_broken;
     #endif
-        MSG("base64 dec");
 
         size_t bin_length = gzip_declen(gzip, gzip_length);
         DBG(bin_length);
@@ -178,7 +173,6 @@ dspbptk_error_t blueprint_decode(blueprint_t* blueprint, const char* string) {
         if(bin_length <= 3)
             return blueprint_gzip_broken;
     #endif
-        MSG("gzip dec");
 
         // 解析二进制流
         {
@@ -195,7 +189,6 @@ dspbptk_error_t blueprint_decode(blueprint_t* blueprint, const char* string) {
             BIN_HEAD_DECODE(dragBoxSize_y, i32_t);
             BIN_HEAD_DECODE(primaryAreaIdx, i32_t);
 
-            MSG("bin parsing");
 
             const size_t AREA_NUM = (size_t) * ((i8_t*)(p + BIN_OFFSET_AREA_NUM));
             blueprint->AREA_NUM = AREA_NUM;
@@ -210,6 +203,7 @@ dspbptk_error_t blueprint_decode(blueprint_t* blueprint, const char* string) {
             p += BIN_OFFSET_AREA_ARRAY;
 
             for(size_t i = 0; i < AREA_NUM; i++) {
+
             #define AREA_DECODE(name, type)\
                 blueprint->area[i].name = (i64_t)*((type*)(p + area_offset_##name));
 
@@ -225,7 +219,6 @@ dspbptk_error_t blueprint_decode(blueprint_t* blueprint, const char* string) {
                 p += AREA_OFFSET_AREA_NEXT;
             }
 
-            MSG("area parsing");
 
             const size_t BUILDING_NUM = (size_t) * ((i32_t*)(p));
             blueprint->BUILDING_NUM = BUILDING_NUM;
@@ -240,6 +233,7 @@ dspbptk_error_t blueprint_decode(blueprint_t* blueprint, const char* string) {
             p += sizeof(int32_t);
 
             for(size_t i = 0; i < BUILDING_NUM; i++) {
+
             #define BUILDING_DECODE(name, type)\
                 blueprint->building[i].name = (i64_t)*((type*)(p + building_offset_##name));
 
@@ -294,7 +288,6 @@ dspbptk_error_t blueprint_decode(blueprint_t* blueprint, const char* string) {
 
                 p += PARAMETERS_NUM * sizeof(i32_t);
             }
-            MSG("building parsing");
 
         }
 
@@ -350,7 +343,6 @@ void re_index(int32_t* ObjIdx, id_t* id_lut, size_t building_num) {
 }
 
 dspbptk_error_t blueprint_encode(const blueprint_t* blueprint, char* string) {
-    MSG("////////////////////////////////////////////////////////////////////");
     void* bin = calloc(BLUEPRINT_MAX_LENGTH, 1);
     void* gzip = calloc(BLUEPRINT_MAX_LENGTH, 1);
 
@@ -376,10 +368,9 @@ dspbptk_error_t blueprint_encode(const blueprint_t* blueprint, char* string) {
     size_t head_length = strlen(string); // 这个长度已经带了前一个引号
     ptr_str += head_length;
 
-    MSG("print head");
     DBG(head_length);
 
-    // 编码bin head
+// 编码bin head
 #define BIN_HEAD_ENCODE(name, type)\
     *((type*)(ptr_bin + bin_offset_##name)) = (type)blueprint->name;
 
@@ -391,7 +382,6 @@ dspbptk_error_t blueprint_encode(const blueprint_t* blueprint, char* string) {
     BIN_HEAD_ENCODE(dragBoxSize_y, i32_t);
     BIN_HEAD_ENCODE(primaryAreaIdx, i32_t);
 
-    MSG("cpy bin head");
 
     // 编码区域总数
     *((i8_t*)(ptr_bin + BIN_OFFSET_AREA_NUM)) = (i8_t)blueprint->AREA_NUM;
@@ -431,14 +421,15 @@ dspbptk_error_t blueprint_encode(const blueprint_t* blueprint, char* string) {
         BUILDING_ENCODE(index, i32_t);
         BUILDING_ENCODE(areaIndex, i8_t);
 
-        // TODO 处理齐次坐标
-        *((f32_t*)(ptr_bin + building_offset_localOffset_x)) = (f32_t)(blueprint->building[i].localOffset.x);
-        *((f32_t*)(ptr_bin + building_offset_localOffset_y)) = (f32_t)(blueprint->building[i].localOffset.y);
-        *((f32_t*)(ptr_bin + building_offset_localOffset_z)) = (f32_t)(blueprint->building[i].localOffset.z);
+        f64_t w = blueprint->building[i].localOffset.w;
+        *((f32_t*)(ptr_bin + building_offset_localOffset_x)) = (f32_t)(blueprint->building[i].localOffset.x / w);
+        *((f32_t*)(ptr_bin + building_offset_localOffset_y)) = (f32_t)(blueprint->building[i].localOffset.y / w);
+        *((f32_t*)(ptr_bin + building_offset_localOffset_z)) = (f32_t)(blueprint->building[i].localOffset.z / w);
 
-        *((f32_t*)(ptr_bin + building_offset_localOffset_x2)) = (f32_t)(blueprint->building[i].localOffset2.x);
-        *((f32_t*)(ptr_bin + building_offset_localOffset_y2)) = (f32_t)(blueprint->building[i].localOffset2.y);
-        *((f32_t*)(ptr_bin + building_offset_localOffset_z2)) = (f32_t)(blueprint->building[i].localOffset2.z);
+        f64_t w2 = blueprint->building[i].localOffset2.w;
+        *((f32_t*)(ptr_bin + building_offset_localOffset_x2)) = (f32_t)(blueprint->building[i].localOffset2.x / w2);
+        *((f32_t*)(ptr_bin + building_offset_localOffset_y2)) = (f32_t)(blueprint->building[i].localOffset2.y / w2);
+        *((f32_t*)(ptr_bin + building_offset_localOffset_z2)) = (f32_t)(blueprint->building[i].localOffset2.z / w2);
 
         *((f32_t*)(ptr_bin + building_offset_yaw)) = (f32_t)(blueprint->building[i].yaw);
         *((f32_t*)(ptr_bin + building_offset_yaw2)) = (f32_t)(blueprint->building[i].yaw2);
