@@ -44,7 +44,7 @@ size_t base64_declen(const char* base64, size_t base64_length) {
  * @return size_t 压缩后的二进制流长度
  */
 size_t gzip_enc(const unsigned char* in, size_t in_nbytes, unsigned char* out) {
-    struct libdeflate_compressor* p_compressor = libdeflate_alloc_compressor(0);
+    struct libdeflate_compressor* p_compressor = libdeflate_alloc_compressor(12);
     size_t gzip_length = libdeflate_gzip_compress(
         p_compressor, in, in_nbytes, out, BLUEPRINT_MAX_LENGTH);
     libdeflate_free_compressor(p_compressor);
@@ -307,7 +307,7 @@ dspbptk_error_t blueprint_decode(blueprint_t* blueprint, const char* string) {
 typedef struct {
     i64_t id;
     i64_t index;
-}id_t;
+}index_t;
 
 int cmp_building(const void* p_a, const void* p_b) {
     building_t* a = (building_t*)p_a;
@@ -316,21 +316,21 @@ int cmp_building(const void* p_a, const void* p_b) {
 }
 
 int cmp_id(const void* p_a, const void* p_b) {
-    id_t* a = ((id_t*)p_a);
-    id_t* b = ((id_t*)p_b);
+    index_t* a = ((index_t*)p_a);
+    index_t* b = ((index_t*)p_b);
     return a->id - b->id;
 }
 
 int cmp_index(const void* p_a, const void* p_b) {
-    id_t* a = ((id_t*)p_a);
-    id_t* b = ((id_t*)p_b);
+    index_t* a = ((index_t*)p_a);
+    index_t* b = ((index_t*)p_b);
     return a->index - b->index;
 }
 
-void re_index(i64_t* ObjIdx, id_t* id_lut, size_t BUILDING_NUM) {
+void re_index(i64_t* ObjIdx, index_t* id_lut, size_t BUILDING_NUM) {
     if(*ObjIdx == OBJ_NULL)
         return;
-    id_t* p_id = bsearch(ObjIdx, id_lut, BUILDING_NUM, sizeof(id_t), cmp_id);
+    index_t* p_id = bsearch(ObjIdx, id_lut, BUILDING_NUM, sizeof(index_t), cmp_id);
     if(p_id == NULL) {
     #ifndef DSPBPTK_NO_WARNING
         fprintf(stderr, "Warning: index %"PRId64" no found! Reindex index to OBJ_NULL(-1).\n", *ObjIdx);
@@ -367,8 +367,6 @@ dspbptk_error_t blueprint_encode(const blueprint_t* blueprint, char* string) {
 
     size_t head_length = strlen(string); // 这个长度已经带了前一个引号
     ptr_str += head_length;
-
-    DBG(head_length);
 
 // 编码bin head
 #define BIN_HEAD_ENCODE(name, type)\
@@ -410,20 +408,18 @@ dspbptk_error_t blueprint_encode(const blueprint_t* blueprint, char* string) {
     *((i32_t*)(ptr_bin)) = (i32_t)blueprint->BUILDING_NUM;
     DBG(*((i32_t*)(ptr_bin)));
 
-#define DSPBPTK_DONT_SORT_BUILDING
-
 #ifndef DSPBPTK_DONT_SORT_BUILDING
     // 对建筑按建筑类型排序，有利于进一步压缩，非必要步骤
     qsort(blueprint->building, blueprint->BUILDING_NUM, sizeof(building_t), cmp_building);
 #endif
 
     // 重新生成index
-    id_t* id_lut = (id_t*)calloc(blueprint->BUILDING_NUM, sizeof(id_t));
+    index_t* id_lut = (index_t*)calloc(blueprint->BUILDING_NUM, sizeof(index_t));
     for(size_t i = 0; i < blueprint->BUILDING_NUM; i++) {
         id_lut[i].id = blueprint->building[i].index;
         id_lut[i].index = i;
     }
-    qsort(id_lut, blueprint->BUILDING_NUM, sizeof(id_t), cmp_id);
+    qsort(id_lut, blueprint->BUILDING_NUM, sizeof(index_t), cmp_id);
 
     for(size_t i = 0; i < blueprint->BUILDING_NUM; i++) {
         re_index(&blueprint->building[i].index, id_lut, blueprint->BUILDING_NUM);
@@ -490,6 +486,7 @@ dspbptk_error_t blueprint_encode(const blueprint_t* blueprint, char* string) {
     ptr_str += base64_length;
     sprintf(ptr_str, "\"%s", md5f_hex);
 
+    free(id_lut);
     free(bin);
     free(gzip);
     return no_error;
