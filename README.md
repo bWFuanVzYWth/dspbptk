@@ -10,7 +10,7 @@
 
 1. 纯C语言编写，且代码经过高度优化，解析全球蓝图仅用时0.025秒(游戏里点一下得卡好几秒)
 2. 全缓冲，编解码过程除了blueprint_t内部无动态内存分配
-3. 多线程友好，每个编解码器有独立的内存空间
+3. 多线程友好，每个编解码器的内存空间独立
 
 ## 开发计划
 
@@ -25,13 +25,13 @@
 #include "lib/libdspbptk.h"
 ```
 
-1. 使用前需要先初始化编解码器
+2. 使用前需要先初始化编解码器
 ```C
 dspbptk_coder_t coder;
 dspbptk_init_coder(&coder);
 ```
 
-1. 调用编码/解码函数。
+3. 调用编码/解码函数。
 ```C
 blueprint_t blueprint;
 blueprint_decode(&coder, &blueprint, string/*blueprint code*/);
@@ -39,7 +39,7 @@ blueprint_decode(&coder, &blueprint, string/*blueprint code*/);
 blueprint_encode(&coder, &blueprint, string_edited/*blueprint code edited*/);
 ```
 
-1. 使用结束后必须释放编解码器和蓝图
+4. 使用结束后必须释放编解码器和蓝图
 ```C
 dspbptk_free_blueprint(&blueprint);
 dspbptk_free_coder(&coder);
