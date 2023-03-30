@@ -139,6 +139,13 @@ extern "C" {
         char* md5f;
     }blueprint_t;
 
+    typedef struct {
+        void* buffer0;
+        void* buffer1;
+        struct libdeflate_compressor* p_compressor;
+        struct libdeflate_decompressor* p_decompressor;
+    }dspbptk_coder_t;
+
 
 
     ////////////////////////////////////////////////////////////////////////////
@@ -146,29 +153,55 @@ extern "C" {
     ////////////////////////////////////////////////////////////////////////////
 
     /**
-     * @brief 将蓝图字符串解析成blueprint_t
+     * @brief 蓝图解析。将蓝图字符串解析成blueprint_t
      *
-     * @param blueprint 解析后的蓝图数据。调用free_blueprint(blueprint)释放内存。
+     * @param blueprint 解析后的蓝图数据。使用结束后必须调用free_blueprint(blueprint)释放内存。
      * @param string 解析前的蓝图字符串
      * @return dspbptk_error_t 错误代码
      */
-    dspbptk_error_t blueprint_decode(blueprint_t* blueprint, const char* string);
+    dspbptk_error_t blueprint_decode(dspbptk_coder_t* coder, blueprint_t* blueprint, const char* string);
 
     /**
-     * @brief 将blueprint_t编码成蓝图字符串
+     * @brief 蓝图编码。将blueprint_t编码成蓝图字符串
      *
      * @param blueprint 编码前的蓝图数据
      * @param string 编码后的蓝图字符串
      * @return dspbptk_error_t 错误代码
      */
-    dspbptk_error_t blueprint_encode(const blueprint_t* blueprint, char* string);
+    dspbptk_error_t blueprint_encode(dspbptk_coder_t* coder, const blueprint_t* blueprint, char* string);
 
     /**
      * @brief 释放blueprint_t结构体中的内存
      *
      * @param blueprint 需要释放内存的结构体
      */
-    void free_blueprint(blueprint_t* blueprint);
+    void dspbptk_free_blueprint(blueprint_t* blueprint);
+
+
+
+    ////////////////////////////////////////////////////////////////////////////
+    // dspbptk init coder
+    ////////////////////////////////////////////////////////////////////////////
+
+    /**
+     * @brief 初始化一个蓝图编码/解码器，请注意多线程不能使用同一个coder
+     *
+     * @param coder 待初始化的编码/解码器，使用结束后必须调用dspbptk_free_coder(coder)释放内存
+     */
+    void dspbptk_init_coder(dspbptk_coder_t* coder);
+
+
+
+    ////////////////////////////////////////////////////////////////////////////
+    // dspbptk free coder
+    ////////////////////////////////////////////////////////////////////////////
+
+    /**
+     * @brief 释放coder使用的内存
+     *
+     * @param coder 待释放内存的编码/解码器
+     */
+    void dspbptk_free_coder(dspbptk_coder_t* coder);
 
 
 

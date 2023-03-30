@@ -44,11 +44,9 @@ size_t base64_declen(const char* base64, size_t base64_length) {
  * @param out 压缩后的二进制流
  * @return size_t 压缩后的二进制流长度
  */
-size_t gzip_enc(const unsigned char* in, size_t in_nbytes, unsigned char* out) {
-    struct libdeflate_compressor* p_compressor = libdeflate_alloc_compressor(12);
+size_t gzip_enc(dspbptk_coder_t* coder, const unsigned char* in, size_t in_nbytes, unsigned char* out) {
     size_t gzip_length = libdeflate_gzip_compress(
-        p_compressor, in, in_nbytes, out, BLUEPRINT_MAX_LENGTH);
-    libdeflate_free_compressor(p_compressor);
+        coder->p_compressor, in, in_nbytes, out, BLUEPRINT_MAX_LENGTH);
     return gzip_length;
 }
 
@@ -60,12 +58,10 @@ size_t gzip_enc(const unsigned char* in, size_t in_nbytes, unsigned char* out) {
  * @param out 解压后的二进制流
  * @return size_t 当返回值<=3时，表示解压错误；当返回值>=4时，表示解压成功并返回解压后的二进制流长度
  */
-size_t gzip_dec(const unsigned char* in, size_t in_nbytes, unsigned char* out) {
+size_t gzip_dec(dspbptk_coder_t* coder, const unsigned char* in, size_t in_nbytes, unsigned char* out) {
     size_t actual_out_nbytes_ret;
-    struct libdeflate_decompressor* p_decompressor = libdeflate_alloc_decompressor();
     enum libdeflate_result result = libdeflate_gzip_decompress(
-        p_decompressor, in, in_nbytes, out, BLUEPRINT_MAX_LENGTH, &actual_out_nbytes_ret);
-    libdeflate_free_decompressor(p_decompressor);
+        coder->p_decompressor, in, in_nbytes, out, BLUEPRINT_MAX_LENGTH, &actual_out_nbytes_ret);
     if(result != LIBDEFLATE_SUCCESS)
         return (size_t)result;
     else
@@ -89,7 +85,9 @@ size_t gzip_declen(const unsigned char* in, size_t in_nbytes) {
 // dspbptk decode
 ////////////////////////////////////////////////////////////////////////////////
 
-dspbptk_error_t blueprint_decode(blueprint_t* blueprint, const char* string) {
+dspbptk_error_t blueprint_decode(dspbptk_coder_t* coder, blueprint_t* blueprint, const char* string) {
+    // 初始化结构体，置零
+    memset(blueprint, 0, sizeof(blueprint_t));
 
     // 获取输入的字符串的长度
     const size_t string_length = strlen(string);
@@ -117,7 +115,7 @@ dspbptk_error_t blueprint_decode(blueprint_t* blueprint, const char* string) {
     // 解析md5f(并校验)
 #ifndef DSPBPTK_NO_WARNING
     char md5f_check[MD5F_LENGTH + 1] = "\0";
-    md5f_str(md5f_check, string, head_length + 1 + base64_length);
+    md5f_str(md5f_check, coder->buffer1, string, head_length + 1 + base64_length);
     if(memcmp(md5f, md5f_check, MD5F_LENGTH) != 0)
         fprintf(stderr, "Warning: MD5 abnormal!\nthis:\t%s\nactual:\t%s\n", md5f, md5f_check);
 #endif
@@ -150,7 +148,7 @@ dspbptk_error_t blueprint_decode(blueprint_t* blueprint, const char* string) {
         // base64解码
         size_t gzip_length = base64_declen(base64, base64_length);
         DBG(gzip_length);
-        void* gzip = calloc(gzip_length, 1);
+        void* gzip = coder->buffer0;
     #ifndef DSPBPTK_NO_ERROR
         if(gzip == NULL)
             return out_of_memory;
@@ -165,12 +163,12 @@ dspbptk_error_t blueprint_decode(blueprint_t* blueprint, const char* string) {
         // gzip解压
         size_t bin_length = gzip_declen(gzip, gzip_length);
         DBG(bin_length);
-        void* bin = calloc(bin_length, 1);
+        void* bin = coder->buffer1;
     #ifndef DSPBPTK_NO_ERROR
         if(bin == NULL)
             return out_of_memory;
     #endif
-        bin_length = gzip_dec(gzip, gzip_length, bin);
+        bin_length = gzip_dec(coder, gzip, gzip_length, bin);
         DBG(bin_length);
     #ifndef DSPBP_NO_CHECK
         if(bin_length <= 3)
@@ -283,9 +281,6 @@ dspbptk_error_t blueprint_decode(blueprint_t* blueprint, const char* string) {
                 ptr_bin += PARAMETERS_NUM * sizeof(i32_t);
             }
         }
-
-        free(gzip);
-        free(bin);
     }
 
     return no_error;
@@ -329,11 +324,10 @@ void re_index(i64_t* ObjIdx, index_t* id_lut, size_t BUILDING_NUM) {
     }
 }
 
-dspbptk_error_t blueprint_encode(const blueprint_t* blueprint, char* string) {
+dspbptk_error_t blueprint_encode(dspbptk_coder_t* coder, const blueprint_t* blueprint, char* string) {
 
-    // 申请内存，初始化用于操作的两个指针
-    void* bin = calloc(BLUEPRINT_MAX_LENGTH, 1);
-    void* gzip = calloc(BLUEPRINT_MAX_LENGTH, 1);
+    // 初始化用于操作的几个指针
+    void* bin = coder->buffer0;
     char* ptr_str = string;
     void* ptr_bin = bin;
 
@@ -397,7 +391,7 @@ dspbptk_error_t blueprint_encode(const blueprint_t* blueprint, char* string) {
 #endif
 
     // 重新生成index
-    index_t* id_lut = (index_t*)calloc(blueprint->BUILDING_NUM, sizeof(index_t));
+    index_t* id_lut = (index_t*)coder->buffer1;
     for(size_t i = 0; i < blueprint->BUILDING_NUM; i++) {
         id_lut[i].id = blueprint->building[i].index;
         id_lut[i].index = i;
@@ -452,22 +446,24 @@ dspbptk_error_t blueprint_encode(const blueprint_t* blueprint, char* string) {
 
     // 计算二进制流长度
     size_t bin_length = (size_t)(ptr_bin - bin);
-    size_t gzip_length = gzip_enc(bin, bin_length, gzip);
+    void* gzip = coder->buffer1;
+    size_t gzip_length = gzip_enc(coder, bin, bin_length, gzip);
     size_t base64_length = base64_enc(gzip, gzip_length, ptr_str);
 
     // 计算md5f
     char md5f_hex[MD5F_LENGTH + 1] = "\0";
-    md5f_str(md5f_hex, string, head_length + 1 + base64_length);
+    md5f_str(md5f_hex, coder->buffer1, string, head_length + 1 + base64_length);
     ptr_str += base64_length;
     sprintf(ptr_str, "\"%s", md5f_hex);
 
-    free(id_lut);
-    free(bin);
-    free(gzip);
     return no_error;
 }
 
-void free_blueprint(blueprint_t* blueprint) {
+////////////////////////////////////////////////////////////////////////////////
+// dspbptk free blueprint
+////////////////////////////////////////////////////////////////////////////////
+
+void dspbptk_free_blueprint(blueprint_t* blueprint) {
     free(blueprint->shortDesc);
     free(blueprint->md5f);
     free(blueprint->area);
@@ -476,4 +472,28 @@ void free_blueprint(blueprint_t* blueprint) {
             free(blueprint->building[i].parameters);
     }
     free(blueprint->building);
+}
+
+
+
+////////////////////////////////////////////////////////////////////////////////
+// dspbptk alloc coder
+////////////////////////////////////////////////////////////////////////////////
+
+void dspbptk_init_coder(dspbptk_coder_t* coder) {
+    coder->buffer0 = calloc(BLUEPRINT_MAX_LENGTH, 1);
+    coder->buffer1 = calloc(BLUEPRINT_MAX_LENGTH, 1);
+    coder->p_compressor = libdeflate_alloc_compressor(12);
+    coder->p_decompressor = libdeflate_alloc_decompressor();
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// dspbptk free coder
+////////////////////////////////////////////////////////////////////////////////
+
+void dspbptk_free_coder(dspbptk_coder_t* coder) {
+    free(coder->buffer0);
+    free(coder->buffer1);
+    libdeflate_free_compressor(coder->p_compressor);
+    libdeflate_free_decompressor(coder->p_decompressor);
 }

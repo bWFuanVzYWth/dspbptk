@@ -40,7 +40,7 @@ void II(uint32_t* a, uint32_t b, uint32_t c, uint32_t d, uint32_t mj, int32_t s,
     *a += b;
 }
 
-void MD5_Append(uint32_t** buffer, size_t* buffer_len, const char* input, size_t input_len) {
+void MD5_Append(uint32_t* buffer, size_t* buffer_len, const char* input, size_t input_len) {
     int32_t num = 0;
     int32_t num2 = 1;
     int32_t num3 = 0;
@@ -61,7 +61,7 @@ void MD5_Append(uint32_t** buffer, size_t* buffer_len, const char* input, size_t
         num3 = num4 + 64 - num5 + 64;
     }
 
-    uint8_t* array = (uint8_t*)calloc(num3, 1);
+    uint8_t* array = (uint8_t*)buffer;
     *buffer_len = num3 / 4;
 
     for(int32_t i = 0; i < input_len; i++) {
@@ -92,8 +92,6 @@ void MD5_Append(uint32_t** buffer, size_t* buffer_len, const char* input, size_t
     array[index++] = (b6);
     array[index++] = (b7);
     array[index++] = (b8);
-
-    *buffer = (uint32_t*)array;
 
 }
 
@@ -185,15 +183,12 @@ void MD5_Trasform(uint32_t array[4], uint32_t* buffer, size_t buffer_len) {
     array[2] = C;
     array[3] = D;
 
-    free(buffer);
-
 }
 
-void md5f(uint32_t md5f_u32[4], const char* stream, size_t stream_len) {
+void md5f(uint32_t md5f_u32[4], void* buffer, const char* stream, size_t stream_len) {
     size_t buffer_len;
-    uint32_t* buffer;
 
-    MD5_Append(&buffer, &buffer_len, stream, stream_len);
+    MD5_Append(buffer, &buffer_len, stream, stream_len);
     MD5_Trasform(md5f_u32, buffer, buffer_len);
 
 }
@@ -208,9 +203,9 @@ void to_str(char* md5f_hex, uint32_t md5f_u32[4]) {
     }
 }
 
-void md5f_str(char* md5f_hex, const char* stream, size_t stream_len) {
+void md5f_str(char* md5f_hex, void* buffer, const char* stream, size_t stream_len) {
     uint32_t md5f_u32[4];
-    md5f(md5f_u32, stream, stream_len);
+    md5f(md5f_u32, buffer, stream, stream_len);
     to_str(md5f_hex, md5f_u32);
 
 }
