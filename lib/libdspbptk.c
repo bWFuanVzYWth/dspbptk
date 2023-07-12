@@ -300,7 +300,25 @@ typedef struct {
 int cmp_building(const void* p_a, const void* p_b) {
     building_t* a = (building_t*)p_a;
     building_t* b = (building_t*)p_b;
-    return a->itemId - b->itemId;
+
+    // 建筑种类不同时，最优先根据建筑种类排序
+    int tmp = a->itemId - b->itemId;
+    if(tmp != 0)
+        return tmp;
+
+    // 建筑种类相同时，根据所在区域排序
+    int tmp_areaIndex = a->areaIndex - b->areaIndex;
+    if(tmp_areaIndex != 0)
+        return tmp_areaIndex;
+
+    // 区域也相同时，根据y>x>z的优先级排序
+    const double K = 1024.0;
+    double score_pos_a = (a->localOffset.y * K + a->localOffset.x) * K + a->localOffset.z;
+    double score_pos_b = (b->localOffset.y * K + b->localOffset.x) * K + b->localOffset.z;
+    if(score_pos_a < score_pos_b)
+        return 1;
+    else
+        return -1;
 }
 
 int cmp_id(const void* p_a, const void* p_b) {
