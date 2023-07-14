@@ -1,0 +1,6 @@
+[submodule "lib/libdeflate"]
+	path = lib/libdeflate
+	url = https://github.com/ebiggers/libdeflate.git
+[submodule "lib/Turbo-Base64"]
+	path = lib/Turbo-Base64
+	url = https://github.com/powturbo/Turbo-Base64.git
