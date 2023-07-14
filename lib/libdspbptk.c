@@ -14,7 +14,7 @@
  * @return size_t 编码后的二进制流长度
  */
 size_t base64_enc(const void* in, size_t inlen, char* out) {
-    return tb64v256enc((unsigned char*)in, inlen, (unsigned char*)out);
+    return _tb64e((unsigned char*)in, inlen, (unsigned char*)out);
 }
 
 /**
@@ -26,7 +26,7 @@ size_t base64_enc(const void* in, size_t inlen, char* out) {
  * @return size_t 当返回值<=0时表示解码错误；当返回值>=1时，表示成功并返回解码后的二进制流长度
  */
 size_t base64_dec(const char* in, size_t inlen, void* out) {
-    return tb64v256dec((unsigned char*)in, inlen, (unsigned char*)out);
+    return _tb64d((unsigned char*)in, inlen, (unsigned char*)out);
 }
 
 /**
