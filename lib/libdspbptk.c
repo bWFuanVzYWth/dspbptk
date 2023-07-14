@@ -119,8 +119,8 @@ dspbptk_error_t blueprint_decode(dspbptk_coder_t* coder, blueprint_t* blueprint,
     if(memcmp(md5f, md5f_check, MD5F_LENGTH) != 0)
         fprintf(stderr, "Warning: MD5 abnormal!\nthis:\t%s\nactual:\t%s\n", md5f, md5f_check);
 #endif
-    blueprint->md5f = (char*)calloc(32 + 1, sizeof(char));
-    memcpy(blueprint->md5f, md5f, 32);
+    blueprint->md5f = (char*)calloc(MD5F_LENGTH + 1, sizeof(char));
+    memcpy(blueprint->md5f, md5f, MD5F_LENGTH);
 
     // 解析head
     blueprint->shortDesc = (char*)calloc(SHORTDESC_MAX_LENGTH + 1, sizeof(char));
@@ -149,10 +149,6 @@ dspbptk_error_t blueprint_decode(dspbptk_coder_t* coder, blueprint_t* blueprint,
         size_t gzip_length = base64_declen(base64, base64_length);
         DBG(gzip_length);
         void* gzip = coder->buffer0;
-    #ifndef DSPBPTK_NO_ERROR
-        if(gzip == NULL)
-            return out_of_memory;
-    #endif
         gzip_length = base64_dec(base64, base64_length, gzip);
         DBG(gzip_length);
     #ifndef DSPBPTK_NO_ERROR
@@ -164,10 +160,6 @@ dspbptk_error_t blueprint_decode(dspbptk_coder_t* coder, blueprint_t* blueprint,
         size_t bin_length = gzip_declen(gzip, gzip_length);
         DBG(bin_length);
         void* bin = coder->buffer1;
-    #ifndef DSPBPTK_NO_ERROR
-        if(bin == NULL)
-            return out_of_memory;
-    #endif
         bin_length = gzip_dec(coder, gzip, gzip_length, bin);
         DBG(bin_length);
     #ifndef DSPBP_NO_CHECK
@@ -312,13 +304,11 @@ int cmp_building(const void* p_a, const void* p_b) {
         return tmp_areaIndex;
 
     // 区域也相同时，根据y>x>z的优先级排序
-    const double K = 1024.0;
-    double score_pos_a = (a->localOffset.y * K + a->localOffset.x) * K + a->localOffset.z;
-    double score_pos_b = (b->localOffset.y * K + b->localOffset.x) * K + b->localOffset.z;
-    if(score_pos_a < score_pos_b)
-        return 1;
-    else
-        return -1;
+    const double Ky = 256.0;
+    const double Kx = 1024.0;
+    double score_pos_a = (a->localOffset.y * Ky + a->localOffset.x) * Kx + a->localOffset.z;
+    double score_pos_b = (b->localOffset.y * Ky + b->localOffset.x) * Kx + b->localOffset.z;
+    return score_pos_a < score_pos_b ? 1 : -1;
 }
 
 int cmp_id(const void* p_a, const void* p_b) {
