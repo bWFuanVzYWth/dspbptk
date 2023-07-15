@@ -3,7 +3,7 @@ CC := gcc
 SRC_BPOPT := app/bpopt.c
 SRC_LIBDSPBPTK := lib/*.c lib/*.h lib/libdeflate/lib/*.c lib/libdeflate/lib/*/*.c lib/Turbo-Base64/libtb64.a
 
-CFLAGS := -fexec-charset=GBK -Wall -Ofast -flto -pipe -march=native -mtune=native -static
+CFLAGS := -fexec-charset=GBK -Wall -Ofast -flto -pipe -mavx2 -mtune=generic -static
 #CFLAGS += -g -fsanitize=address -fno-omit-frame-pointer
 
 bpopt: $(SRC_LIBDSPBPTK) $(SRC_BPOPT)
