@@ -4,3 +4,6 @@
 [submodule "lib/Turbo-Base64"]
 	path = lib/Turbo-Base64
 	url = https://github.com/powturbo/Turbo-Base64.git
+[submodule "lib/zopfli"]
+	path = lib/zopfli
+	url = https://github.com/google/zopfli.git
