@@ -45,9 +45,19 @@ size_t base64_declen(const char* base64, size_t base64_length) {
  * @return size_t 压缩后的二进制流长度
  */
 size_t gzip_enc(dspbptk_coder_t* coder, const unsigned char* in, size_t in_nbytes, unsigned char* out) {
+#if 0
     size_t gzip_length = libdeflate_gzip_compress(
         coder->p_compressor, in, in_nbytes, out, BLUEPRINT_MAX_LENGTH);
     return gzip_length;
+#else
+    ZopfliOptions options = { 0, 0, 15, 1, 0, 0};
+    size_t gzip_length = 0;
+    unsigned char* tmp_out = NULL;
+    ZopfliCompress(&options, ZOPFLI_FORMAT_GZIP, in, in_nbytes, &tmp_out, &gzip_length);
+    memcpy(out, tmp_out, gzip_length);
+    free(tmp_out);
+    return gzip_length;
+#endif
 }
 
 /**
@@ -289,28 +299,6 @@ typedef struct {
     i64_t index;
 }index_t;
 
-int cmp_building(const void* p_a, const void* p_b) {
-    building_t* a = (building_t*)p_a;
-    building_t* b = (building_t*)p_b;
-
-    // 建筑种类不同时，最优先根据建筑种类排序
-    int tmp = a->itemId - b->itemId;
-    if(tmp != 0)
-        return tmp;
-
-    // 建筑种类相同时，根据所在区域排序
-    int tmp_areaIndex = a->areaIndex - b->areaIndex;
-    if(tmp_areaIndex != 0)
-        return tmp_areaIndex;
-
-    // 区域也相同时，根据y>x>z的优先级排序
-    const double Ky = 256.0;
-    const double Kx = 1024.0;
-    double score_pos_a = (a->localOffset.y * Ky + a->localOffset.x) * Kx + a->localOffset.z;
-    double score_pos_b = (b->localOffset.y * Ky + b->localOffset.x) * Kx + b->localOffset.z;
-    return score_pos_a < score_pos_b ? 1 : -1;
-}
-
 int cmp_id(const void* p_a, const void* p_b) {
     index_t* a = ((index_t*)p_a);
     index_t* b = ((index_t*)p_b);
@@ -392,11 +380,6 @@ dspbptk_error_t blueprint_encode(dspbptk_coder_t* coder, const blueprint_t* blue
     // 编码建筑总数
     *((i32_t*)(ptr_bin)) = (i32_t)blueprint->BUILDING_NUM;
     DBG(*((i32_t*)(ptr_bin)));
-
-#ifndef DSPBPTK_DONT_SORT_BUILDING
-    // 对建筑按建筑类型排序，有利于进一步压缩，非必要步骤
-    qsort(blueprint->building, blueprint->BUILDING_NUM, sizeof(building_t), cmp_building);
-#endif
 
     // 重新生成index
     index_t* id_lut = (index_t*)coder->buffer1;
@@ -493,6 +476,7 @@ void dspbptk_init_coder(dspbptk_coder_t* coder) {
     coder->buffer1 = calloc(BLUEPRINT_MAX_LENGTH, 1);
     coder->p_compressor = libdeflate_alloc_compressor(12);
     coder->p_decompressor = libdeflate_alloc_decompressor();
+    tb64ini(0,0);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
