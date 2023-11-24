@@ -18,12 +18,20 @@ int cmp_building(const void* p_a, const void* p_b) {
     building_t* a = (building_t*)p_a;
     building_t* b = (building_t*)p_b;
 
-    // 建筑种类不同时，最优先根据建筑种类排序
-    int tmp = a->itemId - b->itemId;
-    if(tmp != 0)
-        return tmp;
+    // 优先根据建筑种类排序
+    int tmp_itemId = a->itemId - b->itemId;
+    if(tmp_itemId != 0)
+        return tmp_itemId;
+    int tmp_modelIndex = a->modelIndex - b->modelIndex;
+    if(tmp_modelIndex != 0)
+        return tmp_modelIndex;
 
-    // 建筑种类相同时，根据所在区域排序
+    // 其次根据公式排序
+    int tmp_recipeId = a->recipeId - b->recipeId;
+    if(tmp_recipeId != 0)
+        return tmp_recipeId;
+
+    // 然后根据所在纬度区域排序
     int tmp_areaIndex = a->areaIndex - b->areaIndex;
     if(tmp_areaIndex != 0)
         return tmp_areaIndex;
