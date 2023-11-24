@@ -88,7 +88,10 @@ int main(int argc, char* argv[]) {
 
     // 对建筑按建筑类型排序，有利于进一步压缩，非必要步骤
 #ifndef DSPBPTK_DONT_SORT_BUILDING
+    uint64_t t_opt_0 = get_timestamp();
     qsort(bp.building, bp.BUILDING_NUM, sizeof(building_t), cmp_building);
+    uint64_t t_opt_1 = get_timestamp();
+    fprintf(stderr, "opt time = %.3lf ms\n", d_t(t_opt_1, t_opt_0));
 #endif
 
     // 蓝图编码
