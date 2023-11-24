@@ -50,8 +50,8 @@ int main(int argc, char* argv[]) {
     dspbptk_error_t errorlevel;
 
     // 检查用户是否输入了文件名
-    if(argc < 1) {
-        fprintf(stderr, "Error: Need filename.\n");
+    if(argc <= 1) {
+        fprintf(stderr, "Usage: bpopt FileName\n");
         errorlevel = -1;
         goto error;
     }
