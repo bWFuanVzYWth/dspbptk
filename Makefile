@@ -1,7 +1,7 @@
 CC := gcc
 
 SRC_BPOPT := app/bpopt.c
-SRC_LIBDSPBPTK := lib/*.c lib/libdeflate/lib/*.c lib/libdeflate/lib/*/*.c lib/Turbo-Base64/libtb64.a lib/zopfli/libzopfli.a
+SRC_LIBDSPBPTK := lib/*.c lib/libdeflate/lib/*.c lib/libdeflate/lib/*/*.c lib/Turbo-Base64/libtb64.a
 
 CFLAGS := -fexec-charset=GBK -Wall -Ofast -pipe -static -march=native
 #CFLAGS += -g -fsanitize=address -fno-omit-frame-pointer
@@ -14,9 +14,6 @@ libdspbptk.dll: $(SRC_LIBDSPBPTK)
 
 lib/Turbo-Base64/libtb64.a: lib/Turbo-Base64
 	cd lib/Turbo-Base64 && make libtb64.a
-
-lib/zopfli/libzopfli.a: lib/zopfli
-	cd lib/zopfli && make libzopfli.a
 
 clean:
 	rm bpopt* libdspbptk*

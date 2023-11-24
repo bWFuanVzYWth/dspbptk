@@ -11,7 +11,6 @@ extern "C" {
 #include <string.h>
 
 #include "libdeflate/libdeflate.h"
-#include "zopfli/src/zopfli/zopfli.h"
 #include "Turbo-Base64/turbob64.h"
 
 #include "md5f.h"

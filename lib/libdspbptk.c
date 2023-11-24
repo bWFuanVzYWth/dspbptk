@@ -45,19 +45,9 @@ size_t base64_declen(const char* base64, size_t base64_length) {
  * @return size_t 压缩后的二进制流长度
  */
 size_t gzip_enc(dspbptk_coder_t* coder, const unsigned char* in, size_t in_nbytes, unsigned char* out) {
-#if 0
     size_t gzip_length = libdeflate_gzip_compress(
         coder->p_compressor, in, in_nbytes, out, BLUEPRINT_MAX_LENGTH);
     return gzip_length;
-#else
-    ZopfliOptions options = { 0, 0, 15, 1, 0, 0};
-    size_t gzip_length = 0;
-    unsigned char* tmp_out = NULL;
-    ZopfliCompress(&options, ZOPFLI_FORMAT_GZIP, in, in_nbytes, &tmp_out, &gzip_length);
-    memcpy(out, tmp_out, gzip_length);
-    free(tmp_out);
-    return gzip_length;
-#endif
 }
 
 /**
@@ -476,7 +466,7 @@ void dspbptk_init_coder(dspbptk_coder_t* coder) {
     coder->buffer1 = calloc(BLUEPRINT_MAX_LENGTH, 1);
     coder->p_compressor = libdeflate_alloc_compressor(12);
     coder->p_decompressor = libdeflate_alloc_decompressor();
-    tb64ini(0,0);
+    tb64ini(0, 0);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
