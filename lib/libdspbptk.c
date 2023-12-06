@@ -46,7 +46,7 @@ size_t base64_declen(const char* base64, size_t base64_length) {
  */
 size_t gzip_enc(dspbptk_coder_t* coder, const unsigned char* in, size_t in_nbytes, unsigned char* out) {
     size_t gzip_length = libdeflate_gzip_compress(
-        coder->p_compressor, in, in_nbytes, out, BLUEPRINT_MAX_LENGTH);
+        coder->p_compressor, in, in_nbytes, out, 0xffffffff);
     return gzip_length;
 }
 
@@ -61,7 +61,7 @@ size_t gzip_enc(dspbptk_coder_t* coder, const unsigned char* in, size_t in_nbyte
 size_t gzip_dec(dspbptk_coder_t* coder, const unsigned char* in, size_t in_nbytes, unsigned char* out) {
     size_t actual_out_nbytes_ret;
     enum libdeflate_result result = libdeflate_gzip_decompress(
-        coder->p_decompressor, in, in_nbytes, out, BLUEPRINT_MAX_LENGTH, &actual_out_nbytes_ret);
+        coder->p_decompressor, in, in_nbytes, out, 0xffffffff, &actual_out_nbytes_ret);
     if(result != LIBDEFLATE_SUCCESS)
         return (size_t)result;
     else
@@ -162,7 +162,7 @@ dspbptk_error_t blueprint_decode(dspbptk_coder_t* coder, blueprint_t* blueprint,
         void* bin = coder->buffer1;
         bin_length = gzip_dec(coder, gzip, gzip_length, bin);
         DBG(bin_length);
-    #ifndef DSPBP_NO_CHECK
+    #ifndef DSPBPTK_NO_ERROR
         if(bin_length <= 3)
             return blueprint_gzip_broken;
     #endif
@@ -187,10 +187,6 @@ dspbptk_error_t blueprint_decode(dspbptk_coder_t* coder, blueprint_t* blueprint,
             const size_t AREA_NUM = (size_t) * ((i8_t*)(ptr_bin + BIN_OFFSET_AREA_NUM));
             blueprint->AREA_NUM = AREA_NUM;
             blueprint->area = (area_t*)calloc(AREA_NUM, sizeof(area_t));
-        #ifndef DSPBP_NO_CHECK
-            if(blueprint->area == NULL)
-                return out_of_memory;
-        #endif
             DBG(AREA_NUM);
 
             // 解析区域数组
@@ -213,10 +209,6 @@ dspbptk_error_t blueprint_decode(dspbptk_coder_t* coder, blueprint_t* blueprint,
             const size_t BUILDING_NUM = (size_t) * ((i32_t*)(ptr_bin));
             blueprint->BUILDING_NUM = BUILDING_NUM;
             blueprint->building = (building_t*)calloc(BUILDING_NUM, sizeof(building_t));
-        #ifndef DSPBP_NO_CHECK
-            if(blueprint->building == NULL)
-                return out_of_memory;
-        #endif
             DBG(BUILDING_NUM);
 
             // 解析建筑数组
@@ -259,10 +251,6 @@ dspbptk_error_t blueprint_decode(dspbptk_coder_t* coder, blueprint_t* blueprint,
                 // 解析建筑的参数列表
                 if(PARAMETERS_NUM > 0) {
                     blueprint->building[i].parameters = (i64_t*)calloc(PARAMETERS_NUM, sizeof(i64_t));
-                #ifndef DSPBP_NO_CHECK
-                    if(blueprint->building[i].parameters == NULL)
-                        return out_of_memory;
-                #endif
                 }
                 else {
                     blueprint->building[i].parameters = NULL;

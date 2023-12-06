@@ -17,7 +17,6 @@ extern "C" {
 
 // 可选的宏
 
-// #define DSPBPTK_DONT_SORT_BUILDING
 // #define DSPBPTK_NO_WARNING
 // #define DSPBPTK_NO_ERROR
 
