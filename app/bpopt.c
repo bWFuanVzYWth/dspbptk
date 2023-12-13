@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <time.h>
 
-#include "../lib/libdspbptk.h"
+#include "libdspbptk.h"
 
 uint64_t get_timestamp(void) {
     struct timespec t;
