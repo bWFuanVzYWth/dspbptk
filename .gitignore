@@ -3,6 +3,7 @@ dspbptk
 *.so
 *.dll
 *.a
+*.o
 *.lib
 
 *.bin

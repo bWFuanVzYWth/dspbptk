@@ -214,11 +214,15 @@ dspbptk_error_t blueprint_decode(dspbptk_coder_t* coder, blueprint_t* blueprint,
             // 解析建筑数组
             ptr_bin += sizeof(int32_t);
             for(size_t i = 0; i < BUILDING_NUM; i++) {
+
             #define BUILDING_DECODE(name, type)\
-                blueprint->building[i].name = (i64_t)*((type*)(ptr_bin + building_offset_##name));
+                blueprint->building[i].name = *((type*)(ptr_bin + building_offset_##name));
+
                 BUILDING_DECODE(index, i32_t);
+
                 BUILDING_DECODE(areaIndex, i8_t);
-                // 把建筑坐标转换成齐次坐标
+
+                // 把建筑坐标处理成齐次坐标
                 blueprint->building[i].localOffset.x = (f64_t) * ((f32_t*)(ptr_bin + building_offset_localOffset_x));
                 blueprint->building[i].localOffset.y = (f64_t) * ((f32_t*)(ptr_bin + building_offset_localOffset_y));
                 blueprint->building[i].localOffset.z = (f64_t) * ((f32_t*)(ptr_bin + building_offset_localOffset_z));
@@ -227,12 +231,15 @@ dspbptk_error_t blueprint_decode(dspbptk_coder_t* coder, blueprint_t* blueprint,
                 blueprint->building[i].localOffset2.y = (f64_t) * ((f32_t*)(ptr_bin + building_offset_localOffset_y2));
                 blueprint->building[i].localOffset2.z = (f64_t) * ((f32_t*)(ptr_bin + building_offset_localOffset_z2));
                 blueprint->building[i].localOffset2.w = (f64_t)1.0;
-                blueprint->building[i].yaw = (f64_t) * ((f32_t*)(ptr_bin + building_offset_yaw));
-                blueprint->building[i].yaw2 = (f64_t) * ((f32_t*)(ptr_bin + building_offset_yaw2));
+
+                BUILDING_DECODE(yaw, f32_t);
+                BUILDING_DECODE(yaw2, f32_t);
                 BUILDING_DECODE(itemId, i16_t);
                 BUILDING_DECODE(modelIndex, i16_t);
+
                 BUILDING_DECODE(tempOutputObjIdx, i32_t);
                 BUILDING_DECODE(tempInputObjIdx, i32_t);
+
                 BUILDING_DECODE(outputToSlot, i8_t);
                 BUILDING_DECODE(inputFromSlot, i8_t);
                 BUILDING_DECODE(outputFromSlot, i8_t);
@@ -274,7 +281,7 @@ dspbptk_error_t blueprint_decode(dspbptk_coder_t* coder, blueprint_t* blueprint,
 
 typedef struct {
     i64_t id;
-    i64_t index;
+    i32_t index;
 }index_t;
 
 int cmp_id(const void* p_a, const void* p_b) {
@@ -283,19 +290,27 @@ int cmp_id(const void* p_a, const void* p_b) {
     return a->id - b->id;
 }
 
-void re_index(i64_t* ObjIdx, index_t* id_lut, size_t BUILDING_NUM) {
+i32_t get_idx(i64_t* ObjIdx, index_t* id_lut, size_t BUILDING_NUM) {
     if(*ObjIdx == OBJ_NULL)
-        return;
+        return OBJ_NULL;
     index_t* p_id = bsearch(ObjIdx, id_lut, BUILDING_NUM, sizeof(index_t), cmp_id);
     if(p_id == NULL) {
     #ifndef DSPBPTK_NO_WARNING
         fprintf(stderr, "Warning: index %"PRId64" no found! Reindex index to OBJ_NULL(-1).\n", *ObjIdx);
     #endif
-        * ObjIdx = OBJ_NULL;
+        return OBJ_NULL;
     }
     else {
-        *ObjIdx = p_id->index;
+        return p_id->index;
     }
+}
+
+void generate_lut(const blueprint_t* blueprint, index_t* id_lut) {
+    for(size_t i = 0; i < blueprint->BUILDING_NUM; i++) {
+        id_lut[i].id = blueprint->building[i].index;
+        id_lut[i].index = i;
+    }
+    qsort(id_lut, blueprint->BUILDING_NUM, sizeof(index_t), cmp_id);
 }
 
 dspbptk_error_t blueprint_encode(dspbptk_coder_t* coder, const blueprint_t* blueprint, char* string) {
@@ -361,38 +376,36 @@ dspbptk_error_t blueprint_encode(dspbptk_coder_t* coder, const blueprint_t* blue
 
     // 重新生成index
     index_t* id_lut = (index_t*)coder->buffer1;
-    for(size_t i = 0; i < blueprint->BUILDING_NUM; i++) {
-        id_lut[i].id = blueprint->building[i].index;
-        id_lut[i].index = i;
-    }
-    qsort(id_lut, blueprint->BUILDING_NUM, sizeof(index_t), cmp_id);
-    for(size_t i = 0; i < blueprint->BUILDING_NUM; i++) {
-        re_index(&blueprint->building[i].index, id_lut, blueprint->BUILDING_NUM);
-        re_index(&blueprint->building[i].tempOutputObjIdx, id_lut, blueprint->BUILDING_NUM);
-        re_index(&blueprint->building[i].tempInputObjIdx, id_lut, blueprint->BUILDING_NUM);
-    }
+    generate_lut(blueprint, id_lut);
+    // re_index(blueprint, coder->buffer1);
 
     // 编码建筑数组
     ptr_bin += sizeof(i32_t);
     for(size_t i = 0; i < blueprint->BUILDING_NUM; i++) {
+
     #define BUILDING_ENCODE(name, type)\
         {*((type*)(ptr_bin + building_offset_##name)) = (type)blueprint->building[i].name;}
-        BUILDING_ENCODE(index, i32_t);
+
+        *((i32_t*)(ptr_bin + building_offset_index)) = get_idx(&blueprint->building[i].index, id_lut, blueprint->BUILDING_NUM);
+
         BUILDING_ENCODE(areaIndex, i8_t);
-        f64_t w = blueprint->building[i].localOffset.w;
-        *((f32_t*)(ptr_bin + building_offset_localOffset_x)) = (f32_t)(blueprint->building[i].localOffset.x / w);
-        *((f32_t*)(ptr_bin + building_offset_localOffset_y)) = (f32_t)(blueprint->building[i].localOffset.y / w);
-        *((f32_t*)(ptr_bin + building_offset_localOffset_z)) = (f32_t)(blueprint->building[i].localOffset.z / w);
-        f64_t w2 = blueprint->building[i].localOffset2.w;
-        *((f32_t*)(ptr_bin + building_offset_localOffset_x2)) = (f32_t)(blueprint->building[i].localOffset2.x / w2);
-        *((f32_t*)(ptr_bin + building_offset_localOffset_y2)) = (f32_t)(blueprint->building[i].localOffset2.y / w2);
-        *((f32_t*)(ptr_bin + building_offset_localOffset_z2)) = (f32_t)(blueprint->building[i].localOffset2.z / w2);
-        *((f32_t*)(ptr_bin + building_offset_yaw)) = (f32_t)(blueprint->building[i].yaw);
-        *((f32_t*)(ptr_bin + building_offset_yaw2)) = (f32_t)(blueprint->building[i].yaw2);
+
+        // 把建筑从齐次坐标转换成标准形式
+        *((f32_t*)(ptr_bin + building_offset_localOffset_x)) = (f32_t)(blueprint->building[i].localOffset.x / blueprint->building[i].localOffset.w);
+        *((f32_t*)(ptr_bin + building_offset_localOffset_y)) = (f32_t)(blueprint->building[i].localOffset.y / blueprint->building[i].localOffset.w);
+        *((f32_t*)(ptr_bin + building_offset_localOffset_z)) = (f32_t)(blueprint->building[i].localOffset.z / blueprint->building[i].localOffset.w);
+        *((f32_t*)(ptr_bin + building_offset_localOffset_x2)) = (f32_t)(blueprint->building[i].localOffset2.x / blueprint->building[i].localOffset2.w);
+        *((f32_t*)(ptr_bin + building_offset_localOffset_y2)) = (f32_t)(blueprint->building[i].localOffset2.y / blueprint->building[i].localOffset2.w);
+        *((f32_t*)(ptr_bin + building_offset_localOffset_z2)) = (f32_t)(blueprint->building[i].localOffset2.z / blueprint->building[i].localOffset2.w);
+
+        BUILDING_ENCODE(yaw, f32_t);
+        BUILDING_ENCODE(yaw2, f32_t);
         BUILDING_ENCODE(itemId, i16_t);
         BUILDING_ENCODE(modelIndex, i16_t);
-        BUILDING_ENCODE(tempOutputObjIdx, i32_t);
-        BUILDING_ENCODE(tempInputObjIdx, i32_t);
+
+        *((i32_t*)(ptr_bin + building_offset_tempOutputObjIdx)) = get_idx(&blueprint->building[i].tempOutputObjIdx, id_lut, blueprint->BUILDING_NUM);
+        *((i32_t*)(ptr_bin + building_offset_tempInputObjIdx)) = get_idx(&blueprint->building[i].tempInputObjIdx, id_lut, blueprint->BUILDING_NUM);
+
         BUILDING_ENCODE(outputToSlot, i8_t);
         BUILDING_ENCODE(inputFromSlot, i8_t);
         BUILDING_ENCODE(outputFromSlot, i8_t);
