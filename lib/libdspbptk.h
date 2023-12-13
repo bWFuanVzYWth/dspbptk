@@ -208,7 +208,28 @@ extern "C" {
     // dspbptk API
     ////////////////////////////////////////////////////////////////////////////
 
-    // 暂时还没有
+    typedef struct {
+        i64_t id;
+        i32_t index;
+    }index_t;
+
+    /**
+     * @brief 生成从拓展标准的建筑id到原版标准的建筑index的查找表
+     *
+     * @param blueprint 使用拓展标准建筑id的蓝图
+     * @param id_lut 查找表，假定id_lut有足够的空间
+     */
+    void generate_lut(const blueprint_t* blueprint, index_t* id_lut);
+
+    /**
+     * @brief 从查找表中获取index
+     *
+     * @param ObjIdx 拓展标准的建筑id
+     * @param id_lut 查找表，需要先使用generate_lut函数自动生成
+     * @param BUILDING_NUM 蓝图的建筑总数
+     * @return i32_t 原版标准的建筑index
+     */
+    i32_t get_idx(i64_t* ObjIdx, index_t* id_lut, size_t BUILDING_NUM);
 
 
 

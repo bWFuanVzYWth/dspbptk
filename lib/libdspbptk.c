@@ -279,15 +279,18 @@ dspbptk_error_t blueprint_decode(dspbptk_coder_t* coder, blueprint_t* blueprint,
 // dspbptk encode
 ////////////////////////////////////////////////////////////////////////////////
 
-typedef struct {
-    i64_t id;
-    i32_t index;
-}index_t;
-
 int cmp_id(const void* p_a, const void* p_b) {
     index_t* a = ((index_t*)p_a);
     index_t* b = ((index_t*)p_b);
     return a->id - b->id;
+}
+
+void generate_lut(const blueprint_t* blueprint, index_t* id_lut) {
+    for(size_t i = 0; i < blueprint->BUILDING_NUM; i++) {
+        id_lut[i].id = blueprint->building[i].index;
+        id_lut[i].index = i;
+    }
+    qsort(id_lut, blueprint->BUILDING_NUM, sizeof(index_t), cmp_id);
 }
 
 i32_t get_idx(i64_t* ObjIdx, index_t* id_lut, size_t BUILDING_NUM) {
@@ -303,14 +306,6 @@ i32_t get_idx(i64_t* ObjIdx, index_t* id_lut, size_t BUILDING_NUM) {
     else {
         return p_id->index;
     }
-}
-
-void generate_lut(const blueprint_t* blueprint, index_t* id_lut) {
-    for(size_t i = 0; i < blueprint->BUILDING_NUM; i++) {
-        id_lut[i].id = blueprint->building[i].index;
-        id_lut[i].index = i;
-    }
-    qsort(id_lut, blueprint->BUILDING_NUM, sizeof(index_t), cmp_id);
 }
 
 dspbptk_error_t blueprint_encode(dspbptk_coder_t* coder, const blueprint_t* blueprint, char* string) {
