@@ -7,14 +7,14 @@ extern "C" {
 
 typedef enum {
     bin_offset_version              =                                   0,
-    bin_offset_cursorOffset_x       = bin_offset_version                + 4,
-    bin_offset_cursorOffset_y       = bin_offset_cursorOffset_x         + 4,
-    bin_offset_cursorTargetArea     = bin_offset_cursorOffset_y         + 4,
-    bin_offset_dragBoxSize_x        = bin_offset_cursorTargetArea       + 4,
-    bin_offset_dragBoxSize_y        = bin_offset_dragBoxSize_x          + 4,
-    bin_offset_primaryAreaIdx       = bin_offset_dragBoxSize_y          + 4,
-    BIN_OFFSET_AREA_NUM             = bin_offset_primaryAreaIdx         + 4,
-    BIN_OFFSET_AREA_ARRAY           = BIN_OFFSET_AREA_NUM               + 1
+    bin_offset_cursorOffsetX        = bin_offset_version                + 4,
+    bin_offset_cursorOffsetY        = bin_offset_cursorOffsetX          + 4,
+    bin_offset_cursorTargetArea     = bin_offset_cursorOffsetY          + 4,
+    bin_offset_dragBoxSizeX         = bin_offset_cursorTargetArea       + 4,
+    bin_offset_dragBoxSizeY         = bin_offset_dragBoxSizeX           + 4,
+    bin_offset_primaryAreaIdx       = bin_offset_dragBoxSizeY           + 4,
+    bin_offset_numAreas             = bin_offset_primaryAreaIdx         + 4,
+    bin_offset_areas                = bin_offset_numAreas               + 1
 }bin_offset_t;
 
 typedef enum {
@@ -26,8 +26,8 @@ typedef enum {
     area_offset_anchorLocalOffsetY  = area_offset_anchorLocalOffsetX    + 2,
     area_offset_width               = area_offset_anchorLocalOffsetY    + 2,
     area_offset_height              = area_offset_width                 + 2,
-    AREA_OFFSET_AREA_NEXT           = area_offset_height                + 2,
-    AREA_OFFSET_BUILDING_ARRAY      = AREA_OFFSET_AREA_NEXT             + 4
+    area_offset_next                = area_offset_height                + 2,
+    area_offset_buildings           = area_offset_next                  + 4
 }area_offset_t;
 
 typedef enum {
@@ -53,8 +53,8 @@ typedef enum {
     building_offset_inputOffset     = building_offset_outputOffset      + 1,
     building_offset_recipeId        = building_offset_inputOffset       + 1,
     building_offset_filterId        = building_offset_recipeId          + 2,
-    building_offset_num             = building_offset_filterId          + 2,
-    building_offset_parameters      = building_offset_num               + 2
+    building_offset_numParameters   = building_offset_filterId          + 2,
+    building_offset_parameters      = building_offset_numParameters     + 2
 }building_offset_t;
 
 #ifdef __cplusplus

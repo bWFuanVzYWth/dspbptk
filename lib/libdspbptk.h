@@ -111,7 +111,7 @@ extern "C" {
         i64_t inputOffset;
         i64_t recipeId;
         i64_t filterId;
-        size_t num;
+        size_t numParameters;
         i64_t* parameters;
     }building_t;
 
@@ -124,16 +124,16 @@ extern "C" {
         char* shortDesc;
         // base64
         i64_t version;
-        i64_t cursorOffset_x;
-        i64_t cursorOffset_y;
+        i64_t cursorOffsetX;
+        i64_t cursorOffsetY;
         i64_t cursorTargetArea;
-        i64_t dragBoxSize_x;
-        i64_t dragBoxSize_y;
+        i64_t dragBoxSizeX;
+        i64_t dragBoxSizeY;
         i64_t primaryAreaIdx;
-        size_t AREA_NUM;
-        area_t* area;
-        size_t BUILDING_NUM;
-        building_t* building;
+        size_t numAreas;
+        area_t* areas;
+        size_t numBuildings;
+        building_t* buildings;
         // md5f
         char* md5f;
     }blueprint_t;
