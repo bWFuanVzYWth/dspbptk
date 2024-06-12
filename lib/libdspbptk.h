@@ -73,12 +73,14 @@ typedef struct {
 } area_t;
 
 typedef struct {
+    i64_t num;
     i64_t index;
     i64_t areaIndex;
     vec4 localOffset;
     vec4 localOffset2;
     f64_t yaw;
     f64_t yaw2;
+    f64_t tilt;
     i64_t itemId;
     i64_t modelIndex;
     i64_t tempOutputObjIdx;

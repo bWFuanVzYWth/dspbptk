@@ -317,9 +317,11 @@ void search(dspbptk_coder_t* coder, const double need[MODULE_COUNT], double max_
 
 int main(void) {
     // TODO 输入参数处理
-    double need[MODULE_COUNT] = {2.0, 1.0};
     double max_x_span = 100.0;
     double max_y_span = 170.0;
+    double need[MODULE_COUNT] = {635.0,87.0};
+
+    // const char* options = "hx:y:";
 
     // 初始化蓝图编码器
     dspbptk_coder_t coder;
