@@ -153,6 +153,7 @@ int main(int argc, char* argv[]) {
             bp.buildings[i].localOffset2[2] = try_round(bp.buildings[i].localOffset2[2], 8);
             bp.buildings[i].yaw = try_round(bp.buildings[i].yaw, 1);
             bp.buildings[i].yaw2 = try_round(bp.buildings[i].yaw2, 1);
+            bp.buildings[i].tilt = try_round(bp.buildings[i].tilt, 1);
         }
     }
 

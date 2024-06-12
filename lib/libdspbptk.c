@@ -173,64 +173,140 @@ size_t write_numBuildings(const blueprint_t* blueprint, unsigned char* ptr_bin) 
 }
 
 size_t read_building(building_t* building, const unsigned char* ptr_bin) {
-    building->index = *((i32_t*)(ptr_bin + building_offset_index));
-    building->areaIndex = *((i8_t*)(ptr_bin + building_offset_areaIndex));
-    building->localOffset[0] = *((f32_t*)(ptr_bin + building_offset_localOffset_x));
-    building->localOffset[1] = *((f32_t*)(ptr_bin + building_offset_localOffset_y));
-    building->localOffset[2] = *((f32_t*)(ptr_bin + building_offset_localOffset_z));
-    building->localOffset[3] = 1.0;
-    building->localOffset2[0] = *((f32_t*)(ptr_bin + building_offset_localOffset_x2));
-    building->localOffset2[1] = *((f32_t*)(ptr_bin + building_offset_localOffset_y2));
-    building->localOffset2[2] = *((f32_t*)(ptr_bin + building_offset_localOffset_z2));
-    building->localOffset2[3] = 1.0;
-    building->yaw = *((f32_t*)(ptr_bin + building_offset_yaw));
-    building->yaw2 = *((f32_t*)(ptr_bin + building_offset_yaw2));
-    building->itemId = *((i16_t*)(ptr_bin + building_offset_itemId));
-    building->modelIndex = *((i16_t*)(ptr_bin + building_offset_modelIndex));
-    building->tempOutputObjIdx = *((i32_t*)(ptr_bin + building_offset_tempOutputObjIdx));
-    building->tempInputObjIdx = *((i32_t*)(ptr_bin + building_offset_tempInputObjIdx));
-    building->outputToSlot = *((i8_t*)(ptr_bin + building_offset_outputToSlot));
-    building->inputFromSlot = *((i8_t*)(ptr_bin + building_offset_inputFromSlot));
-    building->outputFromSlot = *((i8_t*)(ptr_bin + building_offset_outputFromSlot));
-    building->inputToSlot = *((i8_t*)(ptr_bin + building_offset_inputToSlot));
-    building->outputOffset = *((i8_t*)(ptr_bin + building_offset_outputOffset));
-    building->inputOffset = *((i8_t*)(ptr_bin + building_offset_inputOffset));
-    building->recipeId = *((i16_t*)(ptr_bin + building_offset_recipeId));
-    building->filterId = *((i16_t*)(ptr_bin + building_offset_filterId));
-    building->numParameters = *((i16_t*)(ptr_bin + building_offset_numParameters));
-    building->parameters = dspbptk_calloc_parameters(building->numParameters);
-    for (size_t j = 0; j < building->numParameters; j++)
-        building->parameters[j] = *((i32_t*)((ptr_bin + building_offset_parameters) + j * sizeof(i32_t)));
-    return building_offset_parameters + building->numParameters * sizeof(i32_t);
+    i32_t num = *((i32_t*)ptr_bin);
+
+    building->num = 0;
+    building->tilt = 0.0;
+
+    switch (num) {
+    default:
+        building->index            = *((i32_t *)(ptr_bin + building_offset_index));
+        building->areaIndex        = *((i8_t *)(ptr_bin + building_offset_areaIndex));
+        building->localOffset[0]   = *((f32_t *)(ptr_bin + building_offset_localOffset_x));
+        building->localOffset[1]   = *((f32_t *)(ptr_bin + building_offset_localOffset_y));
+        building->localOffset[2]   = *((f32_t *)(ptr_bin + building_offset_localOffset_z));
+        building->localOffset[3]   = 1.0;
+        building->localOffset2[0]  = *((f32_t *)(ptr_bin + building_offset_localOffset_x2));
+        building->localOffset2[1]  = *((f32_t *)(ptr_bin + building_offset_localOffset_y2));
+        building->localOffset2[2]  = *((f32_t *)(ptr_bin + building_offset_localOffset_z2));
+        building->localOffset2[3]  = 1.0;
+        building->yaw              = *((f32_t *)(ptr_bin + building_offset_yaw));
+        building->yaw2             = *((f32_t *)(ptr_bin + building_offset_yaw2));
+        building->itemId           = *((i16_t *)(ptr_bin + building_offset_itemId));
+        building->modelIndex       = *((i16_t *)(ptr_bin + building_offset_modelIndex));
+        building->tempOutputObjIdx = *((i32_t *)(ptr_bin + building_offset_tempOutputObjIdx));
+        building->tempInputObjIdx  = *((i32_t *)(ptr_bin + building_offset_tempInputObjIdx));
+        building->outputToSlot     = *((i8_t *)(ptr_bin + building_offset_outputToSlot));
+        building->inputFromSlot    = *((i8_t *)(ptr_bin + building_offset_inputFromSlot));
+        building->outputFromSlot   = *((i8_t *)(ptr_bin + building_offset_outputFromSlot));
+        building->inputToSlot      = *((i8_t *)(ptr_bin + building_offset_inputToSlot));
+        building->outputOffset     = *((i8_t *)(ptr_bin + building_offset_outputOffset));
+        building->inputOffset      = *((i8_t *)(ptr_bin + building_offset_inputOffset));
+        building->recipeId         = *((i16_t *)(ptr_bin + building_offset_recipeId));
+        building->filterId         = *((i16_t *)(ptr_bin + building_offset_filterId));
+        building->numParameters    = *((i16_t *)(ptr_bin + building_offset_numParameters));
+        building->parameters       = dspbptk_calloc_parameters(building->numParameters);
+        for (size_t j = 0; j < building->numParameters; j++)
+            building->parameters[j] = *((i32_t *)((ptr_bin + building_offset_parameters) + j * sizeof(i32_t)));
+        return building_offset_parameters + building->numParameters * sizeof(i32_t);
+
+    case -100:
+        building->num              = -100;
+        building->index            = *((i32_t *)(ptr_bin + building_neg100_offset_index));
+        building->areaIndex        = *((i8_t *)(ptr_bin + building_neg100_offset_areaIndex));
+        building->localOffset[0]   = *((f32_t *)(ptr_bin + building_neg100_offset_localOffset_x));
+        building->localOffset[1]   = *((f32_t *)(ptr_bin + building_neg100_offset_localOffset_y));
+        building->localOffset[2]   = *((f32_t *)(ptr_bin + building_neg100_offset_localOffset_z));
+        building->localOffset[3]   = 1.0;
+        building->localOffset2[0]  = *((f32_t *)(ptr_bin + building_neg100_offset_localOffset_x2));
+        building->localOffset2[1]  = *((f32_t *)(ptr_bin + building_neg100_offset_localOffset_y2));
+        building->localOffset2[2]  = *((f32_t *)(ptr_bin + building_neg100_offset_localOffset_z2));
+        building->localOffset2[3]  = 1.0;
+        building->yaw              = *((f32_t *)(ptr_bin + building_neg100_offset_yaw));
+        building->yaw2             = *((f32_t *)(ptr_bin + building_neg100_offset_yaw2));
+        building->tilt             = *((f32_t *)(ptr_bin + building_neg100_offset_tilt));
+        building->itemId           = *((i16_t *)(ptr_bin + building_neg100_offset_itemId));
+        building->modelIndex       = *((i16_t *)(ptr_bin + building_neg100_offset_modelIndex));
+        building->tempOutputObjIdx = *((i32_t *)(ptr_bin + building_neg100_offset_tempOutputObjIdx));
+        building->tempInputObjIdx  = *((i32_t *)(ptr_bin + building_neg100_offset_tempInputObjIdx));
+        building->outputToSlot     = *((i8_t *)(ptr_bin + building_neg100_offset_outputToSlot));
+        building->inputFromSlot    = *((i8_t *)(ptr_bin + building_neg100_offset_inputFromSlot));
+        building->outputFromSlot   = *((i8_t *)(ptr_bin + building_neg100_offset_outputFromSlot));
+        building->inputToSlot      = *((i8_t *)(ptr_bin + building_neg100_offset_inputToSlot));
+        building->outputOffset     = *((i8_t *)(ptr_bin + building_neg100_offset_outputOffset));
+        building->inputOffset      = *((i8_t *)(ptr_bin + building_neg100_offset_inputOffset));
+        building->recipeId         = *((i16_t *)(ptr_bin + building_neg100_offset_recipeId));
+        building->filterId         = *((i16_t *)(ptr_bin + building_neg100_offset_filterId));
+        building->numParameters    = *((i16_t *)(ptr_bin + building_neg100_offset_numParameters));
+        building->parameters = dspbptk_calloc_parameters(building->numParameters);
+        for (size_t j = 0; j < building->numParameters; j++)
+            building->parameters[j] = *((i32_t *)((ptr_bin + building_neg100_offset_parameters) + j * sizeof(i32_t)));
+        return building_neg100_offset_parameters + building->numParameters * sizeof(i32_t);
+
+    }
 }
 
 size_t write_building(const building_t* building, unsigned char* ptr_bin, const index_t* id_lut, size_t numBuildings) {
-    *((i32_t*)(ptr_bin + building_offset_index)) = get_idx(&building->index, id_lut, numBuildings);
-    *((i8_t*)(ptr_bin + building_offset_areaIndex)) = (i8_t)building->areaIndex;
-    *((f32_t*)(ptr_bin + building_offset_localOffset_x)) = (f32_t)(building->localOffset[0] / building->localOffset[3]);
-    *((f32_t*)(ptr_bin + building_offset_localOffset_y)) = (f32_t)(building->localOffset[1] / building->localOffset[3]);
-    *((f32_t*)(ptr_bin + building_offset_localOffset_z)) = (f32_t)(building->localOffset[2] / building->localOffset[3]);
-    *((f32_t*)(ptr_bin + building_offset_localOffset_x2)) = (f32_t)(building->localOffset2[0] / building->localOffset2[3]);
-    *((f32_t*)(ptr_bin + building_offset_localOffset_y2)) = (f32_t)(building->localOffset2[1] / building->localOffset2[3]);
-    *((f32_t*)(ptr_bin + building_offset_localOffset_z2)) = (f32_t)(building->localOffset2[2] / building->localOffset2[3]);
-    *((f32_t*)(ptr_bin + building_offset_yaw)) = (f32_t)building->yaw;
-    *((f32_t*)(ptr_bin + building_offset_yaw2)) = (f32_t)building->yaw2;
-    *((i16_t*)(ptr_bin + building_offset_itemId)) = (i16_t)building->itemId;
-    *((i16_t*)(ptr_bin + building_offset_modelIndex)) = (i16_t)building->modelIndex;
-    *((i32_t*)(ptr_bin + building_offset_tempOutputObjIdx)) = get_idx(&building->tempOutputObjIdx, id_lut, numBuildings);
-    *((i32_t*)(ptr_bin + building_offset_tempInputObjIdx)) = get_idx(&building->tempInputObjIdx, id_lut, numBuildings);
-    *((i8_t*)(ptr_bin + building_offset_outputToSlot)) = (i8_t)building->outputToSlot;
-    *((i8_t*)(ptr_bin + building_offset_inputFromSlot)) = (i8_t)building->inputFromSlot;
-    *((i8_t*)(ptr_bin + building_offset_outputFromSlot)) = (i8_t)building->outputFromSlot;
-    *((i8_t*)(ptr_bin + building_offset_inputToSlot)) = (i8_t)building->inputToSlot;
-    *((i8_t*)(ptr_bin + building_offset_outputOffset)) = (i8_t)building->outputOffset;
-    *((i8_t*)(ptr_bin + building_offset_inputOffset)) = (i8_t)building->inputOffset;
-    *((i16_t*)(ptr_bin + building_offset_recipeId)) = (i16_t)building->recipeId;
-    *((i16_t*)(ptr_bin + building_offset_filterId)) = (i16_t)building->filterId;
-    *((i16_t*)(ptr_bin + building_offset_numParameters)) = (i16_t)building->numParameters;
-    for (size_t j = 0; j < building->numParameters; j++)
-        *((i32_t*)((ptr_bin + building_offset_parameters) + sizeof(i32_t) * j)) = (i32_t)building->parameters[j];
-    return building_offset_parameters + building->numParameters * sizeof(i32_t);
+    switch(building->num) {
+    default:
+        *((i32_t*)(ptr_bin + building_offset_index))            = get_idx(&building->index, id_lut, numBuildings);
+        *((i8_t*)(ptr_bin + building_offset_areaIndex))         = (i8_t)building->areaIndex;
+        *((f32_t*)(ptr_bin + building_offset_localOffset_x))    = (f32_t)(building->localOffset[0] / building->localOffset[3]);
+        *((f32_t*)(ptr_bin + building_offset_localOffset_y))    = (f32_t)(building->localOffset[1] / building->localOffset[3]);
+        *((f32_t*)(ptr_bin + building_offset_localOffset_z))    = (f32_t)(building->localOffset[2] / building->localOffset[3]);
+        *((f32_t*)(ptr_bin + building_offset_localOffset_x2))   = (f32_t)(building->localOffset2[0] / building->localOffset2[3]);
+        *((f32_t*)(ptr_bin + building_offset_localOffset_y2))   = (f32_t)(building->localOffset2[1] / building->localOffset2[3]);
+        *((f32_t*)(ptr_bin + building_offset_localOffset_z2))   = (f32_t)(building->localOffset2[2] / building->localOffset2[3]);
+        *((f32_t*)(ptr_bin + building_offset_yaw))              = (f32_t)building->yaw;
+        *((f32_t*)(ptr_bin + building_offset_yaw2))             = (f32_t)building->yaw2;
+        *((i16_t*)(ptr_bin + building_offset_itemId))           = (i16_t)building->itemId;
+        *((i16_t*)(ptr_bin + building_offset_modelIndex))       = (i16_t)building->modelIndex;
+        *((i32_t*)(ptr_bin + building_offset_tempOutputObjIdx)) = get_idx(&building->tempOutputObjIdx, id_lut, numBuildings);
+        *((i32_t*)(ptr_bin + building_offset_tempInputObjIdx))  = get_idx(&building->tempInputObjIdx, id_lut, numBuildings);
+        *((i8_t*)(ptr_bin + building_offset_outputToSlot))      = (i8_t)building->outputToSlot;
+        *((i8_t*)(ptr_bin + building_offset_inputFromSlot))     = (i8_t)building->inputFromSlot;
+        *((i8_t*)(ptr_bin + building_offset_outputFromSlot))    = (i8_t)building->outputFromSlot;
+        *((i8_t*)(ptr_bin + building_offset_inputToSlot))       = (i8_t)building->inputToSlot;
+        *((i8_t*)(ptr_bin + building_offset_outputOffset))      = (i8_t)building->outputOffset;
+        *((i8_t*)(ptr_bin + building_offset_inputOffset))       = (i8_t)building->inputOffset;
+        *((i16_t*)(ptr_bin + building_offset_recipeId))         = (i16_t)building->recipeId;
+        *((i16_t*)(ptr_bin + building_offset_filterId))         = (i16_t)building->filterId;
+        *((i16_t*)(ptr_bin + building_offset_numParameters))    = (i16_t)building->numParameters;
+        for (size_t j = 0; j < building->numParameters; j++)
+            *((i32_t*)((ptr_bin + building_offset_parameters) + sizeof(i32_t) * j)) = (i32_t)building->parameters[j];
+        return building_offset_parameters + building->numParameters * sizeof(i32_t);
+
+    case -100:
+        *((i32_t*)(ptr_bin + building_neg100_offset_num)) = -100;
+        *((i32_t*)(ptr_bin + building_neg100_offset_index))            = get_idx(&building->index, id_lut, numBuildings);
+        *((i8_t*)(ptr_bin + building_neg100_offset_areaIndex))         = (i8_t)building->areaIndex;
+        *((f32_t*)(ptr_bin + building_neg100_offset_localOffset_x))    = (f32_t)(building->localOffset[0] / building->localOffset[3]);
+        *((f32_t*)(ptr_bin + building_neg100_offset_localOffset_y))    = (f32_t)(building->localOffset[1] / building->localOffset[3]);
+        *((f32_t*)(ptr_bin + building_neg100_offset_localOffset_z))    = (f32_t)(building->localOffset[2] / building->localOffset[3]);
+        *((f32_t*)(ptr_bin + building_neg100_offset_localOffset_x2))   = (f32_t)(building->localOffset2[0] / building->localOffset2[3]);
+        *((f32_t*)(ptr_bin + building_neg100_offset_localOffset_y2))   = (f32_t)(building->localOffset2[1] / building->localOffset2[3]);
+        *((f32_t*)(ptr_bin + building_neg100_offset_localOffset_z2))   = (f32_t)(building->localOffset2[2] / building->localOffset2[3]);
+        *((f32_t*)(ptr_bin + building_neg100_offset_yaw))              = (f32_t)building->yaw;
+        *((f32_t*)(ptr_bin + building_neg100_offset_yaw2))             = (f32_t)building->yaw2;
+        *((f32_t*)(ptr_bin + building_neg100_offset_tilt))             = (f32_t)building->tilt;
+        *((i16_t*)(ptr_bin + building_neg100_offset_itemId))           = (i16_t)building->itemId;
+        *((i16_t*)(ptr_bin + building_neg100_offset_modelIndex))       = (i16_t)building->modelIndex;
+        *((i32_t*)(ptr_bin + building_neg100_offset_tempOutputObjIdx)) = get_idx(&building->tempOutputObjIdx, id_lut, numBuildings);
+        *((i32_t*)(ptr_bin + building_neg100_offset_tempInputObjIdx))  = get_idx(&building->tempInputObjIdx, id_lut, numBuildings);
+        *((i8_t*)(ptr_bin + building_neg100_offset_outputToSlot))      = (i8_t)building->outputToSlot;
+        *((i8_t*)(ptr_bin + building_neg100_offset_inputFromSlot))     = (i8_t)building->inputFromSlot;
+        *((i8_t*)(ptr_bin + building_neg100_offset_outputFromSlot))    = (i8_t)building->outputFromSlot;
+        *((i8_t*)(ptr_bin + building_neg100_offset_inputToSlot))       = (i8_t)building->inputToSlot;
+        *((i8_t*)(ptr_bin + building_neg100_offset_outputOffset))      = (i8_t)building->outputOffset;
+        *((i8_t*)(ptr_bin + building_neg100_offset_inputOffset))       = (i8_t)building->inputOffset;
+        *((i16_t*)(ptr_bin + building_neg100_offset_recipeId))         = (i16_t)building->recipeId;
+        *((i16_t*)(ptr_bin + building_neg100_offset_filterId))         = (i16_t)building->filterId;
+        *((i16_t*)(ptr_bin + building_neg100_offset_numParameters))    = (i16_t)building->numParameters;
+        for (size_t j = 0; j < building->numParameters; j++)
+            *((i32_t*)((ptr_bin + building_neg100_offset_parameters) + sizeof(i32_t) * j)) = (i32_t)building->parameters[j];
+        return building_neg100_offset_parameters + building->numParameters * sizeof(i32_t);
+
+    }
 }
 
 size_t blueprint_read_head(blueprint_t* blueprint, const char* string) {
