@@ -98,6 +98,10 @@ char* dspbptk_calloc_md5f(void) {
     return (char*)calloc(MD5F_LENGTH, sizeof(char));
 }
 
+char* dspbptk_calloc_gameversion(void) {
+    return (char*)calloc(GAMEVERSION_MAX_LENGTH, sizeof(char));
+}
+
 char* dspbptk_calloc_shortdesc(void) {
     return (char*)calloc(SHORTDESC_MAX_LENGTH, sizeof(char));
 }
@@ -309,11 +313,12 @@ size_t write_building(const building_t* building, unsigned char* ptr_bin, const 
     }
 }
 
-size_t blueprint_read_head(blueprint_t* blueprint, const char* string) {
+int blueprint_read_head(blueprint_t* blueprint, const char* string) {
+    blueprint->gameVersion = dspbptk_calloc_gameversion();
     blueprint->shortDesc = dspbptk_calloc_shortdesc();
     blueprint->desc = dspbptk_calloc_desc();
     // 注意此处读取不包含双引号
-    return sscanf(string, "BLUEPRINT:0,%" PRId64 ",%" PRId64 ",%" PRId64 ",%" PRId64 ",%" PRId64 ",%" PRId64 ",0,%" PRId64 ",%" PRId64 ".%" PRId64 ".%" PRId64 ".%" PRId64 ",%[^,],%[^\"]",
+    return sscanf(string, "BLUEPRINT:0,%" PRId64 ",%" PRId64 ",%" PRId64 ",%" PRId64 ",%" PRId64 ",%" PRId64 ",0,%" PRId64 ",%[^,],%[^,],%[^\"]",
                   &blueprint->layout,
                   &blueprint->icons[0],
                   &blueprint->icons[1],
@@ -321,17 +326,14 @@ size_t blueprint_read_head(blueprint_t* blueprint, const char* string) {
                   &blueprint->icons[3],
                   &blueprint->icons[4],
                   &blueprint->time,
-                  &blueprint->gameVersion[0],
-                  &blueprint->gameVersion[1],
-                  &blueprint->gameVersion[2],
-                  &blueprint->gameVersion[3],
+                  blueprint->gameVersion,
                   blueprint->shortDesc,
                   blueprint->desc);
 }
 
-size_t blueprint_write_head(const blueprint_t* blueprint, char* string) {
+int blueprint_write_head(const blueprint_t* blueprint, char* string) {
     // 注意此处输出包含了双引号
-    return sprintf(string, "BLUEPRINT:0,%" PRId64 ",%" PRId64 ",%" PRId64 ",%" PRId64 ",%" PRId64 ",%" PRId64 ",0,%" PRId64 ",%" PRId64 ".%" PRId64 ".%" PRId64 ".%" PRId64 ",%s,%s\"",
+    return sprintf(string, "BLUEPRINT:0,%" PRId64 ",%" PRId64 ",%" PRId64 ",%" PRId64 ",%" PRId64 ",%" PRId64 ",0,%" PRId64 ",%s,%s,%s\"",
                    blueprint->layout,
                    blueprint->icons[0],
                    blueprint->icons[1],
@@ -339,10 +341,7 @@ size_t blueprint_write_head(const blueprint_t* blueprint, char* string) {
                    blueprint->icons[3],
                    blueprint->icons[4],
                    blueprint->time,
-                   blueprint->gameVersion[0],
-                   blueprint->gameVersion[1],
-                   blueprint->gameVersion[2],
-                   blueprint->gameVersion[3],
+                   blueprint->gameVersion,
                    blueprint->shortDesc == NULL ? "\0" : blueprint->shortDesc,
                    blueprint->desc == NULL ? "\0" : blueprint->desc);
 }
@@ -385,11 +384,12 @@ dspbptk_error_t blueprint_decode(dspbptk_coder_t* coder, blueprint_t* blueprint,
     memcpy(blueprint->md5f, md5f, MD5F_LENGTH);
 
     // 解析head明文数据
-    size_t argc = blueprint_read_head(blueprint, string);
+    int argc = blueprint_read_head(blueprint, string);
 #ifndef DSPBPTK_NO_ERROR
-    // if(argc != 13)  // FIXME 这里似乎并不能很好的处理shortdesc或者desc为空的情况，需要优化错误判定
-    if (argc < 12)  // 暂时改成argument_count < 12，可能会漏掉一些本来应该报错的情况，虽然也只影响报错不影响解码就是了
+    if(argc != 10) {
+        fprintf(stderr, "Error: Head broken! argc=%d.\n", argc);
         return blueprint_head_broken;
+    }
 #endif
 
     // base64 >> gzip
@@ -478,7 +478,7 @@ dspbptk_error_t blueprint_encode(dspbptk_coder_t* coder, const blueprint_t* blue
     unsigned char* ptr_bin = bin;
 
     // 输出head
-    size_t head_length = blueprint_write_head(blueprint, ptr_str) - 1;
+    int head_length = blueprint_write_head(blueprint, ptr_str) - 1;
     ptr_str += head_length + 1;
 
     // 编码bin head
@@ -534,6 +534,7 @@ dspbptk_error_t blueprint_encode_file(dspbptk_coder_t* coder, const blueprint_t*
 ////////////////////////////////////////////////////////////////////////////////
 
 void dspbptk_free_blueprint(blueprint_t* blueprint) {
+    free(blueprint->gameVersion);
     free(blueprint->shortDesc);
     free(blueprint->desc);
     free(blueprint->md5f);

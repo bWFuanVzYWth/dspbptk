@@ -46,6 +46,7 @@ typedef enum {
 ////////////////////////////////////////////////////////////////////////////////
 
 #define MD5F_LENGTH 32
+#define GAMEVERSION_MAX_LENGTH 4096
 #define SHORTDESC_MAX_LENGTH 4096
 #define DESC_MAX_LENGTH 4096
 #define BLUEPRINT_MAX_LENGTH 134217728  // 128mb. 1048576 * 61 * 3/4 = 85284181.333 < 134217728.
@@ -102,7 +103,7 @@ typedef struct {
     i64_t layout;
     i64_t icons[5];
     i64_t time;
-    i64_t gameVersion[4];
+    char* gameVersion;
     char* shortDesc;
     char* desc;
     // base64
