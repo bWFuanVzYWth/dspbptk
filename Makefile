@@ -18,7 +18,7 @@ OBJ_tessellation := app/tessellation.o
 OBJ_LIBDSPBPTK = $(patsubst %.c, %.o, $(wildcard lib/*.c lib/libdeflate/lib/*.c lib/libdeflate/lib/*/*.c lib/chromiumbase64/*.c))
 
 CFLAGS := -fexec-charset=GBK -Wall -lm
-CFLAGS += -O3 -static -s -march=x86-64 -mtune=generic -mavx2 -flto
+CFLAGS += -O3 -static -s -march=native -mtune=native -flto
 # CFLAGS += -g -fsanitize=address -fno-omit-frame-pointer
 CFLAGS_APP := -Ilib
 
