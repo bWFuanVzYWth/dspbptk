@@ -14,17 +14,17 @@ typedef enum {
     // refine,
     // collider,
     smelter,
-    // chemical,
+    chemical,
     // lab,
     MODULE_COUNT
 } module_enum_t;
 
 const char* MODULE_PATH[MODULE_COUNT] = {
-    ".\\module\\unit_assembler_1i1o.txt",
+    "module\\unit_assembler_1i1o.txt",
     // "module\\unit_refine_1i1o.txt",
     // "module\\unit_collider_1i1o.txt",
-    ".\\module\\unit_smelter_1i1o.txt",
-    // "module\\unit_chemical_1i1o.txt",
+    "module\\unit_smelter_1i1o.txt",
+    "module\\unit_chemical_1i1o.txt",
     // "module\\unit_lab_1i1o.txt",
 };
 
@@ -319,7 +319,7 @@ int main(void) {
     // TODO 输入参数处理
     double max_x_span = 100.0;
     double max_y_span = 170.0;
-    double need[MODULE_COUNT] = {635.0,87.0};
+    double need[MODULE_COUNT] = {36.0,0.0,12.0};
 
     // const char* options = "hx:y:";
 

@@ -386,10 +386,8 @@ dspbptk_error_t blueprint_decode(dspbptk_coder_t* coder, blueprint_t* blueprint,
     // 解析head明文数据
     int argc = blueprint_read_head(blueprint, string);
 #ifndef DSPBPTK_NO_ERROR
-    if(argc != 10) {
-        fprintf(stderr, "Error: Head broken! argc=%d.\n", argc);
+    if(argc != 10)
         return blueprint_head_broken;
-    }
 #endif
 
     // base64 >> gzip

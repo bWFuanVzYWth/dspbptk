@@ -13,5 +13,5 @@
 *.rar
 *.7z
 
-!module/*
+!module/*.txt
 !data/*
