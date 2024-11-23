@@ -30,7 +30,6 @@ struct building_t {
     inputOffset: i64,
     recipeId: i64,
     filter_id: i64,
-    numParameters: usize,
     parameters: Vec<u32>,
 }
 
