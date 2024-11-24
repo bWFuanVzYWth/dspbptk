@@ -242,4 +242,18 @@ pub mod data {
         areas: BTreeMap<i64, Area>,
         buildings: BTreeMap<i64, Building>,
     }
+
+    pub fn decode_base64(string: &str) -> Vec<u8> {
+        use base64::prelude::*;
+        let gzip = BASE64_STANDARD
+            .decode(string)
+            .expect("Failed to decode base64!");
+        gzip
+    }
+
+    pub fn decode_gzip(vec: Vec<u8>) -> Vec<u8> {
+        use miniz_oxide::inflate;
+        let raw = inflate::decompress_to_vec(vec.as_slice()).expect("Failed to decode gzip!");
+        raw
+    }
 }
