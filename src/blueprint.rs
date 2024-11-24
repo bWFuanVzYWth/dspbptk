@@ -24,15 +24,16 @@ pub mod blueprint {
         pub md5f: &'blueprint str,
     }
 
-    pub fn parser(string: &str) -> IResult<&str, Blueprint> {
+    pub fn parser(string: &str) -> Blueprint {
         let (unknown, (head, _, data, _, md5f)) = tuple((
             take_till_quote,
             tag_quote,
             take_till_quote,
             tag_quote,
             take_32,
-        ))(string)?;
-        Ok((unknown, Blueprint { head, data, md5f }))
+        ))(string)
+        .expect("Failed to parse blueprint!");
+        Blueprint { head, data, md5f }
     }
 
     #[cfg(test)]
@@ -46,14 +47,11 @@ pub mod blueprint {
 
             assert_eq!(
                 result,
-                Ok((
-                    "\n\0",
-                    Blueprint {
-                        head: "BLUEPRINT:0,0,0,0,0,0,0,0,0,0.0.0.0,,",
-                        data: "H4sIAAAAAAAAA2NkQAWMUMyARCMBANjTKTsvAAAA",
-                        md5f: "E4E5A1CF28F1EC611E33498CBD0DF02B"
-                    }
-                ))
+                Blueprint {
+                    head: "BLUEPRINT:0,0,0,0,0,0,0,0,0,0.0.0.0,,",
+                    data: "H4sIAAAAAAAAA2NkQAWMUMyARCMBANjTKTsvAAAA",
+                    md5f: "E4E5A1CF28F1EC611E33498CBD0DF02B"
+                }
             );
         }
     }
@@ -62,7 +60,6 @@ pub mod blueprint {
 pub mod head {
     use nom::{
         bytes::complete::{tag, take_till},
-        multi::separated_list0,
         sequence::tuple,
         IResult,
     };
@@ -98,7 +95,7 @@ pub mod head {
         desc: &'head str,
     }
 
-    pub fn parser(string: &str) -> IResult<&str, Head> {
+    pub fn parser(string: &str) -> Head {
         let (
             unknown,
             (
@@ -144,23 +141,21 @@ pub mod head {
             take_till_comma,
             tag_comma,
             take_till_comma,
-        ))(string)?;
-        Ok((
-            unknown,
-            Head {
-                tag,
-                layout,
-                icons_0,
-                icons_1,
-                icons_2,
-                icons_3,
-                icons_4,
-                time,
-                game_version,
-                short_desc,
-                desc,
-            },
-        ))
+        ))(string)
+        .expect("Failed to parse blueprint head!");
+        Head {
+            tag,
+            layout,
+            icons_0,
+            icons_1,
+            icons_2,
+            icons_3,
+            icons_4,
+            time,
+            game_version,
+            short_desc,
+            desc,
+        }
     }
 
     #[cfg(test)]
@@ -175,22 +170,19 @@ pub mod head {
 
             assert_eq!(
                 result,
-                Ok((
-                    "",
-                    Head {
-                        tag: "BLUEPRINT:0,",
-                        layout: "9",
-                        icons_0: "0",
-                        icons_1: "1",
-                        icons_2: "2",
-                        icons_3: "3",
-                        icons_4: "4",
-                        time: "5",
-                        game_version: "6.7.8.9",
-                        short_desc: "",
-                        desc: "",
-                    }
-                ))
+                Head {
+                    tag: "BLUEPRINT:0,",
+                    layout: "9",
+                    icons_0: "0",
+                    icons_1: "1",
+                    icons_2: "2",
+                    icons_3: "3",
+                    icons_4: "4",
+                    time: "5",
+                    game_version: "6.7.8.9",
+                    short_desc: "",
+                    desc: "",
+                }
             );
         }
     }
@@ -256,4 +248,6 @@ pub mod data {
         let raw = inflate::decompress_to_vec(vec.as_slice()).expect("Failed to decode gzip!");
         raw
     }
+
+    // pub fn praser(vec: Vec<u8>) -> Vec<Vec<u8>> {}
 }
