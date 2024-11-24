@@ -198,23 +198,13 @@ mod test {
     }
 
     #[test]
-    fn test_md5f_a() {
-        let text = "a";
+    fn test_md5f_reference() {
+        let text =
+            "BLUEPRINT:0,0,0,0,0,0,0,0,0,0.0.0.0,,\"H4sIAAAAAAAAA2NkQAWMUMyARCMBANjTKTsvAAAA";
         let hash = MD5::new(Algo::MD5F).process(text.as_bytes());
         let expected: MD5Hash = [
-            0xf1, 0x0b, 0xdd, 0xae, 0xcb, 0x62, 0xe5, 0xa9, 0x24, 0x33, 0x75, 0x78, 0x67, 0xee,
-            0x06, 0xdb,
-        ];
-        assert!(hash == expected);
-    }
-
-    #[test]
-    fn test_md5f_abcd() {
-        let text = "abcd";
-        let hash = MD5::new(Algo::MD5F).process(text.as_bytes());
-        let expected: MD5Hash = [
-            0xfa, 0x27, 0xc7, 0x8b, 0x6e, 0xc3, 0x15, 0x59, 0xf0, 0xe7, 0x60, 0xce, 0x3f, 0x2b,
-            0x03, 0xf6,
+            0xe4, 0xe5, 0xa1, 0xcf, 0x28, 0xf1, 0xec, 0x61, 0x1e, 0x33, 0x49, 0x8c, 0xbd, 0x0d,
+            0xf0, 0x2b,
         ];
         assert!(hash == expected);
     }

@@ -1,16 +1,9 @@
-mod parser {
+pub mod blueprint {
     use nom::{
         bytes::complete::{tag, take, take_till},
         sequence::tuple,
         IResult,
     };
-
-    #[derive(Debug, PartialEq)]
-    pub struct Parser<'parser> {
-        pub head: &'parser str,
-        pub data: &'parser str,
-        pub md5f: &'parser str,
-    }
 
     fn take_till_quote(string: &str) -> IResult<&str, &str> {
         take_till(|c| c == '"')(string)
@@ -20,40 +13,190 @@ mod parser {
         tag("\"")(string)
     }
 
-    fn take_md5f(string: &str) -> IResult<&str, &str> {
+    fn take_32(string: &str) -> IResult<&str, &str> {
         take(32usize)(string)
     }
 
-    fn parser(string: &str) -> IResult<&str, Parser> {
+    #[derive(Debug, PartialEq)]
+    pub struct Blueprint<'blueprint> {
+        pub head: &'blueprint str,
+        pub data: &'blueprint str,
+        pub md5f: &'blueprint str,
+    }
+
+    pub fn parser(string: &str) -> IResult<&str, Blueprint> {
         let (unknown, (head, _, data, _, md5f)) = tuple((
             take_till_quote,
             tag_quote,
             take_till_quote,
             tag_quote,
-            take_md5f,
+            take_32,
         ))(string)?;
-        Ok((unknown, Parser { head, data, md5f }))
+        Ok((unknown, Blueprint { head, data, md5f }))
     }
 
-    #[test]
-    fn test_parser() {
-        assert_eq!(
-        parser("BLUEPRINT:0,0,0,0,0,0,0,0,0,0.0.0.0,,\"H4sIAAAAAAAAA2NkQAWMUMyARCMBANjTKTsvAAAA\"E4E5A1CF28F1EC611E33498CBD0DF02B\n\0"),
-        Ok((
-            "\n\0",
-            Parser {
-                head:"BLUEPRINT:0,0,0,0,0,0,0,0,0,0.0.0.0,,",
-                data:"H4sIAAAAAAAAA2NkQAWMUMyARCMBANjTKTsvAAAA",
-                md5f:"E4E5A1CF28F1EC611E33498CBD0DF02B"
-            }
-        ))
-    );
+    #[cfg(test)]
+    mod test {
+        use super::*;
+
+        #[test]
+        fn test_parser() {
+            let string = "BLUEPRINT:0,0,0,0,0,0,0,0,0,0.0.0.0,,\"H4sIAAAAAAAAA2NkQAWMUMyARCMBANjTKTsvAAAA\"E4E5A1CF28F1EC611E33498CBD0DF02B\n\0";
+            let result = parser(string);
+
+            assert_eq!(
+                result,
+                Ok((
+                    "\n\0",
+                    Blueprint {
+                        head: "BLUEPRINT:0,0,0,0,0,0,0,0,0,0.0.0.0,,",
+                        data: "H4sIAAAAAAAAA2NkQAWMUMyARCMBANjTKTsvAAAA",
+                        md5f: "E4E5A1CF28F1EC611E33498CBD0DF02B"
+                    }
+                ))
+            );
+        }
     }
 }
 
-mod head_parser {}
+pub mod head {
+    use nom::{
+        bytes::complete::{tag, take_till},
+        multi::separated_list0,
+        sequence::tuple,
+        IResult,
+    };
 
-mod data_parser {
+    fn tag_blueprint(string: &str) -> IResult<&str, &str> {
+        tag("BLUEPRINT:0,")(string)
+    }
+
+    fn tag_comma(string: &str) -> IResult<&str, &str> {
+        tag(",")(string)
+    }
+
+    fn tag_zero(string: &str) -> IResult<&str, &str> {
+        tag(",0,")(string)
+    }
+
+    fn take_till_comma(string: &str) -> IResult<&str, &str> {
+        take_till(|c| c == ',')(string)
+    }
+
+    #[derive(Debug, PartialEq)]
+    pub struct Head<'head> {
+        tag: &'head str,
+        layout: &'head str,
+        icons_0: &'head str,
+        icons_1: &'head str,
+        icons_2: &'head str,
+        icons_3: &'head str,
+        icons_4: &'head str,
+        time: &'head str,
+        game_version: &'head str,
+        short_desc: &'head str,
+        desc: &'head str,
+    }
+
+    pub fn parser(string: &str) -> IResult<&str, Head> {
+        let (
+            unknown,
+            (
+                tag,
+                layout,
+                _,
+                icons_0,
+                _,
+                icons_1,
+                _,
+                icons_2,
+                _,
+                icons_3,
+                _,
+                icons_4,
+                _,
+                time,
+                _,
+                game_version,
+                _,
+                short_desc,
+                _,
+                desc,
+            ),
+        ) = tuple((
+            tag_blueprint,
+            take_till_comma,
+            tag_comma,
+            take_till_comma,
+            tag_comma,
+            take_till_comma,
+            tag_comma,
+            take_till_comma,
+            tag_comma,
+            take_till_comma,
+            tag_comma,
+            take_till_comma,
+            tag_zero,
+            take_till_comma,
+            tag_comma,
+            take_till_comma,
+            tag_comma,
+            take_till_comma,
+            tag_comma,
+            take_till_comma,
+        ))(string)?;
+        Ok((
+            unknown,
+            Head {
+                tag,
+                layout,
+                icons_0,
+                icons_1,
+                icons_2,
+                icons_3,
+                icons_4,
+                time,
+                game_version,
+                short_desc,
+                desc,
+            },
+        ))
+    }
+
+    #[cfg(test)]
+    mod test {
+        use super::*;
+
+        #[test]
+        fn test_parser() {
+            let string = "BLUEPRINT:0,9,0,1,2,3,4,0,5,6.7.8.9,,";
+
+            let result = parser(string);
+
+            assert_eq!(
+                result,
+                Ok((
+                    "",
+                    Head {
+                        tag: "BLUEPRINT:0,",
+                        layout: "9",
+                        icons_0: "0",
+                        icons_1: "1",
+                        icons_2: "2",
+                        icons_3: "3",
+                        icons_4: "4",
+                        time: "5",
+                        game_version: "6.7.8.9",
+                        short_desc: "",
+                        desc: "",
+                    }
+                ))
+            );
+        }
+    }
+}
+
+pub mod data {
     use std::collections::BTreeMap;
 
     pub struct Area {
@@ -90,15 +233,7 @@ mod data_parser {
         parameters: Vec<u32>,
     }
 
-    pub struct Blueprint<'blueprint> {
-        //head
-        layout: i64,
-        icons: [i64; 5],
-        time: i64,
-        game_version: &'blueprint str,
-        short_desc: &'blueprint str,
-        desc: &'blueprint str,
-        //data
+    pub struct Data {
         version: i64,
         cursor_offset: [i64; 2],
         cursor_target_area: i64,
@@ -106,28 +241,5 @@ mod data_parser {
         primary_area_idx: i64,
         areas: BTreeMap<i64, Area>,
         buildings: BTreeMap<i64, Building>,
-        //md5f
-        md5f: [u32; 4],
-    }
-
-    impl<'blueprint> Blueprint<'blueprint> {
-        pub fn new() -> Blueprint<'blueprint> {
-            Blueprint {
-                layout: 0,
-                icons: [0, 0, 0, 0, 0],
-                time: 0,
-                game_version: "",
-                short_desc: "",
-                desc: "",
-                version: 0,
-                cursor_offset: [0, 0],
-                cursor_target_area: 0,
-                drag_box_size: [0, 0],
-                primary_area_idx: 0,
-                areas: BTreeMap::new(),
-                buildings: BTreeMap::new(),
-                md5f: [0, 0, 0, 0],
-            }
-        }
     }
 }
