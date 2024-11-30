@@ -5,14 +5,14 @@ use nom::{
 
 #[derive(Debug)]
 pub struct BlueprintArea {
-    index: i8,
-    parent_index: i8,
-    tropic_anchor: i16,
-    area_segments: i16,
-    anchor_local_offset_x: i16,
-    anchor_local_offset_y: i16,
-    width: i16,
-    height: i16,
+    pub index: i8,
+    pub parent_index: i8,
+    pub tropic_anchor: i16,
+    pub area_segments: i16,
+    pub anchor_local_offset_x: i16,
+    pub anchor_local_offset_y: i16,
+    pub width: i16,
+    pub height: i16,
 }
 
 pub fn parse(memory_stream: &[u8]) -> IResult<&[u8], BlueprintArea> {

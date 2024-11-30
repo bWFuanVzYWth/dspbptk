@@ -9,17 +9,17 @@ use nom::{
 
 #[derive(Debug)]
 pub struct Content {
-    patch: i32,
-    cursor_offset_x: i32,
-    cursor_offset_y: i32,
-    cursor_target_area: i32,
-    drag_box_size_x: i32,
-    drag_box_size_y: i32,
-    primary_area_idx: i32,
-    areas_length: i8,
-    areas: Vec<area::BlueprintArea>,
-    buildings_length: i32,
-    buildings: Vec<building::BlueprintBuilding>,
+    pub patch: i32,
+    pub cursor_offset_x: i32,
+    pub cursor_offset_y: i32,
+    pub cursor_target_area: i32,
+    pub drag_box_size_x: i32,
+    pub drag_box_size_y: i32,
+    pub primary_area_idx: i32,
+    pub areas_length: i8,
+    pub areas: Vec<area::BlueprintArea>,
+    pub buildings_length: i32,
+    pub buildings: Vec<building::BlueprintBuilding>,
 }
 
 pub fn parse(memory_stream: &[u8]) -> IResult<&[u8], Content> {
@@ -74,6 +74,69 @@ pub fn serialization(content: Content) -> Vec<u8> {
         memory_stream.extend(building::serialization_version_neg100(building))
     });
     memory_stream
+}
+
+pub fn sort_buildings(buildings: &mut Vec<building::BlueprintBuilding>) {
+    buildings.sort_by(|a, b| {
+        use std::cmp::Ordering::{Equal, Greater, Less};
+        let item_id_order = a.item_id.cmp(&b.item_id);
+        if item_id_order != Equal {
+            return item_id_order;
+        };
+
+        let model_index_order = a.model_index.cmp(&b.model_index);
+        if model_index_order != Equal {
+            return model_index_order;
+        };
+
+        let recipe_id_order = a.recipe_id.cmp(&b.recipe_id);
+        if recipe_id_order != Equal {
+            return recipe_id_order;
+        };
+
+        let area_index_order = a.area_index.cmp(&b.area_index);
+        if area_index_order != Equal {
+            return area_index_order;
+        };
+
+        let item_id_order = a.item_id.cmp(&b.item_id);
+        if item_id_order != Equal {
+            return item_id_order;
+        };
+
+        const KY: f64 = 256.0;
+        const KX: f64 = 1024.0;
+        let local_offset_score = |x, y, z| ((y as f64) * KY + (x as f64)) * KX + (z as f64);
+        let local_offset_score_a =
+            local_offset_score(a.local_offset_x, a.local_offset_y, a.local_offset_z);
+        let local_offset_score_b =
+            local_offset_score(b.local_offset_x, b.local_offset_y, b.local_offset_z);
+        if local_offset_score_a < local_offset_score_b {
+            Less
+        } else {
+            Greater
+        }
+    });
+
+    use std::collections::HashMap;
+    let mut index_lut = HashMap::new();
+    buildings.iter().enumerate().for_each(|(index, building)| {
+        index_lut.insert(building.index, index as i32);
+    });
+    buildings.iter_mut().for_each(|building| {
+        building.index = index_lut
+            .get(&building.index)
+            .copied()
+            .unwrap_or(building::INDEX_NULL);
+        building.temp_output_obj_idx = index_lut
+            .get(&building.temp_output_obj_idx)
+            .copied()
+            .unwrap_or(building::INDEX_NULL);
+        building.temp_input_obj_idx = index_lut
+            .get(&building.temp_input_obj_idx)
+            .copied()
+            .unwrap_or(building::INDEX_NULL);
+    });
 }
 
 #[cfg(test)]

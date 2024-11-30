@@ -22,16 +22,16 @@ fn take_till_comma(string: &str) -> IResult<&str, &str> {
 
 #[derive(Debug, PartialEq)]
 pub struct Head<'head> {
-    layout: &'head str,
-    icons_0: &'head str,
-    icons_1: &'head str,
-    icons_2: &'head str,
-    icons_3: &'head str,
-    icons_4: &'head str,
-    time: &'head str,
-    game_version: &'head str,
-    short_desc: &'head str,
-    desc: &'head str,
+    pub layout: &'head str,
+    pub icons_0: &'head str,
+    pub icons_1: &'head str,
+    pub icons_2: &'head str,
+    pub icons_3: &'head str,
+    pub icons_4: &'head str,
+    pub time: &'head str,
+    pub game_version: &'head str,
+    pub short_desc: &'head str,
+    pub desc: &'head str,
 }
 
 pub fn parse(string: &str) -> IResult<&str, Head> {

@@ -6,46 +6,48 @@ use nom::{
     IResult,
 };
 
+pub const INDEX_NULL:i32 = -1;
+
 #[derive(Debug)]
 pub struct BlueprintBuilding {
-    version: i32,
+    pub version: i32,
 
-    index: i32,
-    area_index: i8,
+    pub index: i32,
+    pub area_index: i8,
 
-    local_offset_x: f32,
-    local_offset_y: f32,
-    local_offset_z: f32,
-    yaw: f32,
-    tilt: f32,
-    pitch: f32,
+    pub local_offset_x: f32,
+    pub local_offset_y: f32,
+    pub local_offset_z: f32,
+    pub yaw: f32,
+    pub tilt: f32,
+    pub pitch: f32,
 
-    local_offset_x2: f32,
-    local_offset_y2: f32,
-    local_offset_z2: f32,
-    yaw2: f32,
-    tilt2: f32,
-    pitch2: f32,
+    pub local_offset_x2: f32,
+    pub local_offset_y2: f32,
+    pub local_offset_z2: f32,
+    pub yaw2: f32,
+    pub tilt2: f32,
+    pub pitch2: f32,
 
-    item_id: i16,
-    model_index: i16,
+    pub item_id: i16,
+    pub model_index: i16,
 
-    temp_output_obj_idx: i32,
-    temp_input_obj_idx: i32,
+    pub temp_output_obj_idx: i32,
+    pub temp_input_obj_idx: i32,
 
-    output_to_slot: i8,
-    input_from_slot: i8,
-    output_from_slot: i8,
-    input_to_slot: i8,
+    pub output_to_slot: i8,
+    pub input_from_slot: i8,
+    pub output_from_slot: i8,
+    pub input_to_slot: i8,
 
-    output_offset: i8,
-    input_offset: i8,
+    pub output_offset: i8,
+    pub input_offset: i8,
 
-    recipe_id: i16,
-    filter_id: i16,
+    pub recipe_id: i16,
+    pub filter_id: i16,
 
-    parameters_length: i16,
-    parameters: Vec<i32>,
+    pub parameters_length: i16,
+    pub parameters: Vec<i32>,
 }
 
 fn parse_version_neg101(memory_stream: &[u8]) -> IResult<&[u8], BlueprintBuilding> {
