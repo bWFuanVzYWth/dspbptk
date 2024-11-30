@@ -1,5 +1,6 @@
 use nom::{
     bytes::complete::{tag, take_till},
+    multi::count,
     sequence::{preceded, tuple},
     IResult,
 };
@@ -35,32 +36,32 @@ pub struct Head<'head> {
 }
 
 pub fn parse(string: &str) -> IResult<&str, Head> {
-    let (unknown, head) = tuple((
-        preceded(tag_blueprint, take_till_comma),
-        preceded(tag_comma, take_till_comma),
-        preceded(tag_comma, take_till_comma),
-        preceded(tag_comma, take_till_comma),
-        preceded(tag_comma, take_till_comma),
-        preceded(tag_comma, take_till_comma),
-        preceded(tag_zero, take_till_comma),
-        preceded(tag_comma, take_till_comma),
-        preceded(tag_comma, take_till_comma),
-        preceded(tag_comma, take_till_comma),
-    ))(string)?;
+    let unknown = string;
+
+    let (unknown, layout) = preceded(tag_blueprint, take_till_comma)(unknown)?;
+    let (unknown, icons_0) = preceded(tag_comma, take_till_comma)(unknown)?;
+    let (unknown, icons_1) = preceded(tag_comma, take_till_comma)(unknown)?;
+    let (unknown, icons_2) = preceded(tag_comma, take_till_comma)(unknown)?;
+    let (unknown, icons_3) = preceded(tag_comma, take_till_comma)(unknown)?;
+    let (unknown, icons_4) = preceded(tag_comma, take_till_comma)(unknown)?;
+    let (unknown, time) = preceded(tag_zero, take_till_comma)(unknown)?;
+    let (unknown, game_version) = preceded(tag_comma, take_till_comma)(unknown)?;
+    let (unknown, short_desc) = preceded(tag_comma, take_till_comma)(unknown)?;
+    let (unknown, desc) = preceded(tag_comma, take_till_comma)(unknown)?;
 
     Ok((
         unknown,
         Head {
-            layout: head.0,
-            icons_0: head.1,
-            icons_1: head.2,
-            icons_2: head.3,
-            icons_3: head.4,
-            icons_4: head.5,
-            time: head.6,
-            game_version: head.7,
-            short_desc: head.8,
-            desc: head.9,
+            layout: layout,
+            icons_0: icons_0,
+            icons_1: icons_1,
+            icons_2: icons_2,
+            icons_3: icons_3,
+            icons_4: icons_4,
+            time: time,
+            game_version: game_version,
+            short_desc: short_desc,
+            desc: desc,
         },
     ))
 }

@@ -40,10 +40,20 @@ name = "dspbptk"
 version = "0.1.0"
 dependencies = [
  "base64",
+ "flate2",
  "lazy_static",
- "miniz_oxide",
  "nom",
  "zopfli",
+]
+
+[[package]]
+name = "flate2"
+version = "1.0.35"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c936bfdafb507ebbf50b8074c54fa31c5be9a1e7e5f467dd659697041407d07c"
+dependencies = [
+ "crc32fast",
+ "miniz_oxide",
 ]
 
 [[package]]

@@ -27,18 +27,23 @@ pub struct BlueprintData<'blueprint> {
 }
 
 pub fn parse(string: &str) -> IResult<&str, BlueprintData> {
-    let (unknown, blueprint) = tuple((
-        take_till_quote,
-        preceded(tag_quote, take_till_quote),
-        preceded(tag_quote, take_32),
-    ))(string)?;
+    // let (unknown, blueprint) = tuple((
+    //     take_till_quote,
+    //     preceded(tag_quote, take_till_quote),
+    //     preceded(tag_quote, take_32),
+    // ))(string)?;
 
+    let unknown = string;
+
+    let (unknown, header) = take_till_quote(unknown)?;
+    let (unknown, content) = preceded(tag_quote, take_till_quote)(unknown)?;
+    let (unknown, md5f) = preceded(tag_quote, take_32)(unknown)?;
     Ok((
         unknown,
         BlueprintData {
-            header: blueprint.0,
-            content: blueprint.1,
-            md5f: blueprint.2,
+            header: header,
+            content: content,
+            md5f: md5f,
         },
     ))
 }
