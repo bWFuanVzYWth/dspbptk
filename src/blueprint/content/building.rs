@@ -6,7 +6,7 @@ use nom::{
     IResult,
 };
 
-pub const INDEX_NULL:i32 = -1;
+pub const INDEX_NULL: i32 = -1;
 
 #[derive(Debug)]
 pub struct BlueprintBuilding {
@@ -125,8 +125,8 @@ fn parse_version_neg101(memory_stream: &[u8]) -> IResult<&[u8], BlueprintBuildin
                     tilt,
                     0.0,
                     0.0,
-                    0.0,
-                    0.0,
+                    yaw,
+                    tilt,
                     0.0,
                     0.0,
                     0.0,
@@ -150,7 +150,7 @@ fn parse_version_neg101(memory_stream: &[u8]) -> IResult<&[u8], BlueprintBuildin
                     0.0,
                     0.0,
                     0.0,
-                    0.0,
+                    yaw,
                     0.0,
                     0.0,
                 ),
@@ -343,9 +343,64 @@ pub fn parse(memory_stream: &[u8]) -> IResult<&[u8], BlueprintBuilding> {
     Ok((unknown, building))
 }
 
-pub fn serialization_version_neg100(building: &BlueprintBuilding) -> Vec<u8> {
+pub fn serialization_version_neg101(building: &BlueprintBuilding) -> Vec<u8> {
     let mut memory_stream = Vec::new();
-    memory_stream.extend_from_slice(&(-100_i32).to_le_bytes());
+    memory_stream.extend_from_slice(&(-101_i32).to_le_bytes());
+    memory_stream.extend_from_slice(&building.index.to_le_bytes());
+    memory_stream.extend_from_slice(&building.item_id.to_le_bytes());
+    memory_stream.extend_from_slice(&building.model_index.to_le_bytes());
+    memory_stream.extend_from_slice(&building.area_index.to_le_bytes());
+
+    match building.item_id {
+        2011..2021 => {
+            // 分拣器
+            memory_stream.extend_from_slice(&building.local_offset_x.to_le_bytes());
+            memory_stream.extend_from_slice(&building.local_offset_y.to_le_bytes());
+            memory_stream.extend_from_slice(&building.local_offset_z.to_le_bytes());
+            memory_stream.extend_from_slice(&building.yaw.to_le_bytes());
+            memory_stream.extend_from_slice(&building.tilt.to_le_bytes());
+            memory_stream.extend_from_slice(&building.pitch.to_le_bytes());
+            memory_stream.extend_from_slice(&building.local_offset_x2.to_le_bytes());
+            memory_stream.extend_from_slice(&building.local_offset_y2.to_le_bytes());
+            memory_stream.extend_from_slice(&building.local_offset_z2.to_le_bytes());
+            memory_stream.extend_from_slice(&building.yaw2.to_le_bytes());
+            memory_stream.extend_from_slice(&building.tilt2.to_le_bytes());
+            memory_stream.extend_from_slice(&building.pitch2.to_le_bytes());
+        }
+        2001..2011 => {
+            memory_stream.extend_from_slice(&building.local_offset_x.to_le_bytes());
+            memory_stream.extend_from_slice(&building.local_offset_y.to_le_bytes());
+            memory_stream.extend_from_slice(&building.local_offset_z.to_le_bytes());
+            memory_stream.extend_from_slice(&building.yaw.to_le_bytes());
+            memory_stream.extend_from_slice(&building.tilt.to_le_bytes());
+        }
+        _ => {
+            memory_stream.extend_from_slice(&building.local_offset_x.to_le_bytes());
+            memory_stream.extend_from_slice(&building.local_offset_y.to_le_bytes());
+            memory_stream.extend_from_slice(&building.local_offset_z.to_le_bytes());
+            memory_stream.extend_from_slice(&building.yaw.to_le_bytes());
+        }
+    }
+    memory_stream.extend_from_slice(&building.temp_output_obj_idx.to_le_bytes());
+    memory_stream.extend_from_slice(&building.temp_input_obj_idx.to_le_bytes());
+    memory_stream.extend_from_slice(&building.output_to_slot.to_le_bytes());
+    memory_stream.extend_from_slice(&building.input_from_slot.to_le_bytes());
+    memory_stream.extend_from_slice(&building.output_from_slot.to_le_bytes());
+    memory_stream.extend_from_slice(&building.input_to_slot.to_le_bytes());
+    memory_stream.extend_from_slice(&building.output_offset.to_le_bytes());
+    memory_stream.extend_from_slice(&building.input_offset.to_le_bytes());
+    memory_stream.extend_from_slice(&building.recipe_id.to_le_bytes());
+    memory_stream.extend_from_slice(&building.filter_id.to_le_bytes());
+    memory_stream.extend_from_slice(&building.parameters_length.to_le_bytes());
+    building
+        .parameters
+        .iter()
+        .for_each(|x| memory_stream.extend_from_slice(&x.to_le_bytes()));
+    memory_stream
+}
+
+pub fn serialization_version_0(building: &BlueprintBuilding) -> Vec<u8> {
+    let mut memory_stream = Vec::new();
     memory_stream.extend_from_slice(&building.index.to_le_bytes());
     memory_stream.extend_from_slice(&building.area_index.to_le_bytes());
     memory_stream.extend_from_slice(&building.local_offset_x.to_le_bytes());
@@ -356,7 +411,6 @@ pub fn serialization_version_neg100(building: &BlueprintBuilding) -> Vec<u8> {
     memory_stream.extend_from_slice(&building.local_offset_z2.to_le_bytes());
     memory_stream.extend_from_slice(&building.yaw.to_le_bytes());
     memory_stream.extend_from_slice(&building.yaw2.to_le_bytes());
-    memory_stream.extend_from_slice(&building.tilt.to_le_bytes());
     memory_stream.extend_from_slice(&building.item_id.to_le_bytes());
     memory_stream.extend_from_slice(&building.model_index.to_le_bytes());
     memory_stream.extend_from_slice(&building.temp_output_obj_idx.to_le_bytes());

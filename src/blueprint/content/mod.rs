@@ -71,7 +71,7 @@ pub fn serialization(content: Content) -> Vec<u8> {
         .for_each(|area| memory_stream.extend(area::serialization(area)));
     memory_stream.extend_from_slice(&content.buildings_length.to_le_bytes());
     content.buildings.iter().for_each(|building| {
-        memory_stream.extend(building::serialization_version_neg100(building))
+        memory_stream.extend(building::serialization_version_neg101(building))
     });
     memory_stream
 }
