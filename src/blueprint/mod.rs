@@ -102,7 +102,7 @@ pub fn encode_content_with_options(
 }
 
 pub fn encode_content(memory_stream: Vec<u8>) -> String {
-    encode_content_with_options(memory_stream, 64, u64::MAX, 0)
+    encode_content_with_options(memory_stream, 64, u64::MAX, 64)
 }
 
 #[cfg(test)]
