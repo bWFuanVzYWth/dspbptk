@@ -55,8 +55,29 @@ pub fn parse(memory_stream: &[u8]) -> IResult<&[u8], Content> {
     ))
 }
 
+pub fn serialization(content: Content) -> Vec<u8> {
+    let mut memory_stream = Vec::new();
+    memory_stream.extend_from_slice(&content.patch.to_le_bytes());
+    memory_stream.extend_from_slice(&content.cursor_offset_x.to_le_bytes());
+    memory_stream.extend_from_slice(&content.cursor_offset_y.to_le_bytes());
+    memory_stream.extend_from_slice(&content.cursor_target_area.to_le_bytes());
+    memory_stream.extend_from_slice(&content.drag_box_size_x.to_le_bytes());
+    memory_stream.extend_from_slice(&content.drag_box_size_y.to_le_bytes());
+    memory_stream.extend_from_slice(&content.primary_area_idx.to_le_bytes());
+    memory_stream.extend_from_slice(&content.areas_length.to_le_bytes());
+    content
+        .areas
+        .iter()
+        .for_each(|area| memory_stream.extend(area::serialization(area)));
+    memory_stream.extend_from_slice(&content.buildings_length.to_le_bytes());
+    content.buildings.iter().for_each(|building| {
+        memory_stream.extend(building::serialization_version_neg100(building))
+    });
+    memory_stream
+}
+
 #[cfg(test)]
 mod test {
     use super::*;
-// TODO test
+    // TODO test
 }

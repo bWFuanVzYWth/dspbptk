@@ -3,7 +3,7 @@ pub mod header;
 
 use nom::{
     bytes::complete::{tag, take, take_till},
-    sequence::{preceded, tuple},
+    sequence::preceded,
     IResult,
 };
 
@@ -20,19 +20,13 @@ fn take_till_quote(string: &str) -> IResult<&str, &str> {
 }
 
 #[derive(Debug, PartialEq)]
-pub struct BlueprintData<'blueprint> {
-    pub header: &'blueprint str,
-    pub content: &'blueprint str,
-    pub md5f: &'blueprint str,
+pub struct BlueprintData<'bp> {
+    pub header: &'bp str,
+    pub content: &'bp str,
+    pub md5f: &'bp str,
 }
 
 pub fn parse(string: &str) -> IResult<&str, BlueprintData> {
-    // let (unknown, blueprint) = tuple((
-    //     take_till_quote,
-    //     preceded(tag_quote, take_till_quote),
-    //     preceded(tag_quote, take_32),
-    // ))(string)?;
-
     let unknown = string;
 
     let (unknown, header) = take_till_quote(unknown)?;
