@@ -1,3 +1,5 @@
+cargo-features = ["profile-rustflags"]
+
 [package]
 name = "dspbptk"
 version = "0.1.0"
@@ -9,3 +11,14 @@ nom = "7.1.3"
 base64 = "0.22.1"
 lazy_static = "1.5.0"
 flate2 = "1.0.35"
+clap = { version = "4.5.21", features = ["derive"] }
+
+[release]
+lto = "fat"
+codegen-units = 1
+rustflags = ["-C", "target-cpu=native"]
+
+[profile.release]
+lto = "fat"
+codegen-units = 1
+rustflags = ["-C", "target-cpu=native"]
