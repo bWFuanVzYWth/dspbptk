@@ -42,8 +42,7 @@ pub fn parse(memory_stream: &[u8]) -> IResult<&[u8], BlueprintArea> {
     ))
 }
 
-pub fn serialization(area: &BlueprintArea) -> Vec<u8> {
-    let mut memory_stream = Vec::new();
+pub fn serialization(memory_stream: &mut Vec<u8>, area: &BlueprintArea) {
     memory_stream.extend_from_slice(&area.index.to_le_bytes());
     memory_stream.extend_from_slice(&area.parent_index.to_le_bytes());
     memory_stream.extend_from_slice(&area.tropic_anchor.to_le_bytes());
@@ -52,7 +51,6 @@ pub fn serialization(area: &BlueprintArea) -> Vec<u8> {
     memory_stream.extend_from_slice(&area.anchor_local_offset_y.to_le_bytes());
     memory_stream.extend_from_slice(&area.width.to_le_bytes());
     memory_stream.extend_from_slice(&area.height.to_le_bytes());
-    memory_stream
 }
 
 #[cfg(test)]

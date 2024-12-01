@@ -83,9 +83,9 @@ impl MD5 {
 
     fn k(&self, i: usize) -> u32 {
         let u = if self.algo == Algo::MD5F && K_MD5F.contains_key(&i) {
-            *K_MD5F.get(&i).unwrap()
+            *K_MD5F.get(&i).unwrap(/* impossible */)
         } else if self.algo == Algo::MD5FC && K_MD5FC.contains_key(&i) {
-            *K_MD5FC.get(&i).unwrap()
+            *K_MD5FC.get(&i).unwrap(/* impossible */)
         } else {
             K[i]
         };
@@ -96,7 +96,7 @@ impl MD5 {
         assert!(buf.len() == 64);
         let words: Vec<u32> = buf
             .chunks_exact(4)
-            .map(|b| u32::from_le_bytes(b.try_into().unwrap()))
+            .map(|b| u32::from_le_bytes(b.try_into().unwrap(/* impossible */)))
             .collect();
         let mut a = self.s[0];
         let mut b = self.s[1];

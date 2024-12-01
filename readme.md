@@ -1,4 +1,4 @@
 # dspbptk
 
 ## Acknowledgements
-* https://github.com/Wesmania/dspbp
+* MD5f: https://github.com/Wesmania/dspbp

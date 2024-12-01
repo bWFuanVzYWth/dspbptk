@@ -1,6 +1,10 @@
 pub mod area;
 pub mod building;
 
+use crate::blueprint::error::DspbptkError;
+use crate::blueprint::error::DspbptkError::*;
+
+use log::{error, info, warn};
 use nom::{
     multi::count,
     number::complete::{le_i32, le_i8},
@@ -22,7 +26,7 @@ pub struct Content {
     pub buildings: Vec<building::BlueprintBuilding>,
 }
 
-pub fn parse(memory_stream: &[u8]) -> IResult<&[u8], Content> {
+pub fn parse_non_finish(memory_stream: &[u8]) -> IResult<&[u8], Content> {
     let unknown = memory_stream;
 
     let (unknown, patch) = le_i32(unknown)?;
@@ -55,6 +59,23 @@ pub fn parse(memory_stream: &[u8]) -> IResult<&[u8], Content> {
     ))
 }
 
+pub fn parse(memory_stream: &[u8]) -> Result<Content, DspbptkError> {
+    use nom::Finish;
+    match parse_non_finish(memory_stream).finish() {
+        Ok((unknown, content)) => {
+            if unknown.len() > 0 {
+                warn!("Unknown after content: {:?}", unknown);
+                // return Err(CanNotParseContent)
+            };
+            Ok(content)
+        }
+        Err(why) => {
+            error!("{:#?}", why);
+            Err(CanNotParseContent)
+        }
+    }
+}
+
 pub fn serialization(content: Content) -> Vec<u8> {
     let mut memory_stream = Vec::new();
     memory_stream.extend_from_slice(&content.patch.to_le_bytes());
@@ -68,11 +89,12 @@ pub fn serialization(content: Content) -> Vec<u8> {
     content
         .areas
         .iter()
-        .for_each(|area| memory_stream.extend(area::serialization(area)));
+        .for_each(|area| area::serialization(&mut memory_stream, area));
     memory_stream.extend_from_slice(&content.buildings_length.to_le_bytes());
-    content.buildings.iter().for_each(|building| {
-        memory_stream.extend(building::serialization_version_neg101(building))
-    });
+    content
+        .buildings
+        .iter()
+        .for_each(|building| building::serialization_version_neg101(&mut memory_stream, building));
     memory_stream
 }
 
@@ -124,18 +146,15 @@ pub fn sort_buildings(buildings: &mut Vec<building::BlueprintBuilding>) {
         index_lut.insert(building.index, index as i32);
     });
     buildings.iter_mut().for_each(|building| {
-        building.index = index_lut
+        building.index = *index_lut
             .get(&building.index)
-            .copied()
-            .unwrap_or(building::INDEX_NULL);
-        building.temp_output_obj_idx = index_lut
+            .unwrap(/* impossible */);
+        building.temp_output_obj_idx = *index_lut
             .get(&building.temp_output_obj_idx)
-            .copied()
-            .unwrap_or(building::INDEX_NULL);
-        building.temp_input_obj_idx = index_lut
+            .unwrap_or(&building::INDEX_NULL);
+        building.temp_input_obj_idx = *index_lut
             .get(&building.temp_input_obj_idx)
-            .copied()
-            .unwrap_or(building::INDEX_NULL);
+            .unwrap_or(&building::INDEX_NULL);
     });
 }
 

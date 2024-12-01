@@ -40,3 +40,9 @@ pub fn parse(string: &str) -> IResult<&str, DysonBlueprintData> {
         },
     ))
 }
+
+#[cfg(test)]
+mod test {
+    use super::*;
+    // TODO test
+}

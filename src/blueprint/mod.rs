@@ -1,5 +1,11 @@
 pub mod content;
+pub mod error;
 pub mod header;
+
+use log::{error, info, warn};
+
+use crate::blueprint::error::DspbptkError;
+use crate::blueprint::error::DspbptkError::*;
 
 use nom::{
     bytes::complete::{tag, take, take_till},
@@ -26,7 +32,7 @@ pub struct BlueprintData<'bp> {
     pub md5f: &'bp str,
 }
 
-pub fn parse(string: &str) -> IResult<&str, BlueprintData> {
+pub fn parse_non_finish(string: &str) -> IResult<&str, BlueprintData> {
     let unknown = string;
 
     let (unknown, header) = take_till_quote(unknown)?;
@@ -42,67 +48,92 @@ pub fn parse(string: &str) -> IResult<&str, BlueprintData> {
     ))
 }
 
-pub fn serialization(blueprint: BlueprintData) -> String {
-    format!(
-        "{}\"{}\"{}",
-        blueprint.header, blueprint.content, blueprint.md5f
-    )
+pub fn parse(string: &str) -> Result<BlueprintData, DspbptkError> {
+    use nom::Finish;
+    match parse_non_finish(string).finish() {
+        Ok((unknown, data)) => {
+            if unknown.len() > 0 {
+                warn!("Unknown after blueprint: {:?}", unknown);
+            };
+            Ok(data)
+        }
+        Err(why) => {
+            error!("{:#?}", why);
+            Err(CanNotParseBluePrint)
+        }
+    }
 }
 
-pub fn compute_md5f_string(header: &str, content: &str) -> String {
+pub fn compute_md5f_string(header_content: &str) -> String {
     use crate::md5::*;
-    let header_content = format!("{}\"{}", header, content);
-    MD5::new(Algo::MD5F)
-        .process(header_content.as_bytes())
-        .iter()
-        .map(|x| format!("{:02X}", x))
-        .collect::<Vec<String>>()
-        .join("")
+    let md5f = MD5::new(Algo::MD5F).process(header_content.as_bytes());
+    format!("{:02X}{:02X}{:02X}{:02X}{:02X}{:02X}{:02X}{:02X}{:02X}{:02X}{:02X}{:02X}{:02X}{:02X}{:02X}{:02X}",
+        md5f[0], md5f[1], md5f[2], md5f[3], md5f[4], md5f[5], md5f[6], md5f[7], md5f[8], md5f[9], md5f[10], md5f[11], md5f[12], md5f[13], md5f[14], md5f[15])
 }
 
-pub fn has_broken_md5f(blueprint: BlueprintData) -> bool {
-    let expect_md5f_string = compute_md5f_string(blueprint.header, blueprint.content);
-    expect_md5f_string != blueprint.md5f
+pub fn serialization(header: &str, content: &str) -> String {
+    let mut header_content = format!("{}\"{}", header, content);
+    let md5f = compute_md5f_string(&header_content);
+    header_content.push_str("\"");
+    header_content.push_str(&md5f);
+    header_content
 }
 
-// TODO 异常处理：去掉两个unwrap()
-pub fn decode_content(content: &str) -> Vec<u8> {
+pub fn decode_content(content: &str) -> Result<Vec<u8>, DspbptkError> {
     use base64::prelude::*;
+    use flate2::read::GzDecoder;
     use std::io::Read;
-    let gzip_stream = BASE64_STANDARD.decode(content).unwrap();
-    let mut decoder = flate2::read::GzDecoder::new(gzip_stream.as_slice());
+    let gzip_stream = match BASE64_STANDARD.decode(content) {
+        Ok(result) => result,
+        Err(why) => {
+            error!("{:#?}", why);
+            return Err(ReadBrokenBase64);
+        }
+    };
+    let mut decoder = GzDecoder::new(gzip_stream.as_slice());
     let mut memory_stream = Vec::new();
-    decoder.read_to_end(&mut memory_stream).unwrap();
-    memory_stream
+    match decoder.read_to_end(&mut memory_stream) {
+        Ok(_) => Ok(memory_stream),
+        Err(why) => {
+            error!("{:#?}", why);
+            Err(ReadBrokenGzip)
+        }
+    }
 }
 
-// TODO 异常处理：去掉两个unwrap()
 pub fn encode_content_with_options(
     memory_stream: Vec<u8>,
     iteration_count: u64,
     iterations_without_improvement: u64,
     maximum_block_splits: u16,
-) -> String {
+) -> Result<String, DspbptkError> {
     use base64::prelude::*;
     use std::num::NonZero;
+    if iteration_count == 0 || iterations_without_improvement == 0 {
+        return Err(IllegalCompressParameters);
+    };
     let options = zopfli::Options {
-        iteration_count: NonZero::new(iteration_count).unwrap(),
-        iterations_without_improvement: NonZero::new(iterations_without_improvement).unwrap(),
+        iteration_count: NonZero::new(iteration_count).unwrap(/* impossible */),
+        iterations_without_improvement: NonZero::new(iterations_without_improvement).unwrap(/* impossible */),
         maximum_block_splits: maximum_block_splits,
     };
     let mut gzip_stream = Vec::new();
-    zopfli::compress(
+    match zopfli::compress(
         options,
         zopfli::Format::Gzip,
         memory_stream.as_slice(),
         &mut gzip_stream,
-    )
-    .unwrap();
-    BASE64_STANDARD.encode(gzip_stream)
+    ) {
+        Ok(_) => Ok(BASE64_STANDARD.encode(gzip_stream)),
+        Err(why) => {
+            error!("{:#?}", why);
+            Err(CanNotCompressGzip)
+        }
+    }
 }
 
 pub fn encode_content(memory_stream: Vec<u8>) -> String {
-    encode_content_with_options(memory_stream, 64, u64::MAX, 64)
+    encode_content_with_options(memory_stream, 64, u64::MAX, 64).unwrap(/*impossible*/)
 }
 
 #[cfg(test)]
@@ -116,14 +147,11 @@ mod test {
 
         assert_eq!(
             result,
-            Ok((
-                "\n\0",
-                BlueprintData {
-                    header: "BLUEPRINT:0,0,0,0,0,0,0,0,0,0.0.0.0,,",
-                    content: "H4sIAAAAAAAAA2NkQAWMUMyARCMBANjTKTsvAAAA",
-                    md5f: "E4E5A1CF28F1EC611E33498CBD0DF02B"
-                }
-            ))
+            Ok(BlueprintData {
+                header: "BLUEPRINT:0,0,0,0,0,0,0,0,0,0.0.0.0,,",
+                content: "H4sIAAAAAAAAA2NkQAWMUMyARCMBANjTKTsvAAAA",
+                md5f: "E4E5A1CF28F1EC611E33498CBD0DF02B"
+            })
         );
     }
 }

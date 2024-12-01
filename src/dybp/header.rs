@@ -46,3 +46,9 @@ pub fn parse(string: &str) -> IResult<&str, Head> {
         },
     ))
 }
+
+#[cfg(test)]
+mod test {
+    use super::*;
+    // TODO test
+}

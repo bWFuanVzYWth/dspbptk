@@ -10,7 +10,7 @@ pub const INDEX_NULL: i32 = -1;
 
 #[derive(Debug)]
 pub struct BlueprintBuilding {
-    pub version: i32,
+    pub version: i32, // 暂时用不到，但是保留字段
 
     pub index: i32,
     pub area_index: i8,
@@ -338,13 +338,19 @@ fn parse_version_0(memory_stream: &[u8]) -> IResult<&[u8], BlueprintBuilding> {
 }
 
 pub fn parse(memory_stream: &[u8]) -> IResult<&[u8], BlueprintBuilding> {
-    let (unknown, building) =
-        alt((parse_version_neg101, parse_version_neg100, parse_version_0))(memory_stream)?;
+    let num_slice = &memory_stream[0..4];
+    let num = i32::from_le_bytes(num_slice.try_into().unwrap(/* FIXME */));
+    let (unknown, building) = match num {
+        -101 => parse_version_neg101(memory_stream)?,
+        -100 => parse_version_neg100(memory_stream)?,
+        _ => parse_version_0(memory_stream)?,
+    };
+    // let (unknown, building) =
+    //     alt((parse_version_neg101, parse_version_neg100, parse_version_0))(memory_stream)?;
     Ok((unknown, building))
 }
 
-pub fn serialization_version_neg101(building: &BlueprintBuilding) -> Vec<u8> {
-    let mut memory_stream = Vec::new();
+pub fn serialization_version_neg101(memory_stream: &mut Vec<u8>, building: &BlueprintBuilding) {
     memory_stream.extend_from_slice(&(-101_i32).to_le_bytes());
     memory_stream.extend_from_slice(&building.index.to_le_bytes());
     memory_stream.extend_from_slice(&building.item_id.to_le_bytes());
@@ -381,6 +387,7 @@ pub fn serialization_version_neg101(building: &BlueprintBuilding) -> Vec<u8> {
             memory_stream.extend_from_slice(&building.yaw.to_le_bytes());
         }
     }
+
     memory_stream.extend_from_slice(&building.temp_output_obj_idx.to_le_bytes());
     memory_stream.extend_from_slice(&building.temp_input_obj_idx.to_le_bytes());
     memory_stream.extend_from_slice(&building.output_to_slot.to_le_bytes());
@@ -396,11 +403,41 @@ pub fn serialization_version_neg101(building: &BlueprintBuilding) -> Vec<u8> {
         .parameters
         .iter()
         .for_each(|x| memory_stream.extend_from_slice(&x.to_le_bytes()));
-    memory_stream
 }
 
-pub fn serialization_version_0(building: &BlueprintBuilding) -> Vec<u8> {
-    let mut memory_stream = Vec::new();
+pub fn serialization_version_neg100(memory_stream: &mut Vec<u8>, building: &BlueprintBuilding) {
+    memory_stream.extend_from_slice(&(-100_i32).to_le_bytes());
+    memory_stream.extend_from_slice(&building.index.to_le_bytes());
+    memory_stream.extend_from_slice(&building.area_index.to_le_bytes());
+    memory_stream.extend_from_slice(&building.local_offset_x.to_le_bytes());
+    memory_stream.extend_from_slice(&building.local_offset_y.to_le_bytes());
+    memory_stream.extend_from_slice(&building.local_offset_z.to_le_bytes());
+    memory_stream.extend_from_slice(&building.local_offset_x2.to_le_bytes());
+    memory_stream.extend_from_slice(&building.local_offset_y2.to_le_bytes());
+    memory_stream.extend_from_slice(&building.local_offset_z2.to_le_bytes());
+    memory_stream.extend_from_slice(&building.yaw.to_le_bytes());
+    memory_stream.extend_from_slice(&building.yaw2.to_le_bytes());
+    memory_stream.extend_from_slice(&building.tilt.to_le_bytes());
+    memory_stream.extend_from_slice(&building.item_id.to_le_bytes());
+    memory_stream.extend_from_slice(&building.model_index.to_le_bytes());
+    memory_stream.extend_from_slice(&building.temp_output_obj_idx.to_le_bytes());
+    memory_stream.extend_from_slice(&building.temp_input_obj_idx.to_le_bytes());
+    memory_stream.extend_from_slice(&building.output_to_slot.to_le_bytes());
+    memory_stream.extend_from_slice(&building.input_from_slot.to_le_bytes());
+    memory_stream.extend_from_slice(&building.output_from_slot.to_le_bytes());
+    memory_stream.extend_from_slice(&building.input_to_slot.to_le_bytes());
+    memory_stream.extend_from_slice(&building.output_offset.to_le_bytes());
+    memory_stream.extend_from_slice(&building.input_offset.to_le_bytes());
+    memory_stream.extend_from_slice(&building.recipe_id.to_le_bytes());
+    memory_stream.extend_from_slice(&building.filter_id.to_le_bytes());
+    memory_stream.extend_from_slice(&building.parameters_length.to_le_bytes());
+    building
+        .parameters
+        .iter()
+        .for_each(|x| memory_stream.extend_from_slice(&x.to_le_bytes()));
+}
+
+pub fn serialization_version_0(memory_stream: &mut Vec<u8>, building: &BlueprintBuilding) {
     memory_stream.extend_from_slice(&building.index.to_le_bytes());
     memory_stream.extend_from_slice(&building.area_index.to_le_bytes());
     memory_stream.extend_from_slice(&building.local_offset_x.to_le_bytes());
@@ -428,7 +465,6 @@ pub fn serialization_version_0(building: &BlueprintBuilding) -> Vec<u8> {
         .parameters
         .iter()
         .for_each(|x| memory_stream.extend_from_slice(&x.to_le_bytes()));
-    memory_stream
 }
 
 #[cfg(test)]
