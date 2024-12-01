@@ -88,11 +88,7 @@ fn single_threaded_work(path_in: &std::path::PathBuf, path_out: &std::path::Path
 
     // println!("{}",base64_string_in);
 
-    if base64_string_in.len() < 12 {
-        trace!("Not blueprint: {:?}", path_in);
-        return;
-    }
-    if &base64_string_in[0..12] != "BLUEPRINT:0," {
+    if (&base64_string_in).chars().take(12).collect::<String>() != "BLUEPRINT:0," {
         trace!("Not blueprint: {:?}", path_in);
         return;
     }
