@@ -12,7 +12,7 @@ use nom::{
 };
 
 #[derive(Debug)]
-pub struct Content {
+pub struct Content<'c> {
     pub patch: i32,
     pub cursor_offset_x: i32,
     pub cursor_offset_y: i32,
@@ -24,6 +24,7 @@ pub struct Content {
     pub areas: Vec<area::BlueprintArea>,
     pub buildings_length: i32,
     pub buildings: Vec<building::BlueprintBuilding>,
+    pub unknown: &'c [u8],
 }
 
 pub fn parse_non_finish(memory_stream: &[u8]) -> IResult<&[u8], Content> {
@@ -55,6 +56,7 @@ pub fn parse_non_finish(memory_stream: &[u8]) -> IResult<&[u8], Content> {
             areas: areas,
             buildings_length: buildings_length,
             buildings: buildings,
+            unknown: unknown,
         },
     ))
 }
@@ -63,10 +65,6 @@ pub fn parse(memory_stream: &[u8]) -> Result<Content, DspbptkError> {
     use nom::Finish;
     match parse_non_finish(memory_stream).finish() {
         Ok((unknown, content)) => {
-            if unknown.len() > 0 {
-                warn!("Unknown after content: {:?}", unknown);
-                // return Err(CanNotParseContent)
-            };
             Ok(content)
         }
         Err(why) => {

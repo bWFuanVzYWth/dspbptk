@@ -338,15 +338,8 @@ fn parse_version_0(memory_stream: &[u8]) -> IResult<&[u8], BlueprintBuilding> {
 }
 
 pub fn parse(memory_stream: &[u8]) -> IResult<&[u8], BlueprintBuilding> {
-    let num_slice = &memory_stream[0..4];
-    let num = i32::from_le_bytes(num_slice.try_into().unwrap(/* FIXME */));
-    let (unknown, building) = match num {
-        -101 => parse_version_neg101(memory_stream)?,
-        -100 => parse_version_neg100(memory_stream)?,
-        _ => parse_version_0(memory_stream)?,
-    };
-    // let (unknown, building) =
-    //     alt((parse_version_neg101, parse_version_neg100, parse_version_0))(memory_stream)?;
+    let (unknown, building) =
+        alt((parse_version_neg101, parse_version_neg100, parse_version_0))(memory_stream)?;
     Ok((unknown, building))
 }
 

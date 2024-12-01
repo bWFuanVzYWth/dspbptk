@@ -1,6 +1,5 @@
 #[derive(Debug, PartialEq)]
 pub enum DspbptkError {
-    NotBlueprint,
     ReadBrokenBase64,
     ReadBrokenGzip,
     CanNotCompressGzip,
@@ -26,7 +25,6 @@ impl std::fmt::Display for DspbptkError {
             DspbptkError::CanNotParseBluePrint => write!(f, "Can not parse blueprint"),
             DspbptkError::CanNotParseContent => write!(f, "Can not parse content"),
             DspbptkError::CanNotParseHeader => write!(f, "Can not parse header"),
-            DspbptkError::NotBlueprint => write!(f, "Not blueprint"),
         }
     }
 }

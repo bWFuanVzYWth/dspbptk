@@ -30,6 +30,7 @@ pub struct BlueprintData<'bp> {
     pub header: &'bp str,
     pub content: &'bp str,
     pub md5f: &'bp str,
+    pub unknown: &'bp str,
 }
 
 pub fn parse_non_finish(string: &str) -> IResult<&str, BlueprintData> {
@@ -44,6 +45,7 @@ pub fn parse_non_finish(string: &str) -> IResult<&str, BlueprintData> {
             header: header,
             content: content,
             md5f: md5f,
+            unknown: unknown,
         },
     ))
 }
@@ -51,12 +53,7 @@ pub fn parse_non_finish(string: &str) -> IResult<&str, BlueprintData> {
 pub fn parse(string: &str) -> Result<BlueprintData, DspbptkError> {
     use nom::Finish;
     match parse_non_finish(string).finish() {
-        Ok((unknown, data)) => {
-            if unknown.len() > 0 {
-                warn!("Unknown after blueprint: {:?}", unknown);
-            };
-            Ok(data)
-        }
+        Ok((_unknown, data)) => Ok(data),
         Err(why) => {
             error!("{:#?}", why);
             Err(CanNotParseBluePrint)
@@ -150,7 +147,8 @@ mod test {
             Ok(BlueprintData {
                 header: "BLUEPRINT:0,0,0,0,0,0,0,0,0,0.0.0.0,,",
                 content: "H4sIAAAAAAAAA2NkQAWMUMyARCMBANjTKTsvAAAA",
-                md5f: "E4E5A1CF28F1EC611E33498CBD0DF02B"
+                md5f: "E4E5A1CF28F1EC611E33498CBD0DF02B",
+                unknown: "\n\0",
             })
         );
     }

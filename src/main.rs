@@ -4,7 +4,7 @@ mod md5;
 
 use blueprint::error::DspbptkError;
 use clap::Parser;
-use log::{error, info, warn, trace};
+use log::{error, info, trace, warn};
 use rayon::prelude::*;
 use walkdir::{DirEntry, WalkDir};
 
@@ -17,16 +17,50 @@ struct Args {
     input: std::path::PathBuf,
 }
 
-fn recompress_blueprint(base64_string_in: &str) -> Result<String, DspbptkError> {
+fn recompress_blueprint(
+    base64_string_in: &str,
+    path_in: &std::path::PathBuf, // for warning
+) -> Result<String, DspbptkError> {
     // 蓝图字符串 -> 蓝图数据
     let bp_data_in = blueprint::parse(base64_string_in)?;
-
+    if bp_data_in.unknown.len() > 0 {
+        if bp_data_in.unknown.len() > 256 {
+            warn!(
+                "{} Unknown after blueprint(QUITE A LOT), path_in: {:?}",
+                bp_data_in.unknown.len(),
+                path_in
+            )
+        } else {
+            warn!(
+                "{} Unknown after blueprint: {:?}, path_in: {:?}",
+                bp_data_in.unknown.len(),
+                bp_data_in.unknown,
+                path_in
+            )
+        }
+    };
 
     // content子串 -> 二进制流
     let memory_stream_in = blueprint::decode_content(bp_data_in.content)?;
 
     // 二进制流 -> content数据
     let mut content = blueprint::content::parse(memory_stream_in.as_slice())?;
+    if content.unknown.len() > 0 {
+        if content.unknown.len() > 256 {
+            warn!(
+                "{} Unknown after content(QUITE A LOT), path_in: {:?}",
+                content.unknown.len(),
+                path_in
+            );
+        } else {
+            warn!(
+                "{} Unknown after content: {:?}, path_in: {:?}",
+                content.unknown.len(),
+                content.unknown,
+                path_in
+            );
+        }
+    };
 
     // 蓝图处理
     blueprint::content::sort_buildings(&mut content.buildings);
@@ -54,13 +88,16 @@ fn single_threaded_work(path_in: &std::path::PathBuf, path_out: &std::path::Path
 
     // println!("{}",base64_string_in);
 
-    let slice = &base64_string_in[0..12];
-    if slice != "BLUEPRINT:0," {
+    if base64_string_in.len() < 12 {
+        trace!("Not blueprint: {:?}", path_in);
+        return;
+    }
+    if &base64_string_in[0..12] != "BLUEPRINT:0," {
         trace!("Not blueprint: {:?}", path_in);
         return;
     }
 
-    let base64_string_out = match recompress_blueprint(&base64_string_in) {
+    let base64_string_out = match recompress_blueprint(&base64_string_in, path_in) {
         Ok(result) => result,
         Err(why) => {
             error!("{:#?}: path_in: {:?}", why, path_in);
@@ -78,26 +115,25 @@ fn single_threaded_work(path_in: &std::path::PathBuf, path_out: &std::path::Path
     match order {
         std::cmp::Ordering::Less => {
             warn!(
-                "Unsuccess: {:.3}%, {} -x-> {}, path_in:{:?}",
+                "Fail: {:3.3}%, {} -x-> {}, path_in:{:?}",
                 percent, string_in_length, string_out_length, path_in
-            )
+            );
         }
         std::cmp::Ordering::Equal => {
             warn!(
-                "Unsuccess: {:.3}%, {} -x-> {}",
+                "Fail: {:3.3}%, {} -x-> {}",
                 percent, string_in_length, string_out_length
-            )
+            );
         }
         std::cmp::Ordering::Greater => match std::fs::write(path_out, base64_string_out) {
             Ok(_) => {
                 info!(
-                    "Success: {:.3}%, {} ---> {}",
+                    "Success: {:3.3}%, {} ---> {}",
                     percent, string_in_length, string_out_length
                 );
             }
             Err(why) => {
                 error!("{:#?}: path_in: {:?}", why, path_in);
-                return;
             }
         },
     }
@@ -136,5 +172,4 @@ fn main() {
     let args = Args::parse();
 
     muti_threaded_work(&args.input);
-    // single_threaded_work(&args.input, &args.input);
 }
