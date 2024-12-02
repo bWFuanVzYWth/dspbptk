@@ -149,9 +149,9 @@ fn is_content(entry: &DirEntry) -> bool {
         .unwrap_or(false)
 }
 
-fn muti_threaded_work(path_dir: &std::path::PathBuf) {
+fn muti_threaded_work(path_in: &std::path::PathBuf, path_out: &std::path::PathBuf) {
     let mut path_txts = Vec::new();
-    for entry in WalkDir::new(path_dir)
+    for entry in WalkDir::new(path_in)
         .follow_links(true)
         .into_iter()
         .filter_map(|e| e.ok())
@@ -188,9 +188,19 @@ fn main() {
 
     let path_in = &args.input;
     let path_out = match &args.output {
-        Some(args_output) => args_output,
+        Some(args_output) => {
+            if let Ok(meta_data_in) = std::fs::metadata(path_in) {
+                if let Ok(meta_data_out) = std::fs::metadata(args_output) {
+                    if meta_data_in.is_dir() && meta_data_out.is_file() {
+                        panic!("Fatal error: Cannot input directory when output to file!");
+                    }
+                }
+            }
+            args_output
+        }
         None => path_in,
     };
 
-    muti_threaded_work(&args.input);
+    // TODO 文件输出
+    muti_threaded_work(path_in, path_in);
 }

@@ -4,7 +4,7 @@ pub enum DspbptkError<E> {
     ReadBrokenGzip(E),
 
     CanNotParseBluePrint(E),
-    CanNotParseHeader(E),
+    _CanNotParseHeader(E),
     CanNotParseContent(E),
 
     CanNotCompressGzip(E),
@@ -17,10 +17,12 @@ impl<E: std::error::Error + 'static> std::error::Error for DspbptkError<E> {
             DspbptkError::ReadBrokenGzip(e) => Some(e),
 
             DspbptkError::CanNotParseBluePrint(e) => Some(e),
-            DspbptkError::CanNotParseHeader(e) => Some(e),
+            DspbptkError::_CanNotParseHeader(e) => Some(e),
             DspbptkError::CanNotParseContent(e) => Some(e),
 
             DspbptkError::CanNotCompressGzip(e) => Some(e),
+
+            _ => None,
         }
     }
 }
@@ -32,10 +34,12 @@ impl<E: std::error::Error> std::fmt::Display for DspbptkError<E> {
             DspbptkError::ReadBrokenGzip(e) => write!(f, "read broken GZIP: {:#?}", e),
 
             DspbptkError::CanNotParseBluePrint(e) => write!(f, "can not parse blueprint: {:#?}", e),
-            DspbptkError::CanNotParseHeader(e) => write!(f, "can not parse header: {:#?}", e),
+            DspbptkError::_CanNotParseHeader(e) => write!(f, "can not parse header: {:#?}", e),
             DspbptkError::CanNotParseContent(e) => write!(f, "can not parse content: {:#?}", e),
 
             DspbptkError::CanNotCompressGzip(e) => write!(f, "can not compress GZIP: {:#?}", e),
+
+            _ => write!(f, "unknown dspbptk error. PLEASE report it on Github :("),
         }
     }
 }
