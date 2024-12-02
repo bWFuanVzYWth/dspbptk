@@ -130,7 +130,7 @@ pub fn encode_content_with_options(
 }
 
 pub fn encode_content(memory_stream: Vec<u8>) -> String {
-    encode_content_with_options(memory_stream, 256, u64::MAX, 256).unwrap(/*impossible*/)
+    encode_content_with_options(memory_stream, 256, u64::MAX, 0).unwrap(/*impossible*/)
 }
 
 #[cfg(test)]
