@@ -2,16 +2,23 @@ pub mod content;
 pub mod error;
 pub mod header;
 
-use log::{error, info, warn};
-
-use crate::blueprint::error::DspbptkError;
-use crate::blueprint::error::DspbptkError::*;
-
+use log::{debug, error, info, trace, warn};
 use nom::{
     bytes::complete::{tag, take, take_till},
     sequence::preceded,
     IResult,
 };
+
+use error::DspbptkError;
+use error::DspbptkError::*;
+
+#[derive(Debug, PartialEq)]
+pub struct BlueprintData<'bp> {
+    pub header: &'bp str,
+    pub content: &'bp str,
+    pub md5f: &'bp str,
+    pub unknown: &'bp str,
+}
 
 fn tag_quote(string: &str) -> IResult<&str, &str> {
     tag("\"")(string)
@@ -23,14 +30,6 @@ fn take_32(string: &str) -> IResult<&str, &str> {
 
 fn take_till_quote(string: &str) -> IResult<&str, &str> {
     take_till(|c| c == '"')(string)
-}
-
-#[derive(Debug, PartialEq)]
-pub struct BlueprintData<'bp> {
-    pub header: &'bp str,
-    pub content: &'bp str,
-    pub md5f: &'bp str,
-    pub unknown: &'bp str,
 }
 
 pub fn parse_non_finish(string: &str) -> IResult<&str, BlueprintData> {
@@ -50,8 +49,9 @@ pub fn parse_non_finish(string: &str) -> IResult<&str, BlueprintData> {
     ))
 }
 
-pub fn parse(string: &str) -> Result<BlueprintData, DspbptkError> {
+pub fn parse(string: &str) -> Result<BlueprintData, DspbptkError<&str>> {
     use nom::Finish;
+    let tmp = parse_non_finish(string).finish();
     match parse_non_finish(string).finish() {
         Ok((_unknown, data)) => Ok(data),
         Err(why) => {
@@ -76,17 +76,25 @@ pub fn serialization(header: &str, content: &str) -> String {
     header_content
 }
 
-pub fn decode_content(content: &str) -> Result<Vec<u8>, DspbptkError> {
+pub fn decode_base64(base64_string: &str) -> Result<Vec<u8>, DspbptkError<&str>> {
     use base64::prelude::*;
-    use flate2::read::GzDecoder;
-    use std::io::Read;
-    let gzip_stream = match BASE64_STANDARD.decode(content) {
-        Ok(result) => result,
+    match BASE64_STANDARD.decode(base64_string) {
+        Ok(result) => Ok(result),
         Err(why) => {
             error!("{:#?}", why);
-            return Err(ReadBrokenBase64);
+            Err(ReadBrokenBase64)
         }
-    };
+    }
+}
+
+pub fn encode_base64(bin: Vec<u8>) -> String {
+    use base64::prelude::*;
+    BASE64_STANDARD.encode(bin)
+}
+
+pub fn decompress_gzip(gzip_stream: Vec<u8>) -> Result<Vec<u8>, DspbptkError<&str>> {
+    use flate2::read::GzDecoder;
+    use std::io::Read;
     let mut decoder = GzDecoder::new(gzip_stream.as_slice());
     let mut memory_stream = Vec::new();
     match decoder.read_to_end(&mut memory_stream) {
@@ -98,30 +106,35 @@ pub fn decode_content(content: &str) -> Result<Vec<u8>, DspbptkError> {
     }
 }
 
-pub fn encode_content_with_options(
-    memory_stream: Vec<u8>,
+pub fn compress_gzip_zopfli(
+    bin: Vec<u8>,
     iteration_count: u64,
     iterations_without_improvement: u64,
     maximum_block_splits: u16,
-) -> Result<String, DspbptkError> {
-    use base64::prelude::*;
-    use std::num::NonZero;
+) -> Result<Vec<u8>, DspbptkError<&str>> {
+    // check options
     if iteration_count == 0 || iterations_without_improvement == 0 {
         return Err(IllegalCompressParameters);
     };
+
+    // set options
     let options = zopfli::Options {
-        iteration_count: NonZero::new(iteration_count).unwrap(/* impossible */),
-        iterations_without_improvement: NonZero::new(iterations_without_improvement).unwrap(/* impossible */),
+        iteration_count: std::num::NonZero::new(iteration_count).unwrap(/* impossible */),
+        iterations_without_improvement: std::num::NonZero::new(iterations_without_improvement).unwrap(/* impossible */),
         maximum_block_splits: maximum_block_splits,
     };
+
+    // create write buffer
     let mut gzip_stream = Vec::new();
+
+    // compress
     match zopfli::compress(
         options,
         zopfli::Format::Gzip,
-        memory_stream.as_slice(),
+        bin.as_slice(),
         &mut gzip_stream,
     ) {
-        Ok(_) => Ok(BASE64_STANDARD.encode(gzip_stream)),
+        Ok(_) => Ok(gzip_stream),
         Err(why) => {
             error!("{:#?}", why);
             Err(CanNotCompressGzip)
@@ -129,8 +142,16 @@ pub fn encode_content_with_options(
     }
 }
 
-pub fn encode_content(memory_stream: Vec<u8>) -> String {
-    encode_content_with_options(memory_stream, 256, u64::MAX, 0).unwrap(/*impossible*/)
+pub fn compress_gzip(bin: Vec<u8>) -> Result<Vec<u8>, DspbptkError<&str>> {
+    compress_gzip_zopfli(bin, 256, u64::MAX, 0)
+}
+
+pub fn decode_content(content: &str) -> Result<Vec<u8>, DspbptkError<&str>> {
+    decompress_gzip(decode_base64(content)?)
+}
+
+pub fn encode_content(memory_stream: Vec<u8>) -> Result<String, DspbptkError<&str>> {
+    Ok(encode_base64(compress_gzip(memory_stream)?))
 }
 
 #[cfg(test)]

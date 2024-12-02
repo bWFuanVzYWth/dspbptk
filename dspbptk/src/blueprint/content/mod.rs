@@ -4,7 +4,6 @@ pub mod building;
 use crate::blueprint::error::DspbptkError;
 use crate::blueprint::error::DspbptkError::*;
 
-use log::{error, info, warn};
 use nom::{
     multi::count,
     number::complete::{le_i32, le_i8},
@@ -61,14 +60,11 @@ pub fn parse_non_finish(memory_stream: &[u8]) -> IResult<&[u8], Content> {
     ))
 }
 
-pub fn parse(memory_stream: &[u8]) -> Result<Content, DspbptkError> {
+pub fn parse(memory_stream: &[u8]) -> Result<Content, DspbptkError<&str>> {
     use nom::Finish;
     match parse_non_finish(memory_stream).finish() {
-        Ok((unknown, content)) => {
-            Ok(content)
-        }
+        Ok((_unknown, content)) => Ok(content),
         Err(why) => {
-            error!("{:#?}", why);
             Err(CanNotParseContent)
         }
     }
@@ -92,11 +88,11 @@ pub fn serialization(content: Content) -> Vec<u8> {
     content
         .buildings
         .iter()
-        .for_each(|building| building::serialization_version_neg101(&mut memory_stream, building));
+        .for_each(|building| building::serialization(&mut memory_stream, building));
     memory_stream
 }
 
-pub fn sort_buildings(buildings: &mut Vec<building::BlueprintBuilding>) {
+pub fn fix_buildings_index(buildings: &mut Vec<building::BlueprintBuilding>) {
     buildings.sort_by(|a, b| {
         use std::cmp::Ordering::{Equal, Greater, Less};
         let item_id_order = a.item_id.cmp(&b.item_id);
@@ -158,6 +154,5 @@ pub fn sort_buildings(buildings: &mut Vec<building::BlueprintBuilding>) {
 
 #[cfg(test)]
 mod test {
-    use super::*;
     // TODO test
 }

@@ -10,7 +10,7 @@ pub const INDEX_NULL: i32 = -1;
 
 #[derive(Debug)]
 pub struct BlueprintBuilding {
-    pub version: i32, // 暂时用不到，但是保留字段
+    pub _version: i32, // 暂时用不到，但是保留字段
 
     pub index: i32,
     pub area_index: i8,
@@ -174,7 +174,7 @@ fn parse_version_neg101(memory_stream: &[u8]) -> IResult<&[u8], BlueprintBuildin
     Ok((
         unknown,
         BlueprintBuilding {
-            version: -100,
+            _version: -100,
             index: index,
             area_index: area_index,
             local_offset_x: local_offset_x,
@@ -240,7 +240,7 @@ fn parse_version_neg100(memory_stream: &[u8]) -> IResult<&[u8], BlueprintBuildin
     Ok((
         unknown,
         BlueprintBuilding {
-            version: -100,
+            _version: -100,
             index: index,
             area_index: area_index,
             local_offset_x: local_offset_x,
@@ -304,7 +304,7 @@ fn parse_version_0(memory_stream: &[u8]) -> IResult<&[u8], BlueprintBuilding> {
     Ok((
         unknown,
         BlueprintBuilding {
-            version: 0,
+            _version: 0,
             index: index,
             area_index: area_index,
             local_offset_x: local_offset_x,
@@ -398,7 +398,7 @@ pub fn serialization_version_neg101(memory_stream: &mut Vec<u8>, building: &Blue
         .for_each(|x| memory_stream.extend_from_slice(&x.to_le_bytes()));
 }
 
-pub fn serialization_version_neg100(memory_stream: &mut Vec<u8>, building: &BlueprintBuilding) {
+pub fn _serialization_version_neg100(memory_stream: &mut Vec<u8>, building: &BlueprintBuilding) {
     memory_stream.extend_from_slice(&(-100_i32).to_le_bytes());
     memory_stream.extend_from_slice(&building.index.to_le_bytes());
     memory_stream.extend_from_slice(&building.area_index.to_le_bytes());
@@ -430,7 +430,7 @@ pub fn serialization_version_neg100(memory_stream: &mut Vec<u8>, building: &Blue
         .for_each(|x| memory_stream.extend_from_slice(&x.to_le_bytes()));
 }
 
-pub fn serialization_version_0(memory_stream: &mut Vec<u8>, building: &BlueprintBuilding) {
+pub fn _serialization_version_0(memory_stream: &mut Vec<u8>, building: &BlueprintBuilding) {
     memory_stream.extend_from_slice(&building.index.to_le_bytes());
     memory_stream.extend_from_slice(&building.area_index.to_le_bytes());
     memory_stream.extend_from_slice(&building.local_offset_x.to_le_bytes());
@@ -460,8 +460,11 @@ pub fn serialization_version_0(memory_stream: &mut Vec<u8>, building: &Blueprint
         .for_each(|x| memory_stream.extend_from_slice(&x.to_le_bytes()));
 }
 
+pub fn serialization(memory_stream: &mut Vec<u8>, building: &BlueprintBuilding) {
+    serialization_version_neg101(memory_stream, building)
+}
+
 #[cfg(test)]
 mod test {
-    use super::*;
     // TODO test
 }

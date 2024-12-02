@@ -55,6 +55,5 @@ pub fn serialization(memory_stream: &mut Vec<u8>, area: &BlueprintArea) {
 
 #[cfg(test)]
 mod test {
-    use super::*;
     // TODO test
 }
