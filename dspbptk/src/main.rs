@@ -1,5 +1,4 @@
 mod blueprint;
-mod dybp;
 mod md5;
 
 use clap::Parser;
@@ -12,24 +11,23 @@ use blueprint::error::DspbptkError;
 // FIXME recompress content
 fn recompress_blueprint(
     base64_string_in: &str,
-    path_in: &std::path::PathBuf, // for warning
-) -> Result<String, DspbptkError<&str>> {
+) -> Result<(String, Vec<String>), DspbptkError<String>> {
+    let mut warnings = Vec::new();
+
     // 蓝图字符串 -> 蓝图数据
     let bp_data_in = blueprint::parse(base64_string_in)?;
     if bp_data_in.unknown.len() > 0 {
-        if bp_data_in.unknown.len() > 256 {
-            warn!(
-                "{} Unknown after blueprint(QUITE A LOT), path_in: {:?}",
-                bp_data_in.unknown.len(),
-                path_in
-            )
+        if bp_data_in.unknown.len() > 64 {
+            warnings.push(format!(
+                "{} unknown after blueprint: (QUITE A LOT)",
+                bp_data_in.unknown.len()
+            ));
         } else {
-            warn!(
-                "{} Unknown after blueprint: {:?}, path_in: {:?}",
+            warnings.push(format!(
+                "{} unknown after blueprint: {:?}",
                 bp_data_in.unknown.len(),
-                bp_data_in.unknown,
-                path_in
-            )
+                bp_data_in.unknown
+            ));
         }
     };
 
@@ -39,19 +37,17 @@ fn recompress_blueprint(
     // 二进制流 -> content数据
     let mut content = blueprint::content::parse(memory_stream_in.as_slice())?;
     if content.unknown.len() > 0 {
-        if content.unknown.len() > 256 {
-            warn!(
-                "{} Unknown after content(QUITE A LOT), path_in: {:?}",
-                content.unknown.len(),
-                path_in
-            );
+        if content.unknown.len() > 64 {
+            warnings.push(format!(
+                "{} unknown after content: (QUITE A LOT)",
+                content.unknown.len()
+            ));
         } else {
-            warn!(
-                "{} Unknown after content: {:?}, path_in: {:?}",
+            warnings.push(format!(
+                "{} unknown after content: {:?}",
                 content.unknown.len(),
-                content.unknown,
-                path_in
-            );
+                content.unknown
+            ));
         }
     };
 
@@ -67,7 +63,7 @@ fn recompress_blueprint(
     // 蓝图数据 -> 蓝图字符串
     let base64_string_out = blueprint::serialization(bp_data_in.header, &content_out);
 
-    Ok(base64_string_out)
+    Ok((base64_string_out, warnings))
 }
 
 fn single_threaded_work(path_in: &std::path::PathBuf, path_out: &std::path::PathBuf) {
@@ -84,8 +80,11 @@ fn single_threaded_work(path_in: &std::path::PathBuf, path_out: &std::path::Path
         return;
     }
 
-    let base64_string_out = match recompress_blueprint(&base64_string_in, path_in) {
-        Ok(result) => result,
+    let base64_string_out = match recompress_blueprint(&base64_string_in) {
+        Ok((base64_string, warnings)) => {
+            warnings.iter().for_each(|warning| warn!("{}", warning));
+            base64_string
+        }
         Err(why) => {
             error!("{:#?}: path_in: {:?}", why, path_in);
             return;

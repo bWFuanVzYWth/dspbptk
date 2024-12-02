@@ -2,7 +2,6 @@ pub mod content;
 pub mod error;
 pub mod header;
 
-use log::{debug, error, info, trace, warn};
 use nom::{
     bytes::complete::{tag, take, take_till},
     sequence::preceded,
@@ -32,7 +31,7 @@ fn take_till_quote(string: &str) -> IResult<&str, &str> {
     take_till(|c| c == '"')(string)
 }
 
-pub fn parse_non_finish(string: &str) -> IResult<&str, BlueprintData> {
+fn parse_non_finish(string: &str) -> IResult<&str, BlueprintData> {
     let unknown = string;
 
     let (unknown, header) = take_till_quote(unknown)?;
@@ -49,26 +48,17 @@ pub fn parse_non_finish(string: &str) -> IResult<&str, BlueprintData> {
     ))
 }
 
-pub fn parse(string: &str) -> Result<BlueprintData, DspbptkError<&str>> {
+pub fn parse(string: &str) -> Result<BlueprintData, DspbptkError<String>> {
     use nom::Finish;
-    let tmp = parse_non_finish(string).finish();
+    // let tmp = parse_non_finish(string).finish();
     match parse_non_finish(string).finish() {
         Ok((_unknown, data)) => Ok(data),
-        Err(why) => {
-            error!("{:#?}", why);
-            Err(CanNotParseBluePrint)
-        }
+        Err(why) => Err(CanNotParseBluePrint(why.to_string())),
     }
 }
 
-pub fn compute_md5f_string(header_content: &str) -> String {
-    use crate::md5::*;
-    let md5f = MD5::new(Algo::MD5F).process(header_content.as_bytes());
-    format!("{:02X}{:02X}{:02X}{:02X}{:02X}{:02X}{:02X}{:02X}{:02X}{:02X}{:02X}{:02X}{:02X}{:02X}{:02X}{:02X}",
-        md5f[0], md5f[1], md5f[2], md5f[3], md5f[4], md5f[5], md5f[6], md5f[7], md5f[8], md5f[9], md5f[10], md5f[11], md5f[12], md5f[13], md5f[14], md5f[15])
-}
-
 pub fn serialization(header: &str, content: &str) -> String {
+    use crate::md5::compute_md5f_string;
     let mut header_content = format!("{}\"{}", header, content);
     let md5f = compute_md5f_string(&header_content);
     header_content.push_str("\"");
@@ -76,58 +66,47 @@ pub fn serialization(header: &str, content: &str) -> String {
     header_content
 }
 
-pub fn decode_base64(base64_string: &str) -> Result<Vec<u8>, DspbptkError<&str>> {
+fn decode_base64(base64_string: &str) -> Result<Vec<u8>, DspbptkError<String>> {
     use base64::prelude::*;
     match BASE64_STANDARD.decode(base64_string) {
         Ok(result) => Ok(result),
-        Err(why) => {
-            error!("{:#?}", why);
-            Err(ReadBrokenBase64)
-        }
+        Err(why) => Err(ReadBrokenBase64(why.to_string())),
     }
 }
 
-pub fn encode_base64(bin: Vec<u8>) -> String {
+fn encode_base64(bin: Vec<u8>) -> String {
     use base64::prelude::*;
     BASE64_STANDARD.encode(bin)
 }
 
-pub fn decompress_gzip(gzip_stream: Vec<u8>) -> Result<Vec<u8>, DspbptkError<&str>> {
+fn decompress_gzip(gzip_stream: Vec<u8>) -> Result<Vec<u8>, DspbptkError<String>> {
     use flate2::read::GzDecoder;
     use std::io::Read;
     let mut decoder = GzDecoder::new(gzip_stream.as_slice());
     let mut memory_stream = Vec::new();
     match decoder.read_to_end(&mut memory_stream) {
         Ok(_) => Ok(memory_stream),
-        Err(why) => {
-            error!("{:#?}", why);
-            Err(ReadBrokenGzip)
-        }
+        Err(why) => Err(ReadBrokenGzip(why.to_string())),
     }
 }
 
-pub fn compress_gzip_zopfli(
+fn compress_gzip_zopfli(
     bin: Vec<u8>,
     iteration_count: u64,
     iterations_without_improvement: u64,
     maximum_block_splits: u16,
-) -> Result<Vec<u8>, DspbptkError<&str>> {
-    // check options
-    if iteration_count == 0 || iterations_without_improvement == 0 {
-        return Err(IllegalCompressParameters);
-    };
-
-    // set options
+) -> Result<Vec<u8>, DspbptkError<std::io::Error>> {
     let options = zopfli::Options {
-        iteration_count: std::num::NonZero::new(iteration_count).unwrap(/* impossible */),
-        iterations_without_improvement: std::num::NonZero::new(iterations_without_improvement).unwrap(/* impossible */),
+        // 防呆不防傻，这两个expect只有用户瞎几把输入参数才会炸
+        iteration_count: std::num::NonZero::new(iteration_count)
+            .expect("Fatal error: iteration_count must greater than 0"),
+        iterations_without_improvement: std::num::NonZero::new(iterations_without_improvement)
+            .expect("Fatal error: iterations_without_improvement must greater than 0"),
         maximum_block_splits: maximum_block_splits,
     };
 
-    // create write buffer
     let mut gzip_stream = Vec::new();
 
-    // compress
     match zopfli::compress(
         options,
         zopfli::Format::Gzip,
@@ -135,23 +114,23 @@ pub fn compress_gzip_zopfli(
         &mut gzip_stream,
     ) {
         Ok(_) => Ok(gzip_stream),
-        Err(why) => {
-            error!("{:#?}", why);
-            Err(CanNotCompressGzip)
-        }
+        Err(why) => Err(CanNotCompressGzip(why)),
     }
 }
 
-pub fn compress_gzip(bin: Vec<u8>) -> Result<Vec<u8>, DspbptkError<&str>> {
+fn compress_gzip(bin: Vec<u8>) -> Result<Vec<u8>, DspbptkError<std::io::Error>> {
     compress_gzip_zopfli(bin, 256, u64::MAX, 0)
 }
 
-pub fn decode_content(content: &str) -> Result<Vec<u8>, DspbptkError<&str>> {
+pub fn decode_content(content: &str) -> Result<Vec<u8>, DspbptkError<String>> {
     decompress_gzip(decode_base64(content)?)
 }
 
-pub fn encode_content(memory_stream: Vec<u8>) -> Result<String, DspbptkError<&str>> {
-    Ok(encode_base64(compress_gzip(memory_stream)?))
+pub fn encode_content(memory_stream: Vec<u8>) -> Result<String, DspbptkError<String>> {
+    match compress_gzip(memory_stream) {
+        Ok(gzip_stream) => Ok(encode_base64(gzip_stream)),
+        Err(why) => Err(CanNotCompressGzip(why.to_string())),
+    }
 }
 
 #[cfg(test)]

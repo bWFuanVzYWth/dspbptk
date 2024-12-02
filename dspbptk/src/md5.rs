@@ -72,7 +72,7 @@ pub struct MD5 {
 pub type MD5Hash = [u8; 16];
 
 impl MD5 {
-    pub fn new(algo: Algo) -> Self {
+    fn new(algo: Algo) -> Self {
         let s = match algo {
             Algo::MD5 => INIT_MD5,
             _ => INIT_MD5F,
@@ -135,7 +135,7 @@ impl MD5 {
         self.s[3] = self.s[3].wrapping_add(d);
     }
 
-    pub fn process(&mut self, data: &[u8]) -> MD5Hash {
+    fn process(&mut self, data: &[u8]) -> MD5Hash {
         let chunks = data.chunks_exact(64);
         let mut last: Vec<u8> = chunks.remainder().into();
         for chunk in chunks {

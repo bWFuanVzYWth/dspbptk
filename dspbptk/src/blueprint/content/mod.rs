@@ -26,7 +26,7 @@ pub struct Content<'c> {
     pub unknown: &'c [u8],
 }
 
-pub fn parse_non_finish(memory_stream: &[u8]) -> IResult<&[u8], Content> {
+fn parse_non_finish(memory_stream: &[u8]) -> IResult<&[u8], Content> {
     let unknown = memory_stream;
 
     let (unknown, patch) = le_i32(unknown)?;
@@ -60,13 +60,11 @@ pub fn parse_non_finish(memory_stream: &[u8]) -> IResult<&[u8], Content> {
     ))
 }
 
-pub fn parse(memory_stream: &[u8]) -> Result<Content, DspbptkError<&str>> {
+pub fn parse(memory_stream: &[u8]) -> Result<Content, DspbptkError<String>> {
     use nom::Finish;
     match parse_non_finish(memory_stream).finish() {
         Ok((_unknown, content)) => Ok(content),
-        Err(why) => {
-            Err(CanNotParseContent)
-        }
+        Err(why) => Err(CanNotParseContent(format!("{:?}", why))),
     }
 }
 

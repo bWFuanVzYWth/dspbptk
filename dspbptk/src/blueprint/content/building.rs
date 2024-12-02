@@ -343,7 +343,7 @@ pub fn parse(memory_stream: &[u8]) -> IResult<&[u8], BlueprintBuilding> {
     Ok((unknown, building))
 }
 
-pub fn serialization_version_neg101(memory_stream: &mut Vec<u8>, building: &BlueprintBuilding) {
+fn serialization_version_neg101(memory_stream: &mut Vec<u8>, building: &BlueprintBuilding) {
     memory_stream.extend_from_slice(&(-101_i32).to_le_bytes());
     memory_stream.extend_from_slice(&building.index.to_le_bytes());
     memory_stream.extend_from_slice(&building.item_id.to_le_bytes());
@@ -398,7 +398,7 @@ pub fn serialization_version_neg101(memory_stream: &mut Vec<u8>, building: &Blue
         .for_each(|x| memory_stream.extend_from_slice(&x.to_le_bytes()));
 }
 
-pub fn _serialization_version_neg100(memory_stream: &mut Vec<u8>, building: &BlueprintBuilding) {
+fn _serialization_version_neg100(memory_stream: &mut Vec<u8>, building: &BlueprintBuilding) {
     memory_stream.extend_from_slice(&(-100_i32).to_le_bytes());
     memory_stream.extend_from_slice(&building.index.to_le_bytes());
     memory_stream.extend_from_slice(&building.area_index.to_le_bytes());
@@ -430,7 +430,7 @@ pub fn _serialization_version_neg100(memory_stream: &mut Vec<u8>, building: &Blu
         .for_each(|x| memory_stream.extend_from_slice(&x.to_le_bytes()));
 }
 
-pub fn _serialization_version_0(memory_stream: &mut Vec<u8>, building: &BlueprintBuilding) {
+fn _serialization_version_0(memory_stream: &mut Vec<u8>, building: &BlueprintBuilding) {
     memory_stream.extend_from_slice(&building.index.to_le_bytes());
     memory_stream.extend_from_slice(&building.area_index.to_le_bytes());
     memory_stream.extend_from_slice(&building.local_offset_x.to_le_bytes());
