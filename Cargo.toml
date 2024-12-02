@@ -31,9 +31,9 @@ env_logger = "0.11.5"
 [release]
 lto = "fat"
 codegen-units = 1
-rustflags = ["-C", "target-cpu=native"]
+# rustflags = ["-C", "target-cpu=native"]
 
 [profile.release]
 lto = "fat"
 codegen-units = 1
-rustflags = ["-C", "target-cpu=native"]
+# rustflags = ["-C", "target-cpu=native"]
