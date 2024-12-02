@@ -1,14 +1,14 @@
 pub mod area;
 pub mod building;
 
-use crate::blueprint::error::DspbptkError;
-use crate::blueprint::error::DspbptkError::*;
-
 use nom::{
     multi::count,
     number::complete::{le_i32, le_i8},
     IResult,
 };
+
+use crate::blueprint::error::DspbptkError;
+use crate::blueprint::error::DspbptkError::*;
 
 #[derive(Debug)]
 pub struct Content<'c> {

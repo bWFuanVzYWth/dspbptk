@@ -68,13 +68,17 @@ fn recompress_blueprint(
 
 fn single_threaded_work(path_in: &std::path::PathBuf, path_out: &std::path::PathBuf) {
     let base64_string_in = match std::fs::read_to_string(path_in) {
-        Ok(result) => result,
+        Ok(result) => {
+            debug!("std::fs::read_to_string match Ok: path_in: {:?}", path_in);
+            result
+        }
         Err(why) => {
             error!("{:#?}: path_in: {:?}", why, path_in);
             return;
         }
     };
 
+    // TODO 补点debug和trace
     if (&base64_string_in).chars().take(12).collect::<String>() != "BLUEPRINT:0," {
         debug!("Not blueprint: {:?}", path_in);
         return;
@@ -82,7 +86,10 @@ fn single_threaded_work(path_in: &std::path::PathBuf, path_out: &std::path::Path
 
     let base64_string_out = match recompress_blueprint(&base64_string_in) {
         Ok((base64_string, warnings)) => {
-            warnings.iter().for_each(|warning| warn!("{}", warning));
+            warnings
+                .iter()
+                .for_each(|warning| warn!("{}: path_in: {:?}", warning, path_in));
+            debug!("recompress_blueprint match Ok: path_in: {:?}", path_in);
             base64_string
         }
         Err(why) => {
@@ -107,8 +114,8 @@ fn single_threaded_work(path_in: &std::path::PathBuf, path_out: &std::path::Path
         }
         std::cmp::Ordering::Equal => {
             warn!(
-                "Fail: {:3.3}%, {} -x-> {}",
-                percent, string_in_length, string_out_length
+                "Fail: {:3.3}%, {} -x-> {}, path_in:{:?}",
+                percent, string_in_length, string_out_length, path_in
             );
         }
         std::cmp::Ordering::Greater => match std::fs::write(path_out, base64_string_out) {
