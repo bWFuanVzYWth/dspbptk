@@ -2,7 +2,7 @@ mod blueprint;
 mod md5;
 
 use clap::Parser;
-use log::{debug, error, info, trace, warn};
+use log::{debug, error, info, warn};
 use rayon::prelude::*;
 use walkdir::{DirEntry, WalkDir};
 
@@ -129,17 +129,30 @@ fn recompress_blueprint_with_fs_io(file_in: &std::path::PathBuf, file_out: &std:
                 file_in.display()
             );
         }
-        std::cmp::Ordering::Greater => match std::fs::write(file_out, base64_string_out) {
-            Ok(_) => {
-                info!(
-                    "Success: {:3.3}%, {} ---> {}",
-                    percent, string_in_length, string_out_length
-                );
+        std::cmp::Ordering::Greater => {
+            match std::fs::create_dir_all(file_out.parent().unwrap(/*impossible*/)) {
+                Ok(_) => {
+                    debug!(
+                        "std::fs::create_dir_all match Ok: file_out:{}",
+                        file_out.display()
+                    );
+                }
+                Err(why) => {
+                    error!("{:#?}: file_out: \"{}\"", why, file_out.display());
+                }
+            };
+            match std::fs::write(file_out, base64_string_out) {
+                Ok(_) => {
+                    info!(
+                        "Success: {:3.3}%, {} ---> {}",
+                        percent, string_in_length, string_out_length
+                    );
+                }
+                Err(why) => {
+                    error!("{:#?}: file_out: \"{}\"", why, file_out.display());
+                }
             }
-            Err(why) => {
-                error!("{:#?}: file_in: \"{}\"", why, file_in.display());
-            }
-        },
+        }
     }
 }
 
@@ -159,7 +172,7 @@ fn _is_json(entry: &DirEntry) -> bool {
         .unwrap_or(false)
 }
 
-fn is_bpraw(entry: &DirEntry) -> bool {
+fn _is_bpraw(entry: &DirEntry) -> bool {
     entry
         .file_name()
         .to_str()
@@ -167,20 +180,22 @@ fn is_bpraw(entry: &DirEntry) -> bool {
         .unwrap_or(false)
 }
 
-fn recompress_blueprint_directory_with_fs_io(path_in: &std::path::PathBuf) {
+fn cook_blueprint_directory_with_fs_io(
+    path_in: &std::path::PathBuf,
+    path_out: &std::path::PathBuf,
+) {
     let mut path_maybe_blueprints = Vec::new();
-    for entry in WalkDir::new(path_in)
-        .follow_links(true)
-        .into_iter()
-        .filter_map(|e| e.ok())
-    {
+    for entry in WalkDir::new(path_in).into_iter().filter_map(|e| e.ok()) {
+        // FIXME 还要检查是不是文件
         if is_txt(&entry) {
             path_maybe_blueprints.push(entry.into_path());
         }
     }
 
     path_maybe_blueprints.par_iter().for_each(|file_in| {
-        recompress_blueprint_with_fs_io(file_in, file_in);
+        let relative_path_in = file_in.strip_prefix(path_in).unwrap(/*impossible*/);
+        let file_out = path_out.join(relative_path_in);
+        recompress_blueprint_with_fs_io(file_in, &file_out);
     });
 }
 
@@ -206,22 +221,10 @@ fn main() {
 
     // 快速排除不正常参数，尽早主动崩溃并报错
     let path_in = &args.input;
-    let path_out = &args.output;
+    let path_out = match &args.output {
+        None => path_in,
+        Some(path) => path,
+    };
 
-    // let path_in = &args.input;
-    // let path_out = match &args.output {
-    //     Some(args_output) => {
-    //         if let Ok(meta_data_in) = std::fs::metadata(path_in) {
-    //             if let Ok(meta_data_out) = std::fs::metadata(args_output) {
-    //                 if meta_data_in.is_dir() && meta_data_out.is_file() {
-    //                     panic!("Fatal error: Cannot input directory when output to file!");
-    //                 }
-    //             }
-    //         }
-    //         args_output
-    //     }
-    //     None => path_in,
-    // };
-
-    recompress_blueprint_directory_with_fs_io(path_in);
+    cook_blueprint_directory_with_fs_io(path_in, path_out);
 }
