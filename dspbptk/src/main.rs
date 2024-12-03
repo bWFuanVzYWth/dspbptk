@@ -244,13 +244,18 @@ fn cook_blueprint_directory_with_fs_io(
         debug!("relative_path_in: \"{}\"", relative_path_in.display());
         let file_out = path_out;
         if relative_path_in == std::path::Path::new("").as_os_str() {
-            file_out.join(relative_path_in);
+            let _ = file_out.join(relative_path_in);
         }
         debug!("file_out: \"{}\"", file_out.display());
         recompress_blueprint_with_fs_io(file_in, &file_out);
     });
     maybe_blueprint_raw_paths.par_iter().for_each(|file_in| {
         let relative_path_in = file_in.strip_prefix(path_in).unwrap(/*impossible*/);
+        debug!("relative_path_in: \"{}\"", relative_path_in.display());
+        let file_out = path_out;
+        if relative_path_in == std::path::Path::new("").as_os_str() {
+            let _ = file_out.join(relative_path_in);
+        }
         let file_out = path_out.join(relative_path_in);
         blueprint_from_bpraw_with_fs_io(file_in, &file_out);
     });
