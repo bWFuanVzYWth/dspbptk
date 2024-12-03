@@ -8,10 +8,10 @@ use walkdir::{DirEntry, WalkDir};
 
 use blueprint::error::DspbptkError;
 
-// FIXME recompress content
 fn recompress_blueprint(
     base64_string_in: &str,
 ) -> Result<(String, Vec<String>), DspbptkError<String>> {
+    // 创建空警告列表，用于储存所有警告数据
     let mut warnings = Vec::new();
 
     // 蓝图字符串 -> 蓝图数据
@@ -63,6 +63,7 @@ fn recompress_blueprint(
     // 蓝图数据 -> 蓝图字符串
     let base64_string_out = blueprint::serialization(bp_data_in.header, &content_out);
 
+    // 返回蓝图字符串和警告列表
     Ok((base64_string_out, warnings))
 }
 
@@ -200,30 +201,6 @@ fn recompress_blueprint_with_fs_io(file_in: &std::path::PathBuf, file_out: &std:
     }
 }
 
-fn is_txt(entry: &DirEntry) -> bool {
-    entry
-        .file_name()
-        .to_str()
-        .map(|s| s.ends_with(".txt"))
-        .unwrap_or(false)
-}
-
-fn _is_json(entry: &DirEntry) -> bool {
-    entry
-        .file_name()
-        .to_str()
-        .map(|s| s.ends_with(".json"))
-        .unwrap_or(false)
-}
-
-fn is_bpraw(entry: &DirEntry) -> bool {
-    entry
-        .file_name()
-        .to_str()
-        .map(|s| s.ends_with(".bpraw"))
-        .unwrap_or(false)
-}
-
 pub enum FileType {
     Other,
     Txt,
@@ -255,7 +232,6 @@ fn cook_blueprint_directory_with_fs_io(
     let mut maybe_blueprint_raw_paths = Vec::new();
 
     for entry in WalkDir::new(path_in).into_iter().filter_map(|e| e.ok()) {
-        // FIXME 还要检查是不是文件
         match file_type(&entry) {
             FileType::Txt => maybe_blueprint_paths.push(entry.into_path()),
             FileType::BpRaw => maybe_blueprint_raw_paths.push(entry.into_path()),
@@ -265,7 +241,12 @@ fn cook_blueprint_directory_with_fs_io(
 
     maybe_blueprint_paths.par_iter().for_each(|file_in| {
         let relative_path_in = file_in.strip_prefix(path_in).unwrap(/*impossible*/);
-        let file_out = path_out.join(relative_path_in);
+        debug!("relative_path_in: \"{}\"", relative_path_in.display());
+        let file_out = path_out;
+        if relative_path_in == std::path::Path::new("").as_os_str() {
+            file_out.join(relative_path_in);
+        }
+        debug!("file_out: \"{}\"", file_out.display());
         recompress_blueprint_with_fs_io(file_in, &file_out);
     });
     maybe_blueprint_raw_paths.par_iter().for_each(|file_in| {
@@ -295,7 +276,6 @@ fn main() {
     eprintln!("https://github.com/bWFuanVzYWth/dspbptk");
     let args = Args::parse();
 
-    // 快速排除不正常参数，尽早主动崩溃并报错
     let path_in = &args.input;
     let path_out = match &args.output {
         None => path_in,
