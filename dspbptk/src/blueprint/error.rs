@@ -21,8 +21,6 @@ impl<E: std::error::Error + 'static> std::error::Error for DspbptkError<E> {
             DspbptkError::CanNotParseContent(e) => Some(e),
 
             DspbptkError::CanNotCompressGzip(e) => Some(e),
-
-            _ => None,
         }
     }
 }
@@ -38,8 +36,6 @@ impl<E: std::error::Error> std::fmt::Display for DspbptkError<E> {
             DspbptkError::CanNotParseContent(e) => write!(f, "can not parse content: {:#?}", e),
 
             DspbptkError::CanNotCompressGzip(e) => write!(f, "can not compress GZIP: {:#?}", e),
-
-            _ => write!(f, "unknown dspbptk error. PLEASE report it on Github :("),
         }
     }
 }

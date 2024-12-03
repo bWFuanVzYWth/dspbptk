@@ -66,21 +66,24 @@ fn recompress_blueprint(
     Ok((base64_string_out, warnings))
 }
 
-fn single_threaded_work(path_in: &std::path::PathBuf, path_out: &std::path::PathBuf) {
-    let base64_string_in = match std::fs::read_to_string(path_in) {
+fn recompress_blueprint_with_fs_io(file_in: &std::path::PathBuf, file_out: &std::path::PathBuf) {
+    let base64_string_in = match std::fs::read_to_string(file_in) {
         Ok(result) => {
-            debug!("std::fs::read_to_string match Ok: path_in: {:?}", path_in);
+            debug!(
+                "std::fs::read_to_string match Ok: file_in: \"{}\"",
+                file_in.display()
+            );
             result
         }
         Err(why) => {
-            error!("{:#?}: path_in: {:?}", why, path_in);
+            error!("{:#?}: file_in: \"{}\"", why, file_in.display());
             return;
         }
     };
 
-    // TODO 补点debug和trace
+    // 快速排除非蓝图txt，尽早返回
     if (&base64_string_in).chars().take(12).collect::<String>() != "BLUEPRINT:0," {
-        debug!("Not blueprint: {:?}", path_in);
+        debug!("Not blueprint: \"{}\"", file_in.display());
         return;
     }
 
@@ -88,12 +91,15 @@ fn single_threaded_work(path_in: &std::path::PathBuf, path_out: &std::path::Path
         Ok((base64_string, warnings)) => {
             warnings
                 .iter()
-                .for_each(|warning| warn!("{}: path_in: {:?}", warning, path_in));
-            debug!("recompress_blueprint match Ok: path_in: {:?}", path_in);
+                .for_each(|warning| warn!("{}: file_in: \"{}\"", warning, file_in.display()));
+            debug!(
+                "recompress_blueprint match Ok: file_in: \"{}\"",
+                file_in.display()
+            );
             base64_string
         }
         Err(why) => {
-            error!("{:#?}: path_in: {:?}", why, path_in);
+            error!("{:#?}: file_in: \"{}\"", why, file_in.display());
             return;
         }
     };
@@ -102,23 +108,28 @@ fn single_threaded_work(path_in: &std::path::PathBuf, path_out: &std::path::Path
     let string_out_length = base64_string_out.len();
     let percent = (string_out_length as f64 / string_in_length as f64) * 100.0;
 
-    // let order = std::cmp::Ordering::Greater;
     let order = string_in_length.cmp(&string_out_length);
 
     match order {
         std::cmp::Ordering::Less => {
             warn!(
-                "Fail: {:3.3}%, {} -x-> {}, path_in:{:?}",
-                percent, string_in_length, string_out_length, path_in
+                "Fail: {:3.3}%, {} -x-> {}, file_in:\"{}\"",
+                percent,
+                string_in_length,
+                string_out_length,
+                file_in.display()
             );
         }
         std::cmp::Ordering::Equal => {
             warn!(
-                "Fail: {:3.3}%, {} -x-> {}, path_in:{:?}",
-                percent, string_in_length, string_out_length, path_in
+                "Fail: {:3.3}%, {} -x-> {}, file_in:\"{}\"",
+                percent,
+                string_in_length,
+                string_out_length,
+                file_in.display()
             );
         }
-        std::cmp::Ordering::Greater => match std::fs::write(path_out, base64_string_out) {
+        std::cmp::Ordering::Greater => match std::fs::write(file_out, base64_string_out) {
             Ok(_) => {
                 info!(
                     "Success: {:3.3}%, {} ---> {}",
@@ -126,7 +137,7 @@ fn single_threaded_work(path_in: &std::path::PathBuf, path_out: &std::path::Path
                 );
             }
             Err(why) => {
-                error!("{:#?}: path_in: {:?}", why, path_in);
+                error!("{:#?}: file_in: \"{}\"", why, file_in.display());
             }
         },
     }
@@ -140,7 +151,7 @@ fn is_txt(entry: &DirEntry) -> bool {
         .unwrap_or(false)
 }
 
-fn is_json(entry: &DirEntry) -> bool {
+fn _is_json(entry: &DirEntry) -> bool {
     entry
         .file_name()
         .to_str()
@@ -148,28 +159,28 @@ fn is_json(entry: &DirEntry) -> bool {
         .unwrap_or(false)
 }
 
-fn is_content(entry: &DirEntry) -> bool {
+fn is_bpraw(entry: &DirEntry) -> bool {
     entry
         .file_name()
         .to_str()
-        .map(|s| s.ends_with(".content"))
+        .map(|s| s.ends_with(".bpraw"))
         .unwrap_or(false)
 }
 
-fn muti_threaded_work(path_in: &std::path::PathBuf, path_out: &std::path::PathBuf) {
-    let mut path_txts = Vec::new();
+fn recompress_blueprint_directory_with_fs_io(path_in: &std::path::PathBuf) {
+    let mut path_maybe_blueprints = Vec::new();
     for entry in WalkDir::new(path_in)
         .follow_links(true)
         .into_iter()
         .filter_map(|e| e.ok())
     {
         if is_txt(&entry) {
-            path_txts.push(entry.into_path());
+            path_maybe_blueprints.push(entry.into_path());
         }
     }
 
-    path_txts.par_iter().for_each(|path_txt| {
-        single_threaded_work(path_txt, path_txt);
+    path_maybe_blueprints.par_iter().for_each(|file_in| {
+        recompress_blueprint_with_fs_io(file_in, file_in);
     });
 }
 
@@ -193,21 +204,24 @@ fn main() {
     eprintln!("https://github.com/bWFuanVzYWth/dspbptk");
     let args = Args::parse();
 
+    // 快速排除不正常参数，尽早主动崩溃并报错
     let path_in = &args.input;
-    let path_out = match &args.output {
-        Some(args_output) => {
-            if let Ok(meta_data_in) = std::fs::metadata(path_in) {
-                if let Ok(meta_data_out) = std::fs::metadata(args_output) {
-                    if meta_data_in.is_dir() && meta_data_out.is_file() {
-                        panic!("Fatal error: Cannot input directory when output to file!");
-                    }
-                }
-            }
-            args_output
-        }
-        None => path_in,
-    };
+    let path_out = &args.output;
 
-    // TODO 文件输出
-    muti_threaded_work(path_in, path_in);
+    // let path_in = &args.input;
+    // let path_out = match &args.output {
+    //     Some(args_output) => {
+    //         if let Ok(meta_data_in) = std::fs::metadata(path_in) {
+    //             if let Ok(meta_data_out) = std::fs::metadata(args_output) {
+    //                 if meta_data_in.is_dir() && meta_data_out.is_file() {
+    //                     panic!("Fatal error: Cannot input directory when output to file!");
+    //                 }
+    //             }
+    //         }
+    //         args_output
+    //     }
+    //     None => path_in,
+    // };
+
+    recompress_blueprint_directory_with_fs_io(path_in);
 }
