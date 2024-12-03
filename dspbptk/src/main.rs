@@ -66,6 +66,50 @@ fn recompress_blueprint(
     Ok((base64_string_out, warnings))
 }
 
+fn blueprint_from_bpraw_with_fs_io(file_in: &std::path::PathBuf, file_out: &std::path::PathBuf) {
+    let memory_stream_in = match std::fs::read(file_in) {
+        Ok(result) => {
+            debug!("std::fs::read Ok: file_in: \"{}\"", file_in.display());
+            result
+        }
+        Err(why) => {
+            error!("{:#?}: file_in: \"{}\"", why, file_in.display());
+            return;
+        }
+    };
+
+    let header = "BLUEPRINT:0,0,0,0,0,0,0,0,0,0.0.0.0,,";
+
+    let content_out = match blueprint::encode_content(memory_stream_in) {
+        Ok(content) => {
+            debug!(
+                "blueprint::encode_content match Ok: path_in: \"{}\"",
+                file_in.display()
+            );
+            content
+        }
+        Err(why) => {
+            error!("{:#?}: file_in: \"{}\"", why, file_in.display());
+            return;
+        }
+    };
+
+    let base64_string_out = blueprint::serialization(header, &content_out);
+
+    match std::fs::write(file_out, base64_string_out) {
+        Ok(_) => {
+            info!(
+                "Success: from \"{}\" to \"{}\"",
+                file_in.display(),
+                file_out.display()
+            );
+        }
+        Err(why) => {
+            error!("{:#?}: file_out: \"{}\"", why, file_out.display());
+        }
+    }
+}
+
 fn recompress_blueprint_with_fs_io(file_in: &std::path::PathBuf, file_out: &std::path::PathBuf) {
     let base64_string_in = match std::fs::read_to_string(file_in) {
         Ok(result) => {
@@ -172,7 +216,7 @@ fn _is_json(entry: &DirEntry) -> bool {
         .unwrap_or(false)
 }
 
-fn _is_bpraw(entry: &DirEntry) -> bool {
+fn is_bpraw(entry: &DirEntry) -> bool {
     entry
         .file_name()
         .to_str()
@@ -180,22 +224,54 @@ fn _is_bpraw(entry: &DirEntry) -> bool {
         .unwrap_or(false)
 }
 
+pub enum FileType {
+    Other,
+    Txt,
+    BpRaw,
+    _Json,
+}
+
+fn file_type(entry: &DirEntry) -> FileType {
+    entry
+        .file_name()
+        .to_str()
+        .map(|file_name| {
+            if file_name.ends_with(".txt") {
+                FileType::Txt
+            } else if file_name.ends_with(".bpraw") {
+                FileType::BpRaw
+            } else {
+                FileType::Other
+            }
+        })
+        .unwrap_or(FileType::Other)
+}
+
 fn cook_blueprint_directory_with_fs_io(
     path_in: &std::path::PathBuf,
     path_out: &std::path::PathBuf,
 ) {
-    let mut path_maybe_blueprints = Vec::new();
+    let mut maybe_blueprint_paths = Vec::new();
+    let mut maybe_blueprint_raw_paths = Vec::new();
+
     for entry in WalkDir::new(path_in).into_iter().filter_map(|e| e.ok()) {
         // FIXME 还要检查是不是文件
-        if is_txt(&entry) {
-            path_maybe_blueprints.push(entry.into_path());
+        match file_type(&entry) {
+            FileType::Txt => maybe_blueprint_paths.push(entry.into_path()),
+            FileType::BpRaw => maybe_blueprint_raw_paths.push(entry.into_path()),
+            _ => {}
         }
     }
 
-    path_maybe_blueprints.par_iter().for_each(|file_in| {
+    maybe_blueprint_paths.par_iter().for_each(|file_in| {
         let relative_path_in = file_in.strip_prefix(path_in).unwrap(/*impossible*/);
         let file_out = path_out.join(relative_path_in);
         recompress_blueprint_with_fs_io(file_in, &file_out);
+    });
+    maybe_blueprint_raw_paths.par_iter().for_each(|file_in| {
+        let relative_path_in = file_in.strip_prefix(path_in).unwrap(/*impossible*/);
+        let file_out = path_out.join(relative_path_in);
+        blueprint_from_bpraw_with_fs_io(file_in, &file_out);
     });
 }
 
