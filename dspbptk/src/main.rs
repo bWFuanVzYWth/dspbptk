@@ -3,195 +3,164 @@ mod md5;
 
 use clap::Parser;
 use log::{debug, error, info, warn};
-use rayon::prelude::*;
-use walkdir::WalkDir;
 
 use blueprint::error::BlueprintError;
 
 fn recompress_blueprint(
-    base64_string_in: &str,
+    blueprint_in: &str,
 ) -> Result<(String, Vec<String>), BlueprintError<String>> {
-    // 创建空警告列表，用于储存所有警告数据
+    use blueprint::content;
+    use blueprint::content::{data_from_string, string_from_data};
+
     let mut warnings = Vec::new();
 
-    // 蓝图字符串 -> 蓝图数据
-    let bp_data_in = blueprint::parse(base64_string_in)?;
-    if bp_data_in.unknown.len() > 64 {
+    let blueprint_data = blueprint::parse(blueprint_in)?;
+    if blueprint_data.unknown.len() > 9 {
         warnings.push(format!(
             "{} unknown after blueprint: (QUITE A LOT)",
-            bp_data_in.unknown.len()
+            blueprint_data.unknown.len()
         ));
-    } else if bp_data_in.unknown.len() > 0 {
+    } else if blueprint_data.unknown.len() > 0 {
         warnings.push(format!(
             "{} unknown after blueprint: {:?}",
-            bp_data_in.unknown.len(),
-            bp_data_in.unknown
+            blueprint_data.unknown.len(),
+            blueprint_data.unknown
         ));
     }
 
-    // content子串 -> 二进制流
-    let memory_stream_in = blueprint::content::memory_stream_from_content(bp_data_in.content)?;
+    let mut content_data = data_from_string(blueprint_data.content)?;
 
-    // 二进制流 -> content数据
-    let mut content = blueprint::memory_stream::parse(memory_stream_in.as_slice())?;
-    if content.unknown.len() > 64 {
+    if content_data.unknown.len() > 9 {
         warnings.push(format!(
             "{} unknown after content: (QUITE A LOT)",
-            content.unknown.len()
+            content_data.unknown.len()
         ));
-    } else if content.unknown.len() > 0 {
+    } else if content_data.unknown.len() > 0 {
         warnings.push(format!(
             "{} unknown after content: {:?}",
-            content.unknown.len(),
-            content.unknown
+            content_data.unknown.len(),
+            content_data.unknown
         ));
     }
 
-    // 蓝图处理
-    blueprint::memory_stream::fix_buildings_index(&mut content.buildings);
+    content::fix_buildings_index(&mut content_data.buildings);
 
-    // content数据 -> 二进制流
-    let memory_stream_out = blueprint::memory_stream::serialization(content);
+    let content_string = string_from_data(content_data)?;
 
-    // 二进制流 -> content子串
-    let content_out = blueprint::content::content_from_memory_stream(memory_stream_out)?;
+    let blueprint_string = blueprint::serialization(blueprint_data.header, &content_string);
 
-    // 蓝图数据 -> 蓝图字符串
-    let base64_string_out = blueprint::serialization(bp_data_in.header, &content_out);
-
-    // 返回蓝图字符串和警告列表
-    Ok((base64_string_out, warnings))
+    Ok((blueprint_string, warnings))
 }
 
-fn blueprint_from_bpraw_with_fs_io(file_in: &std::path::PathBuf, file_out: &std::path::PathBuf) {
-    let memory_stream_in = match std::fs::read(file_in) {
+fn blueprint_from_content_rw(file_in: &std::path::PathBuf, file_out: &std::path::PathBuf) {
+    let content_bin = match std::fs::read(file_in) {
         Ok(result) => {
-            debug!("std::fs::read match Ok: file_in: \"{}\"", file_in.display());
+            debug!("Ok: read from {}", file_in.display());
             result
         }
         Err(why) => {
-            error!("{:#?}: file_in: \"{}\"", why, file_in.display());
+            error!("{:#?}: read from {}", why, file_in.display());
             return;
         }
     };
 
-    let content_out = match blueprint::content::content_from_memory_stream(memory_stream_in) {
+    let content_string = match blueprint::content::string_from_bin(content_bin) {
         Ok(content) => {
-            debug!(
-                "blueprint::content::content_from_memory_stream match Ok: path_in: \"{}\"",
-                file_in.display()
-            );
+            debug!("Ok: encode from {}", file_in.display());
             content
         }
         Err(why) => {
-            error!("{:#?}: file_in: \"{}\"", why, file_in.display());
+            error!("{:#?}: encode from {}", why, file_in.display());
             return;
         }
     };
 
-    let header = "BLUEPRINT:0,0,0,0,0,0,0,0,0,0.0.0.0,,";
-    let base64_string_out = blueprint::serialization(header, &content_out);
+    const HEADER: &str = "BLUEPRINT:0,0,0,0,0,0,0,0,0,0.0.0.0,,";
+    let blueprint_string = blueprint::serialization(HEADER, &content_string);
 
-    match std::fs::write(file_out, base64_string_out) {
+    match std::fs::write(file_out, blueprint_string) {
         Ok(_) => {
             info!(
-                "Success: from \"{}\" to \"{}\"",
+                "Ok: encode from {} to {}",
                 file_in.display(),
                 file_out.display()
             );
         }
         Err(why) => {
-            error!("{:#?}: file_out: \"{}\"", why, file_out.display());
+            error!("{:#?}: encode from {}", why, file_out.display());
         }
     }
 }
 
-fn recompress_blueprint_with_fs_io(file_in: &std::path::PathBuf, file_out: &std::path::PathBuf) {
-    let base64_string_in = match std::fs::read_to_string(file_in) {
+fn recompress_blueprint_rw(file_in: &std::path::PathBuf, file_out: &std::path::PathBuf) {
+    let blueprint_in = match std::fs::read_to_string(file_in) {
         Ok(result) => {
-            debug!(
-                "std::fs::read_to_string match Ok: file_in: \"{}\"",
-                file_in.display()
-            );
+            debug!("Ok: read from {}", file_in.display());
             result
         }
         Err(why) => {
-            error!("{:#?}: file_in: \"{}\"", why, file_in.display());
+            error!("{:#?}: read from {}", why, file_in.display());
             return;
         }
     };
 
     // 快速排除非蓝图txt，尽早返回
-    if (&base64_string_in).chars().take(12).collect::<String>() != "BLUEPRINT:0," {
-        debug!("Not blueprint: \"{}\"", file_in.display());
+    if (&blueprint_in).chars().take(12).collect::<String>() != "BLUEPRINT:0," {
+        debug!("Not blueprint: {}", file_in.display());
         return;
     }
 
-    let base64_string_out = match recompress_blueprint(&base64_string_in) {
-        Ok((base64_string, warnings)) => {
+    let blueprint_out = match recompress_blueprint(&blueprint_in) {
+        Ok((blueprint, warnings)) => {
             warnings
                 .iter()
-                .for_each(|warning| warn!("{}: file_in: \"{}\"", warning, file_in.display()));
-            debug!(
-                "recompress_blueprint match Ok: file_in: \"{}\"",
-                file_in.display()
-            );
-            base64_string
+                .for_each(|warning| warn!("{} from {}", warning, file_in.display()));
+            debug!("Ok: recompress from {}", file_in.display());
+            blueprint
         }
         Err(why) => {
-            error!("{:#?}: file_in: \"{}\"", why, file_in.display());
+            error!("{:#?}: recompress from {}", why, file_in.display());
             return;
         }
     };
 
-    let string_in_length = base64_string_in.len();
-    let string_out_length = base64_string_out.len();
+    let string_in_length = blueprint_in.len();
+    let string_out_length = blueprint_out.len();
     let percent = (string_out_length as f64 / string_in_length as f64) * 100.0;
 
-    let order = string_in_length.cmp(&string_out_length);
+    if string_in_length.cmp(&string_out_length) != std::cmp::Ordering::Greater {
+        warn!(
+            "Fail: {:3.3}%, {} -> {}, from {}",
+            percent,
+            string_in_length,
+            string_out_length,
+            file_in.display()
+        );
+        return;
+    }
 
-    match order {
-        std::cmp::Ordering::Less => {
-            warn!(
-                "Fail: {:3.3}%, {} -x-> {}, file_in:\"{}\"",
+    match std::fs::create_dir_all(file_out.parent().unwrap(/*impossible*/)) {
+        Ok(_) => {
+            debug!("Ok: create dir {}", file_out.display());
+        }
+        Err(why) => {
+            error!("{:#?}: create dir {}", why, file_out.display());
+        }
+    };
+
+    match std::fs::write(file_out, blueprint_out) {
+        Ok(_) => {
+            info!(
+                "Ok: {:3.3}%, {} -> {}, from {} to {}",
                 percent,
                 string_in_length,
                 string_out_length,
-                file_in.display()
+                file_in.display(),
+                file_out.display()
             );
         }
-        std::cmp::Ordering::Equal => {
-            warn!(
-                "Fail: {:3.3}%, {} -x-> {}, file_in:\"{}\"",
-                percent,
-                string_in_length,
-                string_out_length,
-                file_in.display()
-            );
-        }
-        std::cmp::Ordering::Greater => {
-            match std::fs::create_dir_all(file_out.parent().unwrap(/*impossible*/)) {
-                Ok(_) => {
-                    debug!(
-                        "std::fs::create_dir_all match Ok: file_out:{}",
-                        file_out.display()
-                    );
-                }
-                Err(why) => {
-                    error!("{:#?}: file_out: \"{}\"", why, file_out.display());
-                }
-            };
-            match std::fs::write(file_out, base64_string_out) {
-                Ok(_) => {
-                    info!(
-                        "Success: {:3.3}%, {} ---> {}",
-                        percent, string_in_length, string_out_length
-                    );
-                }
-                Err(why) => {
-                    error!("{:#?}: file_out: \"{}\"", why, file_out.display());
-                }
-            }
+        Err(why) => {
+            error!("{:#?}: write to {}", why, file_out.display());
         }
     }
 }
@@ -199,21 +168,21 @@ fn recompress_blueprint_with_fs_io(file_in: &std::path::PathBuf, file_out: &std:
 pub enum FileType {
     Other,
     Txt,
-    BpRaw,
+    Content,
 }
 
 fn file_type(entry: &std::path::PathBuf) -> FileType {
     match entry.extension().unwrap().to_str() {
         Some("txt") => FileType::Txt,
-        Some("bpraw") => FileType::BpRaw,
+        Some("content") => FileType::Content,
         _ => FileType::Other,
     }
 }
 
-fn cook_blueprint_directory_with_fs_io(
-    path_in: &std::path::PathBuf,
-    path_out: &std::path::PathBuf,
-) {
+fn cook(path_in: &std::path::PathBuf, path_out: &std::path::PathBuf) {
+    use rayon::prelude::*;
+    use walkdir::WalkDir;
+
     let mut maybe_blueprint_paths = Vec::new();
     let mut maybe_blueprint_raw_paths = Vec::new();
 
@@ -221,43 +190,43 @@ fn cook_blueprint_directory_with_fs_io(
         let entry_path = entry.into_path();
         match file_type(&entry_path) {
             FileType::Txt => maybe_blueprint_paths.push(entry_path),
-            FileType::BpRaw => maybe_blueprint_raw_paths.push(entry_path),
+            FileType::Content => maybe_blueprint_raw_paths.push(entry_path),
             _ => {}
         }
     }
 
     maybe_blueprint_paths.par_iter().for_each(|file_in| {
         let relative_path_in = file_in.strip_prefix(path_in).unwrap(/*impossible*/);
-        debug!("relative_path_in: \"{}\"", relative_path_in.display());
+        debug!("relative_path_in = {}", relative_path_in.display());
         let file_out = path_out;
         if relative_path_in == std::path::Path::new("").as_os_str() {
             let _ = file_out.join(relative_path_in);
         }
-        debug!("file_out: \"{}\"", file_out.display());
-        recompress_blueprint_with_fs_io(file_in, &file_out);
+        debug!("file_out = {}", file_out.display());
+        recompress_blueprint_rw(file_in, &file_out);
     });
 
     maybe_blueprint_raw_paths.par_iter().for_each(|file_in| {
         let relative_path_in = file_in.strip_prefix(path_in).unwrap(/*impossible*/);
-        debug!("relative_path_in: \"{}\"", relative_path_in.display());
+        debug!("relative_path_in = {}", relative_path_in.display());
         let file_out = path_out;
         if relative_path_in == std::path::Path::new("").as_os_str() {
             let _ = file_out.join(relative_path_in);
         }
-        debug!("file_out: \"{}\"", file_out.display());
-        blueprint_from_bpraw_with_fs_io(file_in, &file_out);
+        debug!("file_out = {}", file_out.display());
+        blueprint_from_content_rw(file_in, &file_out);
     });
 }
 
 #[derive(Parser, Debug)]
 #[command(name = "DSPBPTK")]
-#[command(version = "DSPBPTK: 0.1.0, DSP: 0.10.31.24632")]
+#[command(version = "DSPBPTK: 0.2.0, DSP: 0.10.31.24632")]
 #[command(about = "Dyson Sphere Program Blueprint Toolkit", long_about = None)]
 struct Args {
-    /// Input from file. Support *.txt *.json *.content
+    /// Input from file. (*.txt *.content)
     input: std::path::PathBuf,
 
-    /// Input to file. Support *.txt *.json *.content
+    /// Output to file.
     #[arg(long, short)]
     output: Option<std::path::PathBuf>,
 }
@@ -275,5 +244,5 @@ fn main() {
         Some(path) => path,
     };
 
-    cook_blueprint_directory_with_fs_io(path_in, path_out);
+    cook(path_in, path_out);
 }

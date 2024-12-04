@@ -51,7 +51,7 @@ pub struct BuildingData {
     pub parameters: Vec<i32>,
 }
 
-fn parse_version_neg101(bin: &[u8]) -> IResult<&[u8], BuildingData> {
+fn deserialization_version_neg101(bin: &[u8]) -> IResult<&[u8], BuildingData> {
     let unknown = bin;
 
     let (unknown, _version) = tag((-101_i32).to_le_bytes())(unknown)?;
@@ -208,7 +208,7 @@ fn parse_version_neg101(bin: &[u8]) -> IResult<&[u8], BuildingData> {
     ))
 }
 
-fn parse_version_neg100(bin: &[u8]) -> IResult<&[u8], BuildingData> {
+fn deserialization_version_neg100(bin: &[u8]) -> IResult<&[u8], BuildingData> {
     let unknown = bin;
 
     let (unknown, _version) = tag((-100_i32).to_le_bytes())(unknown)?;
@@ -274,7 +274,7 @@ fn parse_version_neg100(bin: &[u8]) -> IResult<&[u8], BuildingData> {
     ))
 }
 
-fn parse_version_0(bin: &[u8]) -> IResult<&[u8], BuildingData> {
+fn deserialization_version_0(bin: &[u8]) -> IResult<&[u8], BuildingData> {
     let unknown = bin;
 
     let (unknown, index) = le_i32(unknown)?;
@@ -338,9 +338,9 @@ fn parse_version_0(bin: &[u8]) -> IResult<&[u8], BuildingData> {
     ))
 }
 
-pub fn parse(bin: &[u8]) -> IResult<&[u8], BuildingData> {
+pub fn deserialization(bin: &[u8]) -> IResult<&[u8], BuildingData> {
     let (unknown, data) =
-        alt((parse_version_neg101, parse_version_neg100, parse_version_0))(bin)?;
+        alt((deserialization_version_neg101, deserialization_version_neg100, deserialization_version_0))(bin)?;
     Ok((unknown, data))
 }
 

@@ -73,7 +73,7 @@ pub fn parse_non_finish(string: &str) -> IResult<&str, HeadData> {
 pub fn parse(string: &str) -> Result<HeadData, BlueprintError<String>> {
     match parse_non_finish(string).finish() {
         Ok((_unknown, data)) => Ok(data),
-        Err(why) => Err(CanNotParseHeader(why.to_string())),
+        Err(why) => Err(CanNotDeserializationHeader(why.to_string())),
     }
 }
 

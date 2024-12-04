@@ -15,7 +15,7 @@ pub struct AreaData {
     pub height: i16,
 }
 
-pub fn parse(bin: &[u8]) -> IResult<&[u8], AreaData> {
+pub fn deserialization(bin: &[u8]) -> IResult<&[u8], AreaData> {
     let unknown = bin;
 
     let (unknown, index) = le_i8(unknown)?;

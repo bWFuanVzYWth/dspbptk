@@ -1,7 +1,6 @@
-pub mod content;
 pub mod error;
 pub mod header;
-pub mod memory_stream;
+pub mod content;
 
 use nom::{
     bytes::complete::{tag, take, take_till},
@@ -52,7 +51,7 @@ fn parse_non_finish(string: &str) -> IResult<&str, BlueprintData> {
 pub fn parse(string: &str) -> Result<BlueprintData, BlueprintError<String>> {
     match parse_non_finish(string).finish() {
         Ok((_unknown, data)) => Ok(data),
-        Err(why) => Err(CanNotParseBluePrint(why.to_string())),
+        Err(why) => Err(CanNotDeserializationBluePrint(why.to_string())),
     }
 }
 
