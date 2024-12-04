@@ -128,17 +128,6 @@ fn recompress_blueprint_rw(file_in: &std::path::PathBuf, file_out: &std::path::P
     let string_out_length = blueprint_out.len();
     let percent = (string_out_length as f64 / string_in_length as f64) * 100.0;
 
-    if string_in_length.cmp(&string_out_length) != std::cmp::Ordering::Greater {
-        warn!(
-            "Fail: {:3.3}%, {} -> {}, from {}",
-            percent,
-            string_in_length,
-            string_out_length,
-            file_in.display()
-        );
-        return;
-    }
-
     match std::fs::create_dir_all(file_out.parent().unwrap(/*impossible*/)) {
         Ok(_) => {
             debug!("Ok: create dir {}", file_out.display());
@@ -166,16 +155,21 @@ fn recompress_blueprint_rw(file_in: &std::path::PathBuf, file_out: &std::path::P
 }
 
 pub enum FileType {
+    Unknown,
     Other,
     Txt,
     Content,
 }
 
 fn file_type(entry: &std::path::PathBuf) -> FileType {
-    match entry.extension().unwrap().to_str() {
-        Some("txt") => FileType::Txt,
-        Some("content") => FileType::Content,
-        _ => FileType::Other,
+    if let Some(extension) = entry.extension() {
+        match extension.to_str() {
+            Some("txt") => FileType::Txt,
+            Some("content") => FileType::Content,
+            _ => FileType::Other,
+        }
+    } else {
+        FileType::Unknown
     }
 }
 
@@ -184,13 +178,13 @@ fn cook(path_in: &std::path::PathBuf, path_out: &std::path::PathBuf) {
     use walkdir::WalkDir;
 
     let mut maybe_blueprint_paths = Vec::new();
-    let mut maybe_blueprint_raw_paths = Vec::new();
+    let mut maybe_content_paths = Vec::new();
 
     for entry in WalkDir::new(path_in).into_iter().filter_map(|e| e.ok()) {
         let entry_path = entry.into_path();
         match file_type(&entry_path) {
             FileType::Txt => maybe_blueprint_paths.push(entry_path),
-            FileType::Content => maybe_blueprint_raw_paths.push(entry_path),
+            FileType::Content => maybe_content_paths.push(entry_path),
             _ => {}
         }
     }
@@ -198,21 +192,22 @@ fn cook(path_in: &std::path::PathBuf, path_out: &std::path::PathBuf) {
     maybe_blueprint_paths.par_iter().for_each(|file_in| {
         let relative_path_in = file_in.strip_prefix(path_in).unwrap(/*impossible*/);
         debug!("relative_path_in = {}", relative_path_in.display());
-        let file_out = path_out;
-        if relative_path_in == std::path::Path::new("").as_os_str() {
-            let _ = file_out.join(relative_path_in);
+        let mut file_out = path_out.clone();
+        if relative_path_in != std::path::Path::new("").as_os_str() {
+            file_out = file_out.join(relative_path_in);
         }
         debug!("file_out = {}", file_out.display());
         recompress_blueprint_rw(file_in, &file_out);
     });
 
-    maybe_blueprint_raw_paths.par_iter().for_each(|file_in| {
+    maybe_content_paths.par_iter().for_each(|file_in| {
         let relative_path_in = file_in.strip_prefix(path_in).unwrap(/*impossible*/);
         debug!("relative_path_in = {}", relative_path_in.display());
-        let file_out = path_out;
-        if relative_path_in == std::path::Path::new("").as_os_str() {
-            let _ = file_out.join(relative_path_in);
+        let mut file_out = path_out.clone();
+        if relative_path_in != std::path::Path::new("").as_os_str() {
+            file_out = file_out.join(relative_path_in);
         }
+        file_out = file_out.with_extension("txt");
         debug!("file_out = {}", file_out.display());
         blueprint_from_content_rw(file_in, &file_out);
     });
@@ -223,10 +218,10 @@ fn cook(path_in: &std::path::PathBuf, path_out: &std::path::PathBuf) {
 #[command(version = "DSPBPTK: 0.2.0, DSP: 0.10.31.24632")]
 #[command(about = "Dyson Sphere Program Blueprint Toolkit", long_about = None)]
 struct Args {
-    /// Input from file. (*.txt *.content)
+    /// Input from file/dir. (*.txt *.content dir/)
     input: std::path::PathBuf,
 
-    /// Output to file.
+    /// Output to file/dir.
     #[arg(long, short)]
     output: Option<std::path::PathBuf>,
 }
