@@ -1,6 +1,7 @@
 [workspace]
 members = ["dspbptk", "zopfli"]
 default-run = "dspbptk"
+workspace.resolver = "2"
 
 [profile.release]
 lto = "fat"

@@ -1,8 +1,26 @@
 use nom::{
     bytes::complete::{tag, take_till},
     sequence::preceded,
-    IResult,
+    Finish, IResult,
 };
+
+use crate::blueprint::error::BlueprintError;
+use crate::blueprint::error::BlueprintError::*;
+
+#[derive(Debug, PartialEq)]
+pub struct HeadData<'h> {
+    pub layout: &'h str,
+    pub icons_0: &'h str,
+    pub icons_1: &'h str,
+    pub icons_2: &'h str,
+    pub icons_3: &'h str,
+    pub icons_4: &'h str,
+    pub time: &'h str,
+    pub game_version: &'h str,
+    pub short_desc: &'h str,
+    pub desc: &'h str,
+    pub unknown: &'h str,
+}
 
 fn tag_blueprint(string: &str) -> IResult<&str, &str> {
     tag("BLUEPRINT:0,")(string)
@@ -20,21 +38,7 @@ fn take_till_comma(string: &str) -> IResult<&str, &str> {
     take_till(|c| c == ',')(string)
 }
 
-#[derive(Debug, PartialEq)]
-pub struct Head<'head> {
-    pub layout: &'head str,
-    pub icons_0: &'head str,
-    pub icons_1: &'head str,
-    pub icons_2: &'head str,
-    pub icons_3: &'head str,
-    pub icons_4: &'head str,
-    pub time: &'head str,
-    pub game_version: &'head str,
-    pub short_desc: &'head str,
-    pub desc: &'head str,
-}
-
-pub fn parse(string: &str) -> IResult<&str, Head> {
+pub fn parse_non_finish(string: &str) -> IResult<&str, HeadData> {
     let unknown = string;
 
     let (unknown, layout) = preceded(tag_blueprint, take_till_comma)(unknown)?;
@@ -50,7 +54,7 @@ pub fn parse(string: &str) -> IResult<&str, Head> {
 
     Ok((
         unknown,
-        Head {
+        HeadData {
             layout: layout,
             icons_0: icons_0,
             icons_1: icons_1,
@@ -61,8 +65,32 @@ pub fn parse(string: &str) -> IResult<&str, Head> {
             game_version: game_version,
             short_desc: short_desc,
             desc: desc,
+            unknown: unknown,
         },
     ))
+}
+
+pub fn parse(string: &str) -> Result<HeadData, BlueprintError<String>> {
+    match parse_non_finish(string).finish() {
+        Ok((_unknown, data)) => Ok(data),
+        Err(why) => Err(CanNotParseHeader(why.to_string())),
+    }
+}
+
+pub fn serialization(data: &HeadData) -> String {
+    format!(
+        "BLUEPRINT:0,{},{},{},{},{},{},0,{},{},{},{}",
+        data.layout,
+        data.icons_0,
+        data.icons_1,
+        data.icons_2,
+        data.icons_3,
+        data.icons_4,
+        data.time,
+        data.game_version,
+        data.short_desc,
+        data.desc,
+    )
 }
 
 #[cfg(test)]
@@ -77,21 +105,19 @@ mod test {
 
         assert_eq!(
             result,
-            Ok((
-                "",
-                Head {
-                    layout: "9",
-                    icons_0: "0",
-                    icons_1: "1",
-                    icons_2: "2",
-                    icons_3: "3",
-                    icons_4: "4",
-                    time: "5",
-                    game_version: "6.7.8.9",
-                    short_desc: "",
-                    desc: "",
-                }
-            ))
+            Ok(HeadData {
+                layout: "9",
+                icons_0: "0",
+                icons_1: "1",
+                icons_2: "2",
+                icons_3: "3",
+                icons_4: "4",
+                time: "5",
+                game_version: "6.7.8.9",
+                short_desc: "",
+                desc: "",
+                unknown: "",
+            })
         );
     }
 }

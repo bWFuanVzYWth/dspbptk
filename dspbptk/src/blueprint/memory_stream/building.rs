@@ -9,8 +9,9 @@ use nom::{
 pub const INDEX_NULL: i32 = -1;
 
 #[derive(Debug)]
-pub struct BlueprintBuilding {
-    pub _version: i32, // 暂时用不到，但是保留字段
+pub struct BuildingData {
+    // 暂时用不到，但是保留字段
+    pub _version: i32,
 
     pub index: i32,
     pub area_index: i8,
@@ -50,8 +51,8 @@ pub struct BlueprintBuilding {
     pub parameters: Vec<i32>,
 }
 
-fn parse_version_neg101(memory_stream: &[u8]) -> IResult<&[u8], BlueprintBuilding> {
-    let unknown = memory_stream;
+fn parse_version_neg101(bin: &[u8]) -> IResult<&[u8], BuildingData> {
+    let unknown = bin;
 
     let (unknown, _version) = tag((-101_i32).to_le_bytes())(unknown)?;
     let (unknown, index) = le_i32(unknown)?;
@@ -173,7 +174,7 @@ fn parse_version_neg101(memory_stream: &[u8]) -> IResult<&[u8], BlueprintBuildin
 
     Ok((
         unknown,
-        BlueprintBuilding {
+        BuildingData {
             _version: -100,
             index: index,
             area_index: area_index,
@@ -207,8 +208,8 @@ fn parse_version_neg101(memory_stream: &[u8]) -> IResult<&[u8], BlueprintBuildin
     ))
 }
 
-fn parse_version_neg100(memory_stream: &[u8]) -> IResult<&[u8], BlueprintBuilding> {
-    let unknown = memory_stream;
+fn parse_version_neg100(bin: &[u8]) -> IResult<&[u8], BuildingData> {
+    let unknown = bin;
 
     let (unknown, _version) = tag((-100_i32).to_le_bytes())(unknown)?;
     let (unknown, index) = le_i32(unknown)?;
@@ -239,7 +240,7 @@ fn parse_version_neg100(memory_stream: &[u8]) -> IResult<&[u8], BlueprintBuildin
 
     Ok((
         unknown,
-        BlueprintBuilding {
+        BuildingData {
             _version: -100,
             index: index,
             area_index: area_index,
@@ -273,8 +274,8 @@ fn parse_version_neg100(memory_stream: &[u8]) -> IResult<&[u8], BlueprintBuildin
     ))
 }
 
-fn parse_version_0(memory_stream: &[u8]) -> IResult<&[u8], BlueprintBuilding> {
-    let unknown = memory_stream;
+fn parse_version_0(bin: &[u8]) -> IResult<&[u8], BuildingData> {
+    let unknown = bin;
 
     let (unknown, index) = le_i32(unknown)?;
     let (unknown, area_index) = le_i8(unknown)?;
@@ -303,7 +304,7 @@ fn parse_version_0(memory_stream: &[u8]) -> IResult<&[u8], BlueprintBuilding> {
 
     Ok((
         unknown,
-        BlueprintBuilding {
+        BuildingData {
             _version: 0,
             index: index,
             area_index: area_index,
@@ -337,131 +338,131 @@ fn parse_version_0(memory_stream: &[u8]) -> IResult<&[u8], BlueprintBuilding> {
     ))
 }
 
-pub fn parse(memory_stream: &[u8]) -> IResult<&[u8], BlueprintBuilding> {
-    let (unknown, building) =
-        alt((parse_version_neg101, parse_version_neg100, parse_version_0))(memory_stream)?;
-    Ok((unknown, building))
+pub fn parse(bin: &[u8]) -> IResult<&[u8], BuildingData> {
+    let (unknown, data) =
+        alt((parse_version_neg101, parse_version_neg100, parse_version_0))(bin)?;
+    Ok((unknown, data))
 }
 
-fn serialization_version_neg101(memory_stream: &mut Vec<u8>, building: &BlueprintBuilding) {
-    memory_stream.extend_from_slice(&(-101_i32).to_le_bytes());
-    memory_stream.extend_from_slice(&building.index.to_le_bytes());
-    memory_stream.extend_from_slice(&building.item_id.to_le_bytes());
-    memory_stream.extend_from_slice(&building.model_index.to_le_bytes());
-    memory_stream.extend_from_slice(&building.area_index.to_le_bytes());
+fn serialization_version_neg101(bin: &mut Vec<u8>, data: &BuildingData) {
+    bin.extend_from_slice(&(-101_i32).to_le_bytes());
+    bin.extend_from_slice(&data.index.to_le_bytes());
+    bin.extend_from_slice(&data.item_id.to_le_bytes());
+    bin.extend_from_slice(&data.model_index.to_le_bytes());
+    bin.extend_from_slice(&data.area_index.to_le_bytes());
 
-    match building.item_id {
+    match data.item_id {
         2011..2021 => {
             // 分拣器
-            memory_stream.extend_from_slice(&building.local_offset_x.to_le_bytes());
-            memory_stream.extend_from_slice(&building.local_offset_y.to_le_bytes());
-            memory_stream.extend_from_slice(&building.local_offset_z.to_le_bytes());
-            memory_stream.extend_from_slice(&building.yaw.to_le_bytes());
-            memory_stream.extend_from_slice(&building.tilt.to_le_bytes());
-            memory_stream.extend_from_slice(&building.pitch.to_le_bytes());
-            memory_stream.extend_from_slice(&building.local_offset_x2.to_le_bytes());
-            memory_stream.extend_from_slice(&building.local_offset_y2.to_le_bytes());
-            memory_stream.extend_from_slice(&building.local_offset_z2.to_le_bytes());
-            memory_stream.extend_from_slice(&building.yaw2.to_le_bytes());
-            memory_stream.extend_from_slice(&building.tilt2.to_le_bytes());
-            memory_stream.extend_from_slice(&building.pitch2.to_le_bytes());
+            bin.extend_from_slice(&data.local_offset_x.to_le_bytes());
+            bin.extend_from_slice(&data.local_offset_y.to_le_bytes());
+            bin.extend_from_slice(&data.local_offset_z.to_le_bytes());
+            bin.extend_from_slice(&data.yaw.to_le_bytes());
+            bin.extend_from_slice(&data.tilt.to_le_bytes());
+            bin.extend_from_slice(&data.pitch.to_le_bytes());
+            bin.extend_from_slice(&data.local_offset_x2.to_le_bytes());
+            bin.extend_from_slice(&data.local_offset_y2.to_le_bytes());
+            bin.extend_from_slice(&data.local_offset_z2.to_le_bytes());
+            bin.extend_from_slice(&data.yaw2.to_le_bytes());
+            bin.extend_from_slice(&data.tilt2.to_le_bytes());
+            bin.extend_from_slice(&data.pitch2.to_le_bytes());
         }
         2001..2011 => {
-            memory_stream.extend_from_slice(&building.local_offset_x.to_le_bytes());
-            memory_stream.extend_from_slice(&building.local_offset_y.to_le_bytes());
-            memory_stream.extend_from_slice(&building.local_offset_z.to_le_bytes());
-            memory_stream.extend_from_slice(&building.yaw.to_le_bytes());
-            memory_stream.extend_from_slice(&building.tilt.to_le_bytes());
+            bin.extend_from_slice(&data.local_offset_x.to_le_bytes());
+            bin.extend_from_slice(&data.local_offset_y.to_le_bytes());
+            bin.extend_from_slice(&data.local_offset_z.to_le_bytes());
+            bin.extend_from_slice(&data.yaw.to_le_bytes());
+            bin.extend_from_slice(&data.tilt.to_le_bytes());
         }
         _ => {
-            memory_stream.extend_from_slice(&building.local_offset_x.to_le_bytes());
-            memory_stream.extend_from_slice(&building.local_offset_y.to_le_bytes());
-            memory_stream.extend_from_slice(&building.local_offset_z.to_le_bytes());
-            memory_stream.extend_from_slice(&building.yaw.to_le_bytes());
+            bin.extend_from_slice(&data.local_offset_x.to_le_bytes());
+            bin.extend_from_slice(&data.local_offset_y.to_le_bytes());
+            bin.extend_from_slice(&data.local_offset_z.to_le_bytes());
+            bin.extend_from_slice(&data.yaw.to_le_bytes());
         }
     }
 
-    memory_stream.extend_from_slice(&building.temp_output_obj_idx.to_le_bytes());
-    memory_stream.extend_from_slice(&building.temp_input_obj_idx.to_le_bytes());
-    memory_stream.extend_from_slice(&building.output_to_slot.to_le_bytes());
-    memory_stream.extend_from_slice(&building.input_from_slot.to_le_bytes());
-    memory_stream.extend_from_slice(&building.output_from_slot.to_le_bytes());
-    memory_stream.extend_from_slice(&building.input_to_slot.to_le_bytes());
-    memory_stream.extend_from_slice(&building.output_offset.to_le_bytes());
-    memory_stream.extend_from_slice(&building.input_offset.to_le_bytes());
-    memory_stream.extend_from_slice(&building.recipe_id.to_le_bytes());
-    memory_stream.extend_from_slice(&building.filter_id.to_le_bytes());
-    memory_stream.extend_from_slice(&building.parameters_length.to_le_bytes());
-    building
+    bin.extend_from_slice(&data.temp_output_obj_idx.to_le_bytes());
+    bin.extend_from_slice(&data.temp_input_obj_idx.to_le_bytes());
+    bin.extend_from_slice(&data.output_to_slot.to_le_bytes());
+    bin.extend_from_slice(&data.input_from_slot.to_le_bytes());
+    bin.extend_from_slice(&data.output_from_slot.to_le_bytes());
+    bin.extend_from_slice(&data.input_to_slot.to_le_bytes());
+    bin.extend_from_slice(&data.output_offset.to_le_bytes());
+    bin.extend_from_slice(&data.input_offset.to_le_bytes());
+    bin.extend_from_slice(&data.recipe_id.to_le_bytes());
+    bin.extend_from_slice(&data.filter_id.to_le_bytes());
+    bin.extend_from_slice(&data.parameters_length.to_le_bytes());
+    data
         .parameters
         .iter()
-        .for_each(|x| memory_stream.extend_from_slice(&x.to_le_bytes()));
+        .for_each(|x| bin.extend_from_slice(&x.to_le_bytes()));
 }
 
-fn _serialization_version_neg100(memory_stream: &mut Vec<u8>, building: &BlueprintBuilding) {
-    memory_stream.extend_from_slice(&(-100_i32).to_le_bytes());
-    memory_stream.extend_from_slice(&building.index.to_le_bytes());
-    memory_stream.extend_from_slice(&building.area_index.to_le_bytes());
-    memory_stream.extend_from_slice(&building.local_offset_x.to_le_bytes());
-    memory_stream.extend_from_slice(&building.local_offset_y.to_le_bytes());
-    memory_stream.extend_from_slice(&building.local_offset_z.to_le_bytes());
-    memory_stream.extend_from_slice(&building.local_offset_x2.to_le_bytes());
-    memory_stream.extend_from_slice(&building.local_offset_y2.to_le_bytes());
-    memory_stream.extend_from_slice(&building.local_offset_z2.to_le_bytes());
-    memory_stream.extend_from_slice(&building.yaw.to_le_bytes());
-    memory_stream.extend_from_slice(&building.yaw2.to_le_bytes());
-    memory_stream.extend_from_slice(&building.tilt.to_le_bytes());
-    memory_stream.extend_from_slice(&building.item_id.to_le_bytes());
-    memory_stream.extend_from_slice(&building.model_index.to_le_bytes());
-    memory_stream.extend_from_slice(&building.temp_output_obj_idx.to_le_bytes());
-    memory_stream.extend_from_slice(&building.temp_input_obj_idx.to_le_bytes());
-    memory_stream.extend_from_slice(&building.output_to_slot.to_le_bytes());
-    memory_stream.extend_from_slice(&building.input_from_slot.to_le_bytes());
-    memory_stream.extend_from_slice(&building.output_from_slot.to_le_bytes());
-    memory_stream.extend_from_slice(&building.input_to_slot.to_le_bytes());
-    memory_stream.extend_from_slice(&building.output_offset.to_le_bytes());
-    memory_stream.extend_from_slice(&building.input_offset.to_le_bytes());
-    memory_stream.extend_from_slice(&building.recipe_id.to_le_bytes());
-    memory_stream.extend_from_slice(&building.filter_id.to_le_bytes());
-    memory_stream.extend_from_slice(&building.parameters_length.to_le_bytes());
-    building
+fn _serialization_version_neg100(bin: &mut Vec<u8>, data: &BuildingData) {
+    bin.extend_from_slice(&(-100_i32).to_le_bytes());
+    bin.extend_from_slice(&data.index.to_le_bytes());
+    bin.extend_from_slice(&data.area_index.to_le_bytes());
+    bin.extend_from_slice(&data.local_offset_x.to_le_bytes());
+    bin.extend_from_slice(&data.local_offset_y.to_le_bytes());
+    bin.extend_from_slice(&data.local_offset_z.to_le_bytes());
+    bin.extend_from_slice(&data.local_offset_x2.to_le_bytes());
+    bin.extend_from_slice(&data.local_offset_y2.to_le_bytes());
+    bin.extend_from_slice(&data.local_offset_z2.to_le_bytes());
+    bin.extend_from_slice(&data.yaw.to_le_bytes());
+    bin.extend_from_slice(&data.yaw2.to_le_bytes());
+    bin.extend_from_slice(&data.tilt.to_le_bytes());
+    bin.extend_from_slice(&data.item_id.to_le_bytes());
+    bin.extend_from_slice(&data.model_index.to_le_bytes());
+    bin.extend_from_slice(&data.temp_output_obj_idx.to_le_bytes());
+    bin.extend_from_slice(&data.temp_input_obj_idx.to_le_bytes());
+    bin.extend_from_slice(&data.output_to_slot.to_le_bytes());
+    bin.extend_from_slice(&data.input_from_slot.to_le_bytes());
+    bin.extend_from_slice(&data.output_from_slot.to_le_bytes());
+    bin.extend_from_slice(&data.input_to_slot.to_le_bytes());
+    bin.extend_from_slice(&data.output_offset.to_le_bytes());
+    bin.extend_from_slice(&data.input_offset.to_le_bytes());
+    bin.extend_from_slice(&data.recipe_id.to_le_bytes());
+    bin.extend_from_slice(&data.filter_id.to_le_bytes());
+    bin.extend_from_slice(&data.parameters_length.to_le_bytes());
+    data
         .parameters
         .iter()
-        .for_each(|x| memory_stream.extend_from_slice(&x.to_le_bytes()));
+        .for_each(|x| bin.extend_from_slice(&x.to_le_bytes()));
 }
 
-fn _serialization_version_0(memory_stream: &mut Vec<u8>, building: &BlueprintBuilding) {
-    memory_stream.extend_from_slice(&building.index.to_le_bytes());
-    memory_stream.extend_from_slice(&building.area_index.to_le_bytes());
-    memory_stream.extend_from_slice(&building.local_offset_x.to_le_bytes());
-    memory_stream.extend_from_slice(&building.local_offset_y.to_le_bytes());
-    memory_stream.extend_from_slice(&building.local_offset_z.to_le_bytes());
-    memory_stream.extend_from_slice(&building.local_offset_x2.to_le_bytes());
-    memory_stream.extend_from_slice(&building.local_offset_y2.to_le_bytes());
-    memory_stream.extend_from_slice(&building.local_offset_z2.to_le_bytes());
-    memory_stream.extend_from_slice(&building.yaw.to_le_bytes());
-    memory_stream.extend_from_slice(&building.yaw2.to_le_bytes());
-    memory_stream.extend_from_slice(&building.item_id.to_le_bytes());
-    memory_stream.extend_from_slice(&building.model_index.to_le_bytes());
-    memory_stream.extend_from_slice(&building.temp_output_obj_idx.to_le_bytes());
-    memory_stream.extend_from_slice(&building.temp_input_obj_idx.to_le_bytes());
-    memory_stream.extend_from_slice(&building.output_to_slot.to_le_bytes());
-    memory_stream.extend_from_slice(&building.input_from_slot.to_le_bytes());
-    memory_stream.extend_from_slice(&building.output_from_slot.to_le_bytes());
-    memory_stream.extend_from_slice(&building.input_to_slot.to_le_bytes());
-    memory_stream.extend_from_slice(&building.output_offset.to_le_bytes());
-    memory_stream.extend_from_slice(&building.input_offset.to_le_bytes());
-    memory_stream.extend_from_slice(&building.recipe_id.to_le_bytes());
-    memory_stream.extend_from_slice(&building.filter_id.to_le_bytes());
-    memory_stream.extend_from_slice(&building.parameters_length.to_le_bytes());
-    building
+fn _serialization_version_0(bin: &mut Vec<u8>, data: &BuildingData) {
+    bin.extend_from_slice(&data.index.to_le_bytes());
+    bin.extend_from_slice(&data.area_index.to_le_bytes());
+    bin.extend_from_slice(&data.local_offset_x.to_le_bytes());
+    bin.extend_from_slice(&data.local_offset_y.to_le_bytes());
+    bin.extend_from_slice(&data.local_offset_z.to_le_bytes());
+    bin.extend_from_slice(&data.local_offset_x2.to_le_bytes());
+    bin.extend_from_slice(&data.local_offset_y2.to_le_bytes());
+    bin.extend_from_slice(&data.local_offset_z2.to_le_bytes());
+    bin.extend_from_slice(&data.yaw.to_le_bytes());
+    bin.extend_from_slice(&data.yaw2.to_le_bytes());
+    bin.extend_from_slice(&data.item_id.to_le_bytes());
+    bin.extend_from_slice(&data.model_index.to_le_bytes());
+    bin.extend_from_slice(&data.temp_output_obj_idx.to_le_bytes());
+    bin.extend_from_slice(&data.temp_input_obj_idx.to_le_bytes());
+    bin.extend_from_slice(&data.output_to_slot.to_le_bytes());
+    bin.extend_from_slice(&data.input_from_slot.to_le_bytes());
+    bin.extend_from_slice(&data.output_from_slot.to_le_bytes());
+    bin.extend_from_slice(&data.input_to_slot.to_le_bytes());
+    bin.extend_from_slice(&data.output_offset.to_le_bytes());
+    bin.extend_from_slice(&data.input_offset.to_le_bytes());
+    bin.extend_from_slice(&data.recipe_id.to_le_bytes());
+    bin.extend_from_slice(&data.filter_id.to_le_bytes());
+    bin.extend_from_slice(&data.parameters_length.to_le_bytes());
+    data
         .parameters
         .iter()
-        .for_each(|x| memory_stream.extend_from_slice(&x.to_le_bytes()));
+        .for_each(|x| bin.extend_from_slice(&x.to_le_bytes()));
 }
 
-pub fn serialization(memory_stream: &mut Vec<u8>, building: &BlueprintBuilding) {
-    serialization_version_neg101(memory_stream, building)
+pub fn serialization(bin: &mut Vec<u8>, data: &BuildingData) {
+    serialization_version_neg101(bin, data)
 }
 
 #[cfg(test)]

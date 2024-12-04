@@ -4,7 +4,7 @@ use nom::{
 };
 
 #[derive(Debug)]
-pub struct BlueprintArea {
+pub struct AreaData {
     pub index: i8,
     pub parent_index: i8,
     pub tropic_anchor: i16,
@@ -15,8 +15,8 @@ pub struct BlueprintArea {
     pub height: i16,
 }
 
-pub fn parse(memory_stream: &[u8]) -> IResult<&[u8], BlueprintArea> {
-    let unknown = memory_stream;
+pub fn parse(bin: &[u8]) -> IResult<&[u8], AreaData> {
+    let unknown = bin;
 
     let (unknown, index) = le_i8(unknown)?;
     let (unknown, parent_index) = le_i8(unknown)?;
@@ -29,7 +29,7 @@ pub fn parse(memory_stream: &[u8]) -> IResult<&[u8], BlueprintArea> {
 
     Ok((
         unknown,
-        BlueprintArea {
+        AreaData {
             index: index,
             parent_index: parent_index,
             tropic_anchor: tropic_anchor,
@@ -42,15 +42,15 @@ pub fn parse(memory_stream: &[u8]) -> IResult<&[u8], BlueprintArea> {
     ))
 }
 
-pub fn serialization(memory_stream: &mut Vec<u8>, area: &BlueprintArea) {
-    memory_stream.extend_from_slice(&area.index.to_le_bytes());
-    memory_stream.extend_from_slice(&area.parent_index.to_le_bytes());
-    memory_stream.extend_from_slice(&area.tropic_anchor.to_le_bytes());
-    memory_stream.extend_from_slice(&area.area_segments.to_le_bytes());
-    memory_stream.extend_from_slice(&area.anchor_local_offset_x.to_le_bytes());
-    memory_stream.extend_from_slice(&area.anchor_local_offset_y.to_le_bytes());
-    memory_stream.extend_from_slice(&area.width.to_le_bytes());
-    memory_stream.extend_from_slice(&area.height.to_le_bytes());
+pub fn serialization(bin: &mut Vec<u8>, data: &AreaData) {
+    bin.extend_from_slice(&data.index.to_le_bytes());
+    bin.extend_from_slice(&data.parent_index.to_le_bytes());
+    bin.extend_from_slice(&data.tropic_anchor.to_le_bytes());
+    bin.extend_from_slice(&data.area_segments.to_le_bytes());
+    bin.extend_from_slice(&data.anchor_local_offset_x.to_le_bytes());
+    bin.extend_from_slice(&data.anchor_local_offset_y.to_le_bytes());
+    bin.extend_from_slice(&data.width.to_le_bytes());
+    bin.extend_from_slice(&data.height.to_le_bytes());
 }
 
 #[cfg(test)]

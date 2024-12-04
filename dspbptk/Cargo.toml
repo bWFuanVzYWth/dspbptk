@@ -25,3 +25,7 @@ clap = { version = "4.5.21", features = ["derive"] }
 log = "0.4.22"
 # log >> stderr
 env_logger = "0.11.5"
+
+[profile.release]
+lto = "fat"
+codegen-units = 1

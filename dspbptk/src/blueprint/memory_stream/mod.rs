@@ -7,11 +7,11 @@ use nom::{
     IResult,
 };
 
-use crate::blueprint::error::DspbptkError;
-use crate::blueprint::error::DspbptkError::*;
+use crate::blueprint::error::BlueprintError;
+use crate::blueprint::error::BlueprintError::*;
 
 #[derive(Debug)]
-pub struct Content<'c> {
+pub struct MemoryStreamData<'m> {
     pub patch: i32,
     pub cursor_offset_x: i32,
     pub cursor_offset_y: i32,
@@ -20,14 +20,14 @@ pub struct Content<'c> {
     pub drag_box_size_y: i32,
     pub primary_area_idx: i32,
     pub areas_length: i8,
-    pub areas: Vec<area::BlueprintArea>,
+    pub areas: Vec<area::AreaData>,
     pub buildings_length: i32,
-    pub buildings: Vec<building::BlueprintBuilding>,
-    pub unknown: &'c [u8],
+    pub buildings: Vec<building::BuildingData>,
+    pub unknown: &'m [u8],
 }
 
-fn parse_non_finish(memory_stream: &[u8]) -> IResult<&[u8], Content> {
-    let unknown = memory_stream;
+fn parse_non_finish(bin: &[u8]) -> IResult<&[u8], MemoryStreamData> {
+    let unknown = bin;
 
     let (unknown, patch) = le_i32(unknown)?;
     let (unknown, cursor_offset_x) = le_i32(unknown)?;
@@ -43,7 +43,7 @@ fn parse_non_finish(memory_stream: &[u8]) -> IResult<&[u8], Content> {
 
     Ok((
         unknown,
-        Content {
+        MemoryStreamData {
             patch: patch,
             cursor_offset_x: cursor_offset_x,
             cursor_offset_y: cursor_offset_y,
@@ -60,39 +60,39 @@ fn parse_non_finish(memory_stream: &[u8]) -> IResult<&[u8], Content> {
     ))
 }
 
-pub fn parse(memory_stream: &[u8]) -> Result<Content, DspbptkError<String>> {
+pub fn parse(bin: &[u8]) -> Result<MemoryStreamData, BlueprintError<String>> {
     use nom::Finish;
-    match parse_non_finish(memory_stream).finish() {
-        Ok((_unknown, content)) => Ok(content),
-        Err(why) => Err(CanNotParseContent(format!("{:?}", why))),
+    match parse_non_finish(bin).finish() {
+        Ok((_unknown, data)) => Ok(data),
+        Err(why) => Err(CanNotParseMemoryStream(format!("{:?}", why))),
     }
 }
 
-pub fn serialization(content: Content) -> Vec<u8> {
-    let mut memory_stream = Vec::new();
-    memory_stream.extend_from_slice(&content.patch.to_le_bytes());
-    memory_stream.extend_from_slice(&content.cursor_offset_x.to_le_bytes());
-    memory_stream.extend_from_slice(&content.cursor_offset_y.to_le_bytes());
-    memory_stream.extend_from_slice(&content.cursor_target_area.to_le_bytes());
-    memory_stream.extend_from_slice(&content.drag_box_size_x.to_le_bytes());
-    memory_stream.extend_from_slice(&content.drag_box_size_y.to_le_bytes());
-    memory_stream.extend_from_slice(&content.primary_area_idx.to_le_bytes());
-    memory_stream.extend_from_slice(&content.areas_length.to_le_bytes());
-    content
-        .areas
+pub fn serialization(data: MemoryStreamData) -> Vec<u8> {
+    let mut bin = Vec::new();
+    bin.extend_from_slice(&data.patch.to_le_bytes());
+    bin.extend_from_slice(&data.cursor_offset_x.to_le_bytes());
+    bin.extend_from_slice(&data.cursor_offset_y.to_le_bytes());
+    bin.extend_from_slice(&data.cursor_target_area.to_le_bytes());
+    bin.extend_from_slice(&data.drag_box_size_x.to_le_bytes());
+    bin.extend_from_slice(&data.drag_box_size_y.to_le_bytes());
+    bin.extend_from_slice(&data.primary_area_idx.to_le_bytes());
+    bin.extend_from_slice(&data.areas_length.to_le_bytes());
+    data.areas
         .iter()
-        .for_each(|area| area::serialization(&mut memory_stream, area));
-    memory_stream.extend_from_slice(&content.buildings_length.to_le_bytes());
-    content
-        .buildings
+        .for_each(|area_data| area::serialization(&mut bin, area_data));
+    bin.extend_from_slice(&data.buildings_length.to_le_bytes());
+    data.buildings
         .iter()
-        .for_each(|building| building::serialization(&mut memory_stream, building));
-    memory_stream
+        .for_each(|building_data| building::serialization(&mut bin, building_data));
+    bin
 }
 
-pub fn fix_buildings_index(buildings: &mut Vec<building::BlueprintBuilding>) {
+pub fn fix_buildings_index(buildings: &mut Vec<building::BuildingData>) {
+    use std::cmp::Ordering::{Equal, Greater, Less};
+    use std::collections::HashMap;
+
     buildings.sort_by(|a, b| {
-        use std::cmp::Ordering::{Equal, Greater, Less};
         let item_id_order = a.item_id.cmp(&b.item_id);
         if item_id_order != Equal {
             return item_id_order;
@@ -132,7 +132,6 @@ pub fn fix_buildings_index(buildings: &mut Vec<building::BlueprintBuilding>) {
         }
     });
 
-    use std::collections::HashMap;
     let mut index_lut = HashMap::new();
     buildings.iter().enumerate().for_each(|(index, building)| {
         index_lut.insert(building.index, index as i32);

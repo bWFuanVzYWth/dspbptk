@@ -4,13 +4,13 @@ mod md5;
 use clap::Parser;
 use log::{debug, error, info, warn};
 use rayon::prelude::*;
-use walkdir::{DirEntry, WalkDir};
+use walkdir::WalkDir;
 
-use blueprint::error::DspbptkError;
+use blueprint::error::BlueprintError;
 
 fn recompress_blueprint(
     base64_string_in: &str,
-) -> Result<(String, Vec<String>), DspbptkError<String>> {
+) -> Result<(String, Vec<String>), BlueprintError<String>> {
     // 创建空警告列表，用于储存所有警告数据
     let mut warnings = Vec::new();
 
@@ -30,10 +30,10 @@ fn recompress_blueprint(
     }
 
     // content子串 -> 二进制流
-    let memory_stream_in = blueprint::decode_content(bp_data_in.content)?;
+    let memory_stream_in = blueprint::content::memory_stream_from_content(bp_data_in.content)?;
 
     // 二进制流 -> content数据
-    let mut content = blueprint::content::parse(memory_stream_in.as_slice())?;
+    let mut content = blueprint::memory_stream::parse(memory_stream_in.as_slice())?;
     if content.unknown.len() > 64 {
         warnings.push(format!(
             "{} unknown after content: (QUITE A LOT)",
@@ -48,13 +48,13 @@ fn recompress_blueprint(
     }
 
     // 蓝图处理
-    blueprint::content::fix_buildings_index(&mut content.buildings);
+    blueprint::memory_stream::fix_buildings_index(&mut content.buildings);
 
     // content数据 -> 二进制流
-    let memory_stream_out = blueprint::content::serialization(content);
+    let memory_stream_out = blueprint::memory_stream::serialization(content);
 
     // 二进制流 -> content子串
-    let content_out = blueprint::encode_content(memory_stream_out)?;
+    let content_out = blueprint::content::content_from_memory_stream(memory_stream_out)?;
 
     // 蓝图数据 -> 蓝图字符串
     let base64_string_out = blueprint::serialization(bp_data_in.header, &content_out);
@@ -75,10 +75,10 @@ fn blueprint_from_bpraw_with_fs_io(file_in: &std::path::PathBuf, file_out: &std:
         }
     };
 
-    let content_out = match blueprint::encode_content(memory_stream_in) {
+    let content_out = match blueprint::content::content_from_memory_stream(memory_stream_in) {
         Ok(content) => {
             debug!(
-                "blueprint::encode_content match Ok: path_in: \"{}\"",
+                "blueprint::content::content_from_memory_stream match Ok: path_in: \"{}\"",
                 file_in.display()
             );
             content
