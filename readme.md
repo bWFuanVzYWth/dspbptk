@@ -15,6 +15,7 @@
 ## 使用方法 · Usage
 
 ### 命令行 · CMD
+
 ```
 Usage: dspbptk.exe [OPTIONS] <INPUT>
 
@@ -28,8 +29,15 @@ Options:
 ```
 
 ### 或者？· Any Else?
+
 把文件或文件夹拖到`dspbptk.exe`上面（自动识别文件类型）  
 Drag the file/directory onto the `dspbptk.exe` (automatically identify file types)  
 
+## 注意 · Precautions
+
+1. 如果不设置输出路径，默认将覆写原始蓝图
+2. 输出文件时不会对比输入文件的体积，即使新的蓝图比老的更大
+
 ## 参考 Acknowledgements
+
 * MD5f: https://github.com/Wesmania/dspbp
