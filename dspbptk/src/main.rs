@@ -215,7 +215,7 @@ fn cook(path_in: &std::path::PathBuf, path_out: &std::path::PathBuf) {
 
 #[derive(Parser, Debug)]
 #[command(name = "DSPBPTK")]
-#[command(version = "DSPBPTK: 0.2.0, DSP: 0.10.31.24632")]
+#[command(version = "dspbptk0.2.0-dsp0.10.31.24632")]
 #[command(about = "Dyson Sphere Program Blueprint Toolkit", long_about = None)]
 struct Args {
     /// Input from file/dir. (*.txt *.content dir/)
