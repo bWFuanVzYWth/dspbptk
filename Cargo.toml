@@ -1,5 +1,5 @@
 [workspace]
-members = ["dspbptk", "zopfli"]
+members = ["dspbptk", "tammes_problem", "zopfli"]
 default-run = "dspbptk"
 workspace.resolver = "2"
 

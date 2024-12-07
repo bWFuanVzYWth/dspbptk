@@ -1,6 +1,7 @@
 pub mod error;
 pub mod header;
 pub mod content;
+pub mod edit;
 
 use nom::{
     bytes::complete::{tag, take, take_till},

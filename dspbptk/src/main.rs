@@ -9,8 +9,8 @@ use blueprint::error::BlueprintError;
 fn recompress_blueprint(
     blueprint_in: &str,
 ) -> Result<(String, Vec<String>), BlueprintError<String>> {
-    use blueprint::content;
     use blueprint::content::{data_from_string, string_from_data};
+    use blueprint::edit::{fix_buildings_index, sort_buildings};
 
     let mut warnings = Vec::new();
 
@@ -43,7 +43,8 @@ fn recompress_blueprint(
         ));
     }
 
-    content::fix_buildings_index(&mut content_data.buildings);
+    sort_buildings(&mut content_data.buildings);
+    fix_buildings_index(&mut content_data.buildings);
 
     let content_string = string_from_data(content_data)?;
 

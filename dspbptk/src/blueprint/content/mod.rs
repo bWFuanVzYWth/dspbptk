@@ -89,67 +89,6 @@ fn serialization(data: ContentData) -> Vec<u8> {
     bin
 }
 
-pub fn fix_buildings_index(buildings: &mut Vec<building::BuildingData>) {
-    use std::cmp::Ordering::{Equal, Greater, Less};
-    use std::collections::HashMap;
-
-    buildings.sort_by(|a, b| {
-        let item_id_order = a.item_id.cmp(&b.item_id);
-        if item_id_order != Equal {
-            return item_id_order;
-        };
-
-        let model_index_order = a.model_index.cmp(&b.model_index);
-        if model_index_order != Equal {
-            return model_index_order;
-        };
-
-        let recipe_id_order = a.recipe_id.cmp(&b.recipe_id);
-        if recipe_id_order != Equal {
-            return recipe_id_order;
-        };
-
-        let area_index_order = a.area_index.cmp(&b.area_index);
-        if area_index_order != Equal {
-            return area_index_order;
-        };
-
-        let item_id_order = a.item_id.cmp(&b.item_id);
-        if item_id_order != Equal {
-            return item_id_order;
-        };
-
-        const KY: f64 = 256.0;
-        const KX: f64 = 1024.0;
-        let local_offset_score = |x, y, z| ((y as f64) * KY + (x as f64)) * KX + (z as f64);
-        let local_offset_score_a =
-            local_offset_score(a.local_offset_x, a.local_offset_y, a.local_offset_z);
-        let local_offset_score_b =
-            local_offset_score(b.local_offset_x, b.local_offset_y, b.local_offset_z);
-        if local_offset_score_a < local_offset_score_b {
-            Less
-        } else {
-            Greater
-        }
-    });
-
-    let mut index_lut = HashMap::new();
-    buildings.iter().enumerate().for_each(|(index, building)| {
-        index_lut.insert(building.index, index as i32);
-    });
-    buildings.iter_mut().for_each(|building| {
-        building.index = *index_lut
-            .get(&building.index)
-            .unwrap(/* impossible */);
-        building.temp_output_obj_idx = *index_lut
-            .get(&building.temp_output_obj_idx)
-            .unwrap_or(&building::INDEX_NULL);
-        building.temp_input_obj_idx = *index_lut
-            .get(&building.temp_input_obj_idx)
-            .unwrap_or(&building::INDEX_NULL);
-    });
-}
-
 fn decode_base64(string: &str) -> Result<Vec<u8>, BlueprintError<String>> {
     use base64::prelude::*;
     match BASE64_STANDARD.decode(string) {
