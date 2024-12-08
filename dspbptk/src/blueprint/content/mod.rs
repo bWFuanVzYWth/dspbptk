@@ -121,7 +121,7 @@ fn compress_gzip_zopfli(
 ) -> Result<Vec<u8>, BlueprintError<std::io::Error>> {
     use std::num::NonZero;
     let options = zopfli::Options {
-        // 防呆不防傻，这两个expect只有用户瞎几把输入参数才会炸
+        // 防呆不防傻，希望用户自行检查压缩参数是否合理
         iteration_count: NonZero::new(iteration_count)
             .expect("Fatal error: iteration_count must > 0"),
         iterations_without_improvement: NonZero::new(iterations_without_improvement)
