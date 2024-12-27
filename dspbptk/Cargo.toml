@@ -1,7 +1,9 @@
 [package]
 name = "dspbptk"
-version = "0.1.0"
+author = "bWFuanVzYWth"
+version = "0.1.0"                                      # FIXME 这个版本不会自动更新
 edition = "2021"
+description = "Dyson Sphere Program Blueprint Toolkit"
 
 [dependencies]
 # Multi-threaded

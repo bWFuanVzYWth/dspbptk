@@ -115,30 +115,26 @@ fn decompress_gzip(gzip: Vec<u8>) -> Result<Vec<u8>, BlueprintError<String>> {
 
 fn compress_gzip_zopfli(
     bin: Vec<u8>,
-    iteration_count: u64,
-    iterations_without_improvement: u64,
-    maximum_block_splits: u16,
+    zopfli_options: &zopfli::Options,
 ) -> Result<Vec<u8>, BlueprintError<std::io::Error>> {
-    use std::num::NonZero;
-    let options = zopfli::Options {
-        // 防呆不防傻，希望用户自行检查压缩参数是否合理
-        iteration_count: NonZero::new(iteration_count)
-            .expect("Fatal error: iteration_count must > 0"),
-        iterations_without_improvement: NonZero::new(iterations_without_improvement)
-            .expect("Fatal error: iterations_without_improvement must > 0"),
-        maximum_block_splits: maximum_block_splits,
-    };
-
     let mut gzip = Vec::new();
 
-    match zopfli::compress(options, zopfli::Format::Gzip, bin.as_slice(), &mut gzip) {
+    match zopfli::compress(
+        *zopfli_options,
+        zopfli::Format::Gzip,
+        bin.as_slice(),
+        &mut gzip,
+    ) {
         Ok(_) => Ok(gzip),
         Err(why) => Err(CanNotCompressGzip(why)),
     }
 }
 
-fn compress_gzip(bin: Vec<u8>) -> Result<Vec<u8>, BlueprintError<std::io::Error>> {
-    compress_gzip_zopfli(bin, 256, u64::MAX, 0)
+fn compress_gzip(
+    bin: Vec<u8>,
+    zopfli_options: &zopfli::Options,
+) -> Result<Vec<u8>, BlueprintError<std::io::Error>> {
+    compress_gzip_zopfli(bin, zopfli_options)
 }
 
 fn gzip_from_string(string: &str) -> Result<Vec<u8>, BlueprintError<String>> {
@@ -157,8 +153,11 @@ fn bin_from_data(data: ContentData) -> Result<Vec<u8>, BlueprintError<String>> {
     Ok(serialization(data))
 }
 
-fn gzip_from_bin(bin: Vec<u8>) -> Result<Vec<u8>, BlueprintError<String>> {
-    match compress_gzip(bin) {
+fn gzip_from_bin(
+    bin: Vec<u8>,
+    zopfli_options: &zopfli::Options,
+) -> Result<Vec<u8>, BlueprintError<String>> {
+    match compress_gzip(bin, zopfli_options) {
         Ok(gzip) => Ok(gzip),
         Err(why) => Err(CanNotCompressGzip(why.to_string())),
     }
@@ -173,8 +172,11 @@ pub fn bin_from_string(string: &str) -> Result<Vec<u8>, BlueprintError<String>> 
     bin_from_gzip(gzip)
 }
 
-pub fn string_from_bin(bin: Vec<u8>) -> Result<String, BlueprintError<String>> {
-    let gzip = gzip_from_bin(bin)?;
+pub fn string_from_bin(
+    bin: Vec<u8>,
+    zopfli_options: &zopfli::Options,
+) -> Result<String, BlueprintError<String>> {
+    let gzip = gzip_from_bin(bin, zopfli_options)?;
     string_from_gzip(gzip)
 }
 
@@ -184,9 +186,12 @@ pub fn data_from_string(string: &str) -> Result<ContentData, BlueprintError<Stri
     data_from_bin(bin)
 }
 
-pub fn string_from_data(data: ContentData) -> Result<String, BlueprintError<String>> {
+pub fn string_from_data(
+    data: ContentData,
+    zopfli_options: &zopfli::Options,
+) -> Result<String, BlueprintError<String>> {
     let bin = bin_from_data(data)?;
-    let gzip = gzip_from_bin(bin)?;
+    let gzip = gzip_from_bin(bin, zopfli_options)?;
     string_from_gzip(gzip)
 }
 

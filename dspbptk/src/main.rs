@@ -8,6 +8,7 @@ use blueprint::error::BlueprintError;
 
 fn recompress_blueprint(
     blueprint_in: &str,
+    zopfli_options: &zopfli::Options,
 ) -> Result<(String, Vec<String>), BlueprintError<String>> {
     use blueprint::content::{data_from_string, string_from_data};
     use blueprint::edit::{fix_buildings_index, sort_buildings};
@@ -46,14 +47,18 @@ fn recompress_blueprint(
     sort_buildings(&mut content_data.buildings);
     fix_buildings_index(&mut content_data.buildings);
 
-    let content_string = string_from_data(content_data)?;
+    let content_string = string_from_data(content_data, zopfli_options)?;
 
     let blueprint_string = blueprint::serialization(blueprint_data.header, &content_string);
 
     Ok((blueprint_string, warnings))
 }
 
-fn blueprint_from_content_rw(file_in: &std::path::PathBuf, file_out: &std::path::PathBuf) {
+fn blueprint_from_content_rw(
+    file_in: &std::path::PathBuf,
+    file_out: &std::path::PathBuf,
+    zopfli_options: &zopfli::Options,
+) {
     let content_bin = match std::fs::read(file_in) {
         Ok(result) => {
             debug!("Ok: read from {}", file_in.display());
@@ -65,7 +70,7 @@ fn blueprint_from_content_rw(file_in: &std::path::PathBuf, file_out: &std::path:
         }
     };
 
-    let content_string = match blueprint::content::string_from_bin(content_bin) {
+    let content_string = match blueprint::content::string_from_bin(content_bin, zopfli_options) {
         Ok(content) => {
             debug!("Ok: encode from {}", file_in.display());
             content
@@ -93,7 +98,11 @@ fn blueprint_from_content_rw(file_in: &std::path::PathBuf, file_out: &std::path:
     }
 }
 
-fn recompress_blueprint_rw(file_in: &std::path::PathBuf, file_out: &std::path::PathBuf) {
+fn recompress_blueprint_rw(
+    file_in: &std::path::PathBuf,
+    file_out: &std::path::PathBuf,
+    zopfli_options: &zopfli::Options,
+) {
     let blueprint_in = match std::fs::read_to_string(file_in) {
         Ok(result) => {
             debug!("Ok: read from {}", file_in.display());
@@ -111,7 +120,7 @@ fn recompress_blueprint_rw(file_in: &std::path::PathBuf, file_out: &std::path::P
         return;
     }
 
-    let blueprint_out = match recompress_blueprint(&blueprint_in) {
+    let blueprint_out = match recompress_blueprint(&blueprint_in, zopfli_options) {
         Ok((blueprint, warnings)) => {
             warnings
                 .iter()
@@ -174,9 +183,34 @@ fn file_type(entry: &std::path::PathBuf) -> FileType {
     }
 }
 
-fn cook(path_in: &std::path::PathBuf, path_out: &std::path::PathBuf) {
+fn cook(args: &Args) {
     use rayon::prelude::*;
     use walkdir::WalkDir;
+
+    // TODO 考虑默认行为，这样是否合适
+    let path_in = &args.input;
+    let path_out = match &args.output {
+        None => path_in,
+        Some(path) => path,
+    };
+
+    // 防呆不防傻，希望用户自行检查压缩参数是否合理
+    let iteration_count = args
+        .iteration_count
+        .expect("Fatal error: unknown iteration_count");
+    let iterations_without_improvement = args
+        .iterations_without_improvement
+        .expect("Fatal error: unknown iterations_without_improvement");
+    let maximum_block_splits = args
+        .maximum_block_splits
+        .expect("Fatal error: unknown maximum_block_splits");
+    let zopfli_options = zopfli::Options {
+        iteration_count: std::num::NonZero::new(iteration_count)
+            .expect("Fatal error: iteration_count must > 0"),
+        iterations_without_improvement: std::num::NonZero::new(iterations_without_improvement)
+            .expect("Fatal error: iterations_without_improvement must > 0"),
+        maximum_block_splits: maximum_block_splits,
+    };
 
     let mut maybe_blueprint_paths = Vec::new();
     let mut maybe_content_paths = Vec::new();
@@ -198,7 +232,7 @@ fn cook(path_in: &std::path::PathBuf, path_out: &std::path::PathBuf) {
             file_out = file_out.join(relative_path_in);
         }
         debug!("file_out = {}", file_out.display());
-        recompress_blueprint_rw(file_in, &file_out);
+        recompress_blueprint_rw(file_in, &file_out, &zopfli_options);
     });
 
     maybe_content_paths.par_iter().for_each(|file_in| {
@@ -210,21 +244,38 @@ fn cook(path_in: &std::path::PathBuf, path_out: &std::path::PathBuf) {
         }
         file_out = file_out.with_extension("txt");
         debug!("file_out = {}", file_out.display());
-        blueprint_from_content_rw(file_in, &file_out);
+        blueprint_from_content_rw(file_in, &file_out, &zopfli_options);
     });
 }
 
 #[derive(Parser, Debug)]
-#[command(name = "DSPBPTK")]
-#[command(version = "dspbptk0.2.0-dsp0.10.31.24632")]
-#[command(about = "Dyson Sphere Program Blueprint Toolkit", long_about = None)]
+#[command(
+    version = "dspbptk0.2.0-dsp0.10.31.24632",
+    author = "bWFuanVzYWth",
+    about = "Dyson Sphere Program Blueprint Toolkit"
+)]
 struct Args {
+    // TODO 多文件同时输入
     /// Input from file/dir. (*.txt *.content dir/)
     input: std::path::PathBuf,
 
-    /// Output to file/dir.
-    #[arg(long, short)]
+    /// Output to file/dir. (*.txt dir/)
+    #[clap(long, short)]
     output: Option<std::path::PathBuf>,
+
+    /// Actions of edit blueprint.
+    #[clap(short, long, num_args = 0..)]
+    action: Option<Vec<String>>,
+
+    // TODO 注释
+    #[clap(long, default_value = "256")]
+    iteration_count: Option<u64>,
+
+    #[clap(long, default_value = "18446744073709551615")]
+    iterations_without_improvement: Option<u64>,
+
+    #[clap(long, default_value = "0")]
+    maximum_block_splits: Option<u16>,
 }
 
 fn main() {
@@ -234,11 +285,5 @@ fn main() {
     eprintln!("https://github.com/bWFuanVzYWth/dspbptk");
     let args = Args::parse();
 
-    let path_in = &args.input;
-    let path_out = match &args.output {
-        None => path_in,
-        Some(path) => path,
-    };
-
-    cook(path_in, path_out);
+    cook(&args);
 }
