@@ -10,6 +10,7 @@ use crate::blueprint::content::building;
 pub const EARTH_R: f64 = 200.0;
 pub const HALF_EQUATORIAL_GRID: f64 = 500.0;
 
+// TODO 解释一下这个函数的作用
 pub fn sort_buildings(buildings: &mut Vec<building::BuildingData>) {
     use std::cmp::Ordering::{Equal, Greater, Less};
 
@@ -57,7 +58,7 @@ pub fn sort_buildings(buildings: &mut Vec<building::BuildingData>) {
 pub fn fix_buildings_index(buildings: &mut Vec<building::BuildingData>) {
     use std::collections::HashMap;
 
-    let mut index_lut = HashMap::new();
+    let mut index_lut = HashMap::with_capacity(buildings.len());
     buildings.iter().enumerate().for_each(|(index, building)| {
         index_lut.insert(building.index, index as i32);
     });
@@ -74,6 +75,7 @@ pub fn fix_buildings_index(buildings: &mut Vec<building::BuildingData>) {
     });
 }
 
+// 计算两个向量之间的最短旋转弧线，返回对应的四元数
 fn shortest_arc(from: &Vector3<f64>, to: &Vector3<f64>) -> Quaternion<f64> {
     let k_cos_theta = from.dot(to);
     let k = (from.norm_squared() * to.norm_squared()).sqrt();
@@ -97,16 +99,23 @@ fn shortest_arc(from: &Vector3<f64>, to: &Vector3<f64>) -> Quaternion<f64> {
     }
 }
 
+// 使用给定的四元数旋转一个向量
 fn rotation_vector3(from: &Vector3<f64>, quaternion: Quaternion<f64>) -> Vector3<f64> {
     let from_quaternion = Quaternion::new(0.0, from.x, from.y, from.z);
+
+    // 计算四元数的逆，用于旋转变换
     // 防呆不防傻，希望用户自行检查四元数是否有正确的数学意义
     let inverse_quaternion = quaternion
         .try_inverse()
         .expect("Fatal error: quaternion must != 0");
+
+    // 执行旋转变换：q * v * q^(-1)
     let to_quaternion = quaternion * from_quaternion * inverse_quaternion;
+
     Vector3::new(to_quaternion.i, to_quaternion.j, to_quaternion.k)
 }
 
+// TODO 检查函数是否能优化，并补充注释
 // back:x+ right:y+ up:z+
 pub fn local_offset_to_direction(local_offset_x: f32, local_offset_y: f32) -> Vector3<f64> {
     let z_normal = (local_offset_y as f64 * (PI / HALF_EQUATORIAL_GRID)).sin();
@@ -121,6 +130,7 @@ pub fn local_offset_to_direction(local_offset_x: f32, local_offset_y: f32) -> Ve
     Vector3::new(x, y, z)
 }
 
+// TODO 检查函数是否能优化，并补充注释
 // back:x+ right:y+ up:z+
 pub fn direction_to_local_offset(direction: &Vector3<f64>) -> (f32, f32) {
     let x = (direction.x / (1.0 - direction.z * direction.z).sqrt()).acos()
