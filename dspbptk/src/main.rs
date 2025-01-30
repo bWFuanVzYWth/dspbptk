@@ -54,6 +54,7 @@ fn recompress_blueprint(
     Ok((blueprint_string, warnings))
 }
 
+// FIXME 避免使用缩写
 fn blueprint_from_content_rw(
     file_in: &std::path::PathBuf,
     file_out: &std::path::PathBuf,
@@ -183,6 +184,7 @@ fn file_type(entry: &std::path::PathBuf) -> FileType {
     }
 }
 
+// TODO 拆分成更小的函数
 fn cook(args: &Args) {
     use rayon::prelude::*;
     use walkdir::WalkDir;
