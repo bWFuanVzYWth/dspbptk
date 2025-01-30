@@ -1,5 +1,4 @@
 /// 在蓝图编辑中有通用性的工具箱
-
 use std::f64::consts::PI;
 
 use log::warn;
@@ -75,28 +74,59 @@ pub fn fix_buildings_index(buildings: &mut Vec<building::BuildingData>) {
     });
 }
 
-// 计算两个向量之间的最短旋转弧线，返回对应的四元数
+fn select_orthogonal_axis(v: &Vector3<f64>) -> Quaternion<f64> {
+    let mut axis = Vector3::new(-v.y, v.x, 0.0);
+    if axis.norm_squared() == 0.0 {
+        axis = Vector3::new(0.0, -v.z, v.y);
+    }
+    axis.normalize();
+
+    Quaternion::new(0.0, axis.x, axis.y, axis.z)
+}
+
+// TODO 思考这里是否应该限制为仅允许单位向量，如果是的话应该可以简化
 fn shortest_arc(from: &Vector3<f64>, to: &Vector3<f64>) -> Quaternion<f64> {
     let k_cos_theta = from.dot(to);
     let k = (from.norm_squared() * to.norm_squared()).sqrt();
-    if k_cos_theta / k == -1.0 {
-        // FIXME 随便选一个正交向量
-        let from_cross_to = from.cross(to);
-        Quaternion::new(
-            k_cos_theta + k,
-            from_cross_to.x,
-            from_cross_to.y,
-            from_cross_to.z,
-        )
-    } else {
-        let from_cross_to = from.cross(to);
-        Quaternion::new(
-            k_cos_theta + k,
-            from_cross_to.x,
-            from_cross_to.y,
-            from_cross_to.z,
-        )
+
+    // 处理零向量的情况
+    if k == 0.0 {
+        return Quaternion::new(1.0, 0.0, 0.0, 0.0);
     }
+
+    let cos_theta = k_cos_theta / k;
+
+    // 处理浮点数精度问题
+    let cos_theta = if cos_theta < -1.0 {
+        -1.0
+    } else if cos_theta > 1.0 {
+        1.0
+    } else {
+        cos_theta
+    };
+
+    if cos_theta >= 1.0 {
+        // 无需旋转
+        return Quaternion::new(1.0, 0.0, 0.0, 0.0);
+    } else if cos_theta <= -1.0 {
+        // 随便选一个正交向量
+        return select_orthogonal_axis(from);
+    }
+
+    let theta = cos_theta.acos();
+    let half_theta = theta / 2.0;
+    let cos_half = half_theta.cos();
+    let sin_half = half_theta.sin();
+
+    let cross = from.cross(to);
+    let axis = cross.normalize();
+
+    Quaternion::new(
+        cos_half,
+        axis.x * sin_half,
+        axis.y * sin_half,
+        axis.z * sin_half,
+    )
 }
 
 // 使用给定的四元数旋转一个向量
@@ -170,7 +200,9 @@ pub fn direction_to_local_offset(direction: &Vector3<f64>) -> (f32, f32) {
 #[cfg(test)]
 mod test {
     use super::*;
+    use approx::AbsDiffEq;
 
+    // 坐标转换测试
     #[test]
     fn test_direction_to_local_offset_x() {
         let local_offset_origin = direction_to_local_offset(&Vector3::new(1.0, 0.0, 0.0));
@@ -190,6 +222,69 @@ mod test {
         let local_offset_north_pole = direction_to_local_offset(&Vector3::new(0.0, 0.0, 1.0));
         assert_eq!(local_offset_north_pole.0.abs(), 0.0);
         assert_eq!(local_offset_north_pole.1.abs(), 250.0);
+    }
+
+    // 四元数旋转测试
+    #[test]
+    fn test_shortest_arc_same_vector() {
+        let from = Vector3::new(1.0, 0.0, 0.0);
+        let to = Vector3::new(1.0, 0.0, 0.0);
+        let q = shortest_arc(&from, &to);
+        assert!(q.abs_diff_eq(&Quaternion::new(1.0, 0.0, 0.0, 0.0), 1e-6));
+    }
+
+    #[test]
+    fn test_shortest_arc_opposite_vector() {
+        let from = Vector3::new(1.0, 0.0, 0.0);
+        let to = Vector3::new(-1.0, 0.0, 0.0);
+        let q = shortest_arc(&from, &to);
+        let expected = select_orthogonal_axis(&from);
+        assert!(q.abs_diff_eq(&expected, 1e-6));
+    }
+
+    #[test]
+    fn test_shortest_arc_orthogonal_vector() {
+        let from = Vector3::new(1.0, 0.0, 0.0);
+        let to = Vector3::new(0.0, 1.0, 0.0);
+        let q = shortest_arc(&from, &to);
+        let expected = Quaternion::new(
+            std::f64::consts::FRAC_PI_4.cos(),
+            0.0,
+            0.0,
+            std::f64::consts::FRAC_PI_4.sin(),
+        );
+        assert!(q.abs_diff_eq(&expected, 1e-6));
+    }
+
+    #[test]
+    fn test_shortest_arc_zero_vector() {
+        let from = Vector3::new(0.0, 0.0, 0.0);
+        let to = Vector3::new(1.0, 0.0, 0.0);
+        let q = shortest_arc(&from, &to);
+        assert!(q.abs_diff_eq(&Quaternion::new(1.0, 0.0, 0.0, 0.0), 1e-6));
+    }
+
+    #[test]
+    fn test_shortest_arc_non_unit_vector() {
+        let from = Vector3::new(2.0, 0.0, 0.0);
+        let to = Vector3::new(0.0, 3.0, 0.0);
+        let q = shortest_arc(&from, &to);
+        let expected = Quaternion::new(
+            std::f64::consts::FRAC_PI_4.cos(),
+            0.0,
+            0.0,
+            std::f64::consts::FRAC_PI_4.sin(),
+        );
+        assert!(q.abs_diff_eq(&expected, 1e-6));
+    }
+
+    #[test]
+    fn test_shortest_arc_almost_opposite_vector() {
+        let from = Vector3::new(1.0, 0.0, 0.0);
+        let to = Vector3::new(-1.0 + 1e-16, 0.0, 0.0);
+        let q = shortest_arc(&from, &to);
+        let expected = select_orthogonal_axis(&from);
+        assert!(q.abs_diff_eq(&expected, 1e-6));
     }
 
     // TODO 多加几个测试

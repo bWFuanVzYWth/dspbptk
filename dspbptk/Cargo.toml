@@ -18,6 +18,8 @@ lazy_static = "1.5.0"
 flate2 = "1.0.35"
 # Compress GZIP
 zopfli = { path = "../zopfli" }
+# test float equal
+approx = "0.5.1"
 
 # Recursive directory traversal
 walkdir = "2.5.0"

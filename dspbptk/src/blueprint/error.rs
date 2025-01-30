@@ -10,6 +10,8 @@ pub enum BlueprintError<E> {
     CanNotCompressGzip(E),
 }
 
+// TODO 简化异常处理，是否可以使用AnyHow之类的库？
+
 impl<E: std::error::Error + 'static> std::error::Error for BlueprintError<E> {
     fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
         match self {
