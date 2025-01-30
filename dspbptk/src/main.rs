@@ -1,8 +1,12 @@
 mod blueprint;
 mod md5;
 
+use std::path::{Path, PathBuf};
+
 use clap::Parser;
 use log::{debug, error, info, warn};
+use rayon::prelude::*;
+use walkdir::WalkDir;
 
 use blueprint::error::BlueprintError;
 
@@ -184,19 +188,79 @@ fn file_type(entry: &std::path::PathBuf) -> FileType {
     }
 }
 
-// TODO 拆分成更小的函数
+// 收集文件路径
+fn collect_files(path_in: &Path) -> (Vec<PathBuf>, Vec<PathBuf>) {
+    let mut blueprints = Vec::new();
+    let mut contents = Vec::new();
+
+    for entry in WalkDir::new(path_in).into_iter().filter_map(|e| e.ok()) {
+        let entry_path = entry.into_path();
+        match file_type(&entry_path) {
+            FileType::Txt => blueprints.push(entry_path),
+            FileType::Content => contents.push(entry_path),
+            _ => {}
+        }
+    }
+
+    (blueprints, contents)
+}
+
+// 计算输出路径
+fn compute_output_path(path_in: &Path, path_out: &Path, entry_path: &Path) -> PathBuf {
+    let relative_path = entry_path.strip_prefix(path_in).unwrap();
+    if relative_path == Path::new("") {
+        path_out.to_path_buf()
+    } else {
+        path_out.join(relative_path)
+    }
+}
+
+// 处理蓝图文件
+fn process_blueprints(
+    blueprints: Vec<PathBuf>,
+    path_in: &Path,
+    path_out: &Path,
+    zopfli_options: &zopfli::Options,
+) {
+    blueprints.par_iter().for_each(|file_in| {
+        let file_out = compute_output_path(path_in, path_out, file_in);
+        debug!("Processing blueprint: {}", file_out.display());
+        recompress_blueprint_rw(file_in, &file_out, zopfli_options);
+    });
+}
+
+// 处理内容文件
+fn process_contents(
+    contents: Vec<PathBuf>,
+    path_in: &Path,
+    path_out: &Path,
+    zopfli_options: &zopfli::Options,
+) {
+    contents.par_iter().for_each(|file_in| {
+        let file_out = compute_output_path(path_in, path_out, file_in).with_extension("txt");
+        debug!("Processing content: {}", file_out.display());
+        blueprint_from_content_rw(file_in, &file_out, zopfli_options);
+    });
+}
+
+// 主函数
 fn cook(args: &Args) {
     use rayon::prelude::*;
     use walkdir::WalkDir;
 
-    // TODO 考虑默认行为，这样是否合适
     let path_in = &args.input;
-    let path_out = match &args.output {
-        None => path_in,
-        Some(path) => path,
-    };
+    let path_out = args.output.as_deref().unwrap_or(path_in);
 
-    // 防呆不防傻，希望用户自行检查压缩参数是否合理
+    let (blueprints, contents) = collect_files(path_in);
+
+    let zopfli_options = create_zopfli_options(args);
+
+    process_blueprints(blueprints, path_in, path_out, &zopfli_options);
+    process_contents(contents, path_in, path_out, &zopfli_options);
+}
+
+// 创建zopfli选项
+fn create_zopfli_options(args: &Args) -> zopfli::Options {
     let iteration_count = args
         .iteration_count
         .expect("Fatal error: unknown iteration_count");
@@ -206,48 +270,14 @@ fn cook(args: &Args) {
     let maximum_block_splits = args
         .maximum_block_splits
         .expect("Fatal error: unknown maximum_block_splits");
-    let zopfli_options = zopfli::Options {
+
+    zopfli::Options {
         iteration_count: std::num::NonZero::new(iteration_count)
             .expect("Fatal error: iteration_count must > 0"),
         iterations_without_improvement: std::num::NonZero::new(iterations_without_improvement)
             .expect("Fatal error: iterations_without_improvement must > 0"),
         maximum_block_splits: maximum_block_splits,
-    };
-
-    let mut maybe_blueprint_paths = Vec::new();
-    let mut maybe_content_paths = Vec::new();
-
-    for entry in WalkDir::new(path_in).into_iter().filter_map(|e| e.ok()) {
-        let entry_path = entry.into_path();
-        match file_type(&entry_path) {
-            FileType::Txt => maybe_blueprint_paths.push(entry_path),
-            FileType::Content => maybe_content_paths.push(entry_path),
-            _ => {}
-        }
     }
-
-    maybe_blueprint_paths.par_iter().for_each(|file_in| {
-        let relative_path_in = file_in.strip_prefix(path_in).unwrap(/*impossible*/);
-        debug!("relative_path_in = {}", relative_path_in.display());
-        let mut file_out = path_out.clone();
-        if relative_path_in != std::path::Path::new("").as_os_str() {
-            file_out = file_out.join(relative_path_in);
-        }
-        debug!("file_out = {}", file_out.display());
-        recompress_blueprint_rw(file_in, &file_out, &zopfli_options);
-    });
-
-    maybe_content_paths.par_iter().for_each(|file_in| {
-        let relative_path_in = file_in.strip_prefix(path_in).unwrap(/*impossible*/);
-        debug!("relative_path_in = {}", relative_path_in.display());
-        let mut file_out = path_out.clone();
-        if relative_path_in != std::path::Path::new("").as_os_str() {
-            file_out = file_out.join(relative_path_in);
-        }
-        file_out = file_out.with_extension("txt");
-        debug!("file_out = {}", file_out.display());
-        blueprint_from_content_rw(file_in, &file_out, &zopfli_options);
-    });
 }
 
 #[derive(Parser, Debug)]
