@@ -145,53 +145,68 @@ fn rotation_vector3(from: &Vector3<f64>, quaternion: Quaternion<f64>) -> Vector3
     Vector3::new(to_quaternion.i, to_quaternion.j, to_quaternion.k)
 }
 
-// TODO 检查函数是否能优化，并补充注释
 // back:x+ right:y+ up:z+
 pub fn local_offset_to_direction(local_offset_x: f32, local_offset_y: f32) -> Vector3<f64> {
-    let z_normal = (local_offset_y as f64 * (PI / HALF_EQUATORIAL_GRID)).sin();
-    let r_normal = (1.0 - z_normal * z_normal).sqrt();
-    let y_normal = r_normal * (local_offset_x as f64 * (PI / HALF_EQUATORIAL_GRID)).sin();
-    let x_normal = r_normal * (local_offset_x as f64 * (PI / HALF_EQUATORIAL_GRID)).cos();
+    const ANGLE_SCALE: f64 = PI / HALF_EQUATORIAL_GRID;
 
-    let x = x_normal;
-    let y = y_normal;
-    let z = z_normal;
+    let theta_x = (local_offset_x as f64) * ANGLE_SCALE;
+    let theta_y = (local_offset_y as f64) * ANGLE_SCALE;
+
+    let z = theta_y.sin();
+    let radius = (1.0 - z * z).sqrt();
+
+    let (sin_theta_x, cos_theta_x) = theta_x.sin_cos();
+
+    let x = radius * cos_theta_x;
+    let y = radius * sin_theta_x;
 
     Vector3::new(x, y, z)
 }
 
-// TODO 检查函数是否能优化，并补充注释
 // back:x+ right:y+ up:z+
 pub fn direction_to_local_offset(direction: &Vector3<f64>) -> (f32, f32) {
-    let x = (direction.x / (1.0 - direction.z * direction.z).sqrt()).acos()
-        * if direction.x >= 0.0 {
-            HALF_EQUATORIAL_GRID / PI
+    const ANGLE_SCALE: f64 = HALF_EQUATORIAL_GRID / PI;
+
+    // Calculate the angle theta_x as the arccosine of the normalized x component
+    let theta_x = (direction.x / (1.0 - direction.z.powi(2)).sqrt()).acos();
+    let x = theta_x
+        * if direction.y >= 0.0 {
+            ANGLE_SCALE
         } else {
-            -HALF_EQUATORIAL_GRID / PI
+            -ANGLE_SCALE
         };
-    let y = direction.z.asin() * (HALF_EQUATORIAL_GRID / PI);
 
-    let x_fix = if x.is_finite() {
-        x
-    } else {
-        if direction.y >= 0.0 {
-            0.0
-        } else {
-            -500.0
-        }
-    };
-    let y_fix = if y.is_finite() {
-        y
-    } else {
-        if direction.z >= 0.0 {
-            250.0
-        } else {
-            -250.0
-        }
-    };
+    // Calculate the angle theta_z as the arcsine of the z component
+    let theta_z = direction.z.asin();
+    let y = theta_z * ANGLE_SCALE;
 
+    // Function to fix values if they are not finite
+    fn fix_value(
+        value: f64,
+        direction_component: f64,
+        default_positive: f64,
+        default_negative: f64,
+    ) -> f64 {
+        if value.is_finite() {
+            value
+        } else {
+            if direction_component >= 0.0 {
+                default_positive
+            } else {
+                default_negative
+            }
+        }
+    }
+
+    let x_fix = fix_value(x, direction.y, 0.0, -500.0);
+    let y_fix = fix_value(y, direction.z, 250.0, -250.0); // 修改 y 的固定值设置
+
+    // Check if x or y is not finite and log a warning if necessary
     if !x.is_finite() || !y.is_finite() {
-        warn!("Lost precision: {}, {} -> {}, {}", x, y, x_fix, y_fix);
+        warn!(
+            "Lost precision: x = {:?}, y = {:?}, x_fix = {:?}, y_fix = {:?}",
+            x, y, x_fix, y_fix
+        );
     }
 
     (x_fix as f32, y_fix as f32)
@@ -200,28 +215,129 @@ pub fn direction_to_local_offset(direction: &Vector3<f64>) -> (f32, f32) {
 #[cfg(test)]
 mod test {
     use super::*;
+    use approx::assert_abs_diff_eq;
     use approx::AbsDiffEq;
 
     // 坐标转换测试
     #[test]
-    fn test_direction_to_local_offset_x() {
-        let local_offset_origin = direction_to_local_offset(&Vector3::new(1.0, 0.0, 0.0));
-        assert_eq!(local_offset_origin.0.abs(), 0.0);
-        assert_eq!(local_offset_origin.1.abs(), 0.0);
+    fn test_origin() {
+        let offset = (0.0, 0.0);
+        let direction = local_offset_to_direction(offset.0, offset.1);
+        let converted_offset = direction_to_local_offset(&direction);
+        assert_abs_diff_eq!(offset.0, converted_offset.0, epsilon = 1e-6);
+        assert_abs_diff_eq!(offset.1, converted_offset.1, epsilon = 1e-6);
     }
 
     #[test]
-    fn test_direction_to_local_offset_y() {
-        let local_offset_origin = direction_to_local_offset(&Vector3::new(0.0, 1.0, 0.0));
-        assert_eq!(local_offset_origin.0.abs(), 250.0);
-        assert_eq!(local_offset_origin.1.abs(), 0.0);
+    fn test_positive_x_axis() {
+        let offset = (1.0, 0.0);
+        let direction = local_offset_to_direction(offset.0, offset.1);
+        let converted_offset = direction_to_local_offset(&direction);
+        assert_abs_diff_eq!(offset.0, converted_offset.0, epsilon = 1e-6);
+        assert_abs_diff_eq!(offset.1, converted_offset.1, epsilon = 1e-6);
     }
 
     #[test]
-    fn test_direction_to_local_offset_z() {
-        let local_offset_north_pole = direction_to_local_offset(&Vector3::new(0.0, 0.0, 1.0));
-        assert_eq!(local_offset_north_pole.0.abs(), 0.0);
-        assert_eq!(local_offset_north_pole.1.abs(), 250.0);
+    fn test_positive_y_axis() {
+        let offset = (0.0, 1.0);
+        let direction = local_offset_to_direction(offset.0, offset.1);
+        let converted_offset = direction_to_local_offset(&direction);
+        assert_abs_diff_eq!(offset.0, converted_offset.0, epsilon = 1e-6);
+        assert_abs_diff_eq!(offset.1, converted_offset.1, epsilon = 1e-6);
+    }
+
+    #[test]
+    fn test_negative_x_axis() {
+        let offset = (-1.0, 0.0);
+        let direction = local_offset_to_direction(offset.0, offset.1);
+        let converted_offset = direction_to_local_offset(&direction);
+        assert_abs_diff_eq!(offset.0, converted_offset.0, epsilon = 1e-6);
+        assert_abs_diff_eq!(offset.1, converted_offset.1, epsilon = 1e-6);
+    }
+
+    #[test]
+    fn test_negative_y_axis() {
+        let offset = (0.0, -1.0);
+        let direction = local_offset_to_direction(offset.0, offset.1);
+        let converted_offset = direction_to_local_offset(&direction);
+        assert_abs_diff_eq!(offset.0, converted_offset.0, epsilon = 1e-6);
+        assert_abs_diff_eq!(offset.1, converted_offset.1, epsilon = 1e-6);
+    }
+
+    #[test]
+    fn test_45_degree_direction() {
+        let offset = (1.0, 1.0);
+        let direction = local_offset_to_direction(offset.0, offset.1);
+        let converted_offset = direction_to_local_offset(&direction);
+        assert_abs_diff_eq!(offset.0, converted_offset.0, epsilon = 1e-6);
+        assert_abs_diff_eq!(offset.1, converted_offset.1, epsilon = 1e-6);
+    }
+
+    #[test]
+    fn test_max_local_offset() {
+        let max_offset = (HALF_EQUATORIAL_GRID as f32, 0.0);
+        let direction = local_offset_to_direction(max_offset.0, max_offset.1);
+        let converted_offset = direction_to_local_offset(&direction);
+        assert_abs_diff_eq!(
+            max_offset.0 as f64,
+            converted_offset.0 as f64,
+            epsilon = 1e-6
+        );
+        assert_abs_diff_eq!(
+            max_offset.1 as f64,
+            converted_offset.1 as f64,
+            epsilon = 1e-6
+        );
+    }
+
+    #[test]
+    fn test_min_local_offset() {
+        let min_offset = (-HALF_EQUATORIAL_GRID as f32, 0.0);
+        let direction = local_offset_to_direction(min_offset.0, min_offset.1);
+        let converted_offset = direction_to_local_offset(&direction);
+        assert_abs_diff_eq!(
+            min_offset.0 as f64,
+            converted_offset.0 as f64,
+            epsilon = 1e-6
+        );
+        assert_abs_diff_eq!(
+            min_offset.1 as f64,
+            converted_offset.1 as f64,
+            epsilon = 1e-6
+        );
+    }
+
+    #[test]
+    fn test_near_extreme_values() {
+        let near_max_offset = (HALF_EQUATORIAL_GRID as f32 - 1e-3, 0.0);
+        let direction = local_offset_to_direction(near_max_offset.0, near_max_offset.1);
+        let converted_offset = direction_to_local_offset(&direction);
+        assert_abs_diff_eq!(
+            near_max_offset.0 as f64,
+            converted_offset.0 as f64,
+            epsilon = 1e-6
+        );
+        assert_abs_diff_eq!(
+            near_max_offset.1 as f64,
+            converted_offset.1 as f64,
+            epsilon = 1e-6
+        );
+    }
+
+    #[test]
+    fn test_direction_z_component_1() {
+        let direction = Vector3::new(0.0, 0.0, 1.0);
+        let converted_offset = direction_to_local_offset(&direction);
+        assert_abs_diff_eq!(0.0, converted_offset.0 as f64, epsilon = 1e-6);
+        assert_abs_diff_eq!(250.0, converted_offset.1 as f64, epsilon = 1e-6);
+    }
+
+    #[test]
+    fn test_direction_z_component_neg_1() {
+        let direction = Vector3::new(0.0, 0.0, -1.0);
+        let converted_offset = direction_to_local_offset(&direction);
+        assert_abs_diff_eq!(0.0, converted_offset.0 as f64, epsilon = 1e-6);
+        assert_abs_diff_eq!(-250.0, converted_offset.1 as f64, epsilon = 1e-6);
     }
 
     // 四元数旋转测试
