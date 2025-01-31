@@ -58,8 +58,7 @@ fn recompress_blueprint(
     Ok((blueprint_string, warnings))
 }
 
-// FIXME 避免使用缩写
-fn blueprint_from_content_rw(
+fn blueprint_from_content_file(
     file_in: &std::path::PathBuf,
     file_out: &std::path::PathBuf,
     zopfli_options: &zopfli::Options,
@@ -103,7 +102,7 @@ fn blueprint_from_content_rw(
     }
 }
 
-fn recompress_blueprint_rw(
+fn recompress_blueprint_file(
     file_in: &std::path::PathBuf,
     file_out: &std::path::PathBuf,
     zopfli_options: &zopfli::Options,
@@ -176,7 +175,7 @@ pub enum FileType {
     Content,
 }
 
-fn file_type(entry: &std::path::PathBuf) -> FileType {
+fn classify_file_type(entry: &std::path::PathBuf) -> FileType {
     if let Some(extension) = entry.extension() {
         match extension.to_str() {
             Some("txt") => FileType::Txt,
@@ -195,7 +194,7 @@ fn collect_files(path_in: &Path) -> (Vec<PathBuf>, Vec<PathBuf>) {
 
     for entry in WalkDir::new(path_in).into_iter().filter_map(|e| e.ok()) {
         let entry_path = entry.into_path();
-        match file_type(&entry_path) {
+        match classify_file_type(&entry_path) {
             FileType::Txt => blueprints.push(entry_path),
             FileType::Content => contents.push(entry_path),
             _ => {}
@@ -206,7 +205,7 @@ fn collect_files(path_in: &Path) -> (Vec<PathBuf>, Vec<PathBuf>) {
 }
 
 // 计算输出路径
-fn compute_output_path(path_in: &Path, path_out: &Path, entry_path: &Path) -> PathBuf {
+fn generate_output_path(path_in: &Path, path_out: &Path, entry_path: &Path) -> PathBuf {
     let relative_path = entry_path.strip_prefix(path_in).unwrap();
     if relative_path == Path::new("") {
         path_out.to_path_buf()
@@ -216,51 +215,48 @@ fn compute_output_path(path_in: &Path, path_out: &Path, entry_path: &Path) -> Pa
 }
 
 // 处理蓝图文件
-fn process_blueprints(
+fn process_blueprint_files(
     blueprints: Vec<PathBuf>,
     path_in: &Path,
     path_out: &Path,
     zopfli_options: &zopfli::Options,
 ) {
     blueprints.par_iter().for_each(|file_in| {
-        let file_out = compute_output_path(path_in, path_out, file_in);
+        let file_out = generate_output_path(path_in, path_out, file_in);
         debug!("Processing blueprint: {}", file_out.display());
-        recompress_blueprint_rw(file_in, &file_out, zopfli_options);
+        recompress_blueprint_file(file_in, &file_out, zopfli_options);
     });
 }
 
 // 处理内容文件
-fn process_contents(
+fn process_content_files(
     contents: Vec<PathBuf>,
     path_in: &Path,
     path_out: &Path,
     zopfli_options: &zopfli::Options,
 ) {
     contents.par_iter().for_each(|file_in| {
-        let file_out = compute_output_path(path_in, path_out, file_in).with_extension("txt");
+        let file_out = generate_output_path(path_in, path_out, file_in).with_extension("txt");
         debug!("Processing content: {}", file_out.display());
-        blueprint_from_content_rw(file_in, &file_out, zopfli_options);
+        blueprint_from_content_file(file_in, &file_out, zopfli_options);
     });
 }
 
 // 主函数
 fn cook(args: &Args) {
-    use rayon::prelude::*;
-    use walkdir::WalkDir;
-
     let path_in = &args.input;
     let path_out = args.output.as_deref().unwrap_or(path_in);
 
     let (blueprints, contents) = collect_files(path_in);
 
-    let zopfli_options = create_zopfli_options(args);
+    let zopfli_options = configure_zopfli_options(args);
 
-    process_blueprints(blueprints, path_in, path_out, &zopfli_options);
-    process_contents(contents, path_in, path_out, &zopfli_options);
+    process_blueprint_files(blueprints, path_in, path_out, &zopfli_options);
+    process_content_files(contents, path_in, path_out, &zopfli_options);
 }
 
 // 创建zopfli选项
-fn create_zopfli_options(args: &Args) -> zopfli::Options {
+fn configure_zopfli_options(args: &Args) -> zopfli::Options {
     let iteration_count = args
         .iteration_count
         .expect("Fatal error: unknown iteration_count");
@@ -297,7 +293,7 @@ struct Args {
 
     /// Actions of edit blueprint.
     #[clap(short, long, num_args = 0..)]
-    action: Option<Vec<String>>,
+    actions: Option<Vec<String>>,
 
     // TODO 注释
     #[clap(long, default_value = "256")]
