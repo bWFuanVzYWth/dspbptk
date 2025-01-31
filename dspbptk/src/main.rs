@@ -10,6 +10,8 @@ use walkdir::WalkDir;
 
 use blueprint::error::BlueprintError;
 
+// TODO 补充注释，优化可读性
+
 fn recompress_blueprint(
     blueprint_in: &str,
     zopfli_options: &zopfli::Options,
@@ -295,13 +297,15 @@ struct Args {
     #[clap(short, long, num_args = 0..)]
     actions: Option<Vec<String>>,
 
-    // TODO 注释
+    /// Compress arguments: zopfli iteration_count.
     #[clap(long, default_value = "256")]
     iteration_count: Option<u64>,
 
+    /// Compress arguments: zopfli iterations_without_improvement.
     #[clap(long, default_value = "18446744073709551615")]
     iterations_without_improvement: Option<u64>,
 
+    /// Compress arguments: zopfli maximum_block_splits.
     #[clap(long, default_value = "0")]
     maximum_block_splits: Option<u16>,
 }
