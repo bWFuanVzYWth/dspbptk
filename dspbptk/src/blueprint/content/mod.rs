@@ -63,11 +63,10 @@ fn deserialization_non_finish(bin: &[u8]) -> IResult<&[u8], ContentData> {
 
 fn deserialization(bin: &[u8]) -> Result<ContentData, BlueprintError<String>> {
     use nom::Finish;
-    let (_, content_data) = deserialization_non_finish(bin)
+    Ok(deserialization_non_finish(bin)
         .finish()
-        .map_err(|e| CanNotDeserializationContent(format!("{:?}", e)))?;
-
-    Ok(content_data)
+        .map_err(|e| CanNotDeserializationContent(format!("{:?}", e)))?
+        .1)
 }
 
 fn serialization(data: ContentData) -> Vec<u8> {
@@ -92,10 +91,9 @@ fn serialization(data: ContentData) -> Vec<u8> {
 
 fn decode_base64(string: &str) -> Result<Vec<u8>, BlueprintError<String>> {
     use base64::prelude::*;
-    match BASE64_STANDARD.decode(string) {
-        Ok(result) => Ok(result),
-        Err(why) => Err(ReadBrokenBase64(why.to_string())),
-    }
+    Ok(BASE64_STANDARD
+        .decode(string)
+        .map_err(|e| ReadBrokenBase64(e.to_string()))?)
 }
 
 fn encode_base64(bin: Vec<u8>) -> String {
@@ -111,7 +109,6 @@ fn decompress_gzip(gzip: Vec<u8>) -> Result<Vec<u8>, BlueprintError<String>> {
     decoder
         .read_to_end(&mut bin)
         .map_err(|e| ReadBrokenGzip(e.to_string()))?;
-
     Ok(bin)
 }
 
@@ -120,7 +117,6 @@ fn compress_gzip_zopfli(
     zopfli_options: &zopfli::Options,
 ) -> Result<Vec<u8>, BlueprintError<std::io::Error>> {
     let mut gzip = Vec::new();
-
     zopfli::compress(
         *zopfli_options,
         zopfli::Format::Gzip,
@@ -128,7 +124,6 @@ fn compress_gzip_zopfli(
         &mut gzip,
     )
     .map_err(|e| CanNotCompressGzip(e))?;
-
     Ok(gzip)
 }
 
@@ -159,10 +154,7 @@ fn gzip_from_bin(
     bin: Vec<u8>,
     zopfli_options: &zopfli::Options,
 ) -> Result<Vec<u8>, BlueprintError<String>> {
-    match compress_gzip(bin, zopfli_options) {
-        Ok(gzip) => Ok(gzip),
-        Err(why) => Err(CanNotCompressGzip(why.to_string())),
-    }
+    Ok(compress_gzip(bin, zopfli_options).map_err(|e| CanNotCompressGzip(e.to_string()))?)
 }
 
 fn string_from_gzip(gzip: Vec<u8>) -> Result<String, BlueprintError<String>> {
