@@ -10,7 +10,6 @@ use walkdir::WalkDir;
 
 use blueprint::error::BlueprintError;
 
-// TODO 补充注释，优化可读性
 fn recompress_blueprint(
     blueprint_in: &str,
     zopfli_options: &zopfli::Options,
@@ -192,7 +191,7 @@ fn process_recompression(
     }
 }
 
-// TODO 现在的输出难以对应到正确的文件路径，用户反馈不足。思考有没有更优雅的解决方法。
+// FIXME 现在的输出难以对应到正确的文件路径，用户反馈不足。思考有没有更优雅的解决方法。
 // 计算压缩率并返回统计信息
 fn calculate_compression_rate(blueprint_in: &str, blueprint_out: &str) -> (usize, usize, f64) {
     let string_in_length = blueprint_in.len();
