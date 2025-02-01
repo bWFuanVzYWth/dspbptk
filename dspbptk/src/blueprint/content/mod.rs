@@ -63,10 +63,11 @@ fn deserialization_non_finish(bin: &[u8]) -> IResult<&[u8], ContentData> {
 
 fn deserialization(bin: &[u8]) -> Result<ContentData, BlueprintError<String>> {
     use nom::Finish;
-    match deserialization_non_finish(bin).finish() {
-        Ok((_unknown, data)) => Ok(data),
-        Err(why) => Err(CanNotDeserializationContent(format!("{:?}", why))),
-    }
+    let (_, content_data) = deserialization_non_finish(bin)
+        .finish()
+        .map_err(|e| CanNotDeserializationContent(format!("{:?}", e)))?;
+
+    Ok(content_data)
 }
 
 fn serialization(data: ContentData) -> Vec<u8> {
@@ -107,10 +108,11 @@ fn decompress_gzip(gzip: Vec<u8>) -> Result<Vec<u8>, BlueprintError<String>> {
     use std::io::Read;
     let mut decoder = GzDecoder::new(gzip.as_slice());
     let mut bin = Vec::new();
-    match decoder.read_to_end(&mut bin) {
-        Ok(_) => Ok(bin),
-        Err(why) => Err(ReadBrokenGzip(why.to_string())),
-    }
+    decoder
+        .read_to_end(&mut bin)
+        .map_err(|e| ReadBrokenGzip(e.to_string()))?;
+
+    Ok(bin)
 }
 
 fn compress_gzip_zopfli(
@@ -119,15 +121,15 @@ fn compress_gzip_zopfli(
 ) -> Result<Vec<u8>, BlueprintError<std::io::Error>> {
     let mut gzip = Vec::new();
 
-    match zopfli::compress(
+    zopfli::compress(
         *zopfli_options,
         zopfli::Format::Gzip,
         bin.as_slice(),
         &mut gzip,
-    ) {
-        Ok(_) => Ok(gzip),
-        Err(why) => Err(CanNotCompressGzip(why)),
-    }
+    )
+    .map_err(|e| CanNotCompressGzip(e))?;
+
+    Ok(gzip)
 }
 
 fn compress_gzip(

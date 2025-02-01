@@ -297,8 +297,8 @@ fn process_content_files(
     });
 }
 
-// 主函数
-fn cook(args: &Args) {
+// 蓝图处理工作流
+fn process_workflow(args: &Args) {
     let zopfli_options = configure_zopfli_options(args);
     let path_in = &args.input;
     let path_out = args.output.as_deref().unwrap_or(path_in);
@@ -369,5 +369,5 @@ fn main() {
     eprintln!("https://github.com/bWFuanVzYWth/dspbptk");
     let args = Args::parse();
 
-    cook(&args);
+    process_workflow(&args);
 }
