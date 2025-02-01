@@ -1,3 +1,5 @@
+pub mod sorter;
+
 use nom::{
     branch::alt,
     bytes::complete::tag,

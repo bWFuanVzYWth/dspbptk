@@ -21,6 +21,7 @@ fn recompress_blueprint(
 
     let mut warnings = Vec::new();
 
+    // 1. 解析blueprint
     let blueprint_data = blueprint::parse(blueprint_in)?;
     if blueprint_data.unknown.len() > 9 {
         warnings.push(format!(
@@ -35,8 +36,8 @@ fn recompress_blueprint(
         ));
     }
 
+    // 2. 解析content
     let mut content_data = data_from_string(blueprint_data.content)?;
-
     if content_data.unknown.len() > 9 {
         warnings.push(format!(
             "{} unknown after content: (QUITE A LOT)",
@@ -50,11 +51,14 @@ fn recompress_blueprint(
         ));
     }
 
+    // 3. 重新排序建筑
     sort_buildings(&mut content_data.buildings);
     fix_buildings_index(&mut content_data.buildings);
 
+    // 4. 序列化content
     let content_string = string_from_data(content_data, zopfli_options)?;
 
+    // 5. 序列化blueprint
     let blueprint_string = blueprint::serialization(blueprint_data.header, &content_string);
 
     Ok((blueprint_string, warnings))
@@ -65,6 +69,7 @@ fn blueprint_from_content_file(
     file_out: &std::path::PathBuf,
     zopfli_options: &zopfli::Options,
 ) {
+    // 1. 读取content文件
     let content_bin = match std::fs::read(file_in) {
         Ok(result) => {
             debug!("Ok: read from {}", file_in.display());
@@ -76,6 +81,7 @@ fn blueprint_from_content_file(
         }
     };
 
+    // 2. 编码content文件
     let content_string = match blueprint::content::string_from_bin(content_bin, zopfli_options) {
         Ok(content) => {
             debug!("Ok: encode from {}", file_in.display());
@@ -87,9 +93,11 @@ fn blueprint_from_content_file(
         }
     };
 
+    // 3. 生成blueprint字符串
     const HEADER: &str = "BLUEPRINT:0,0,0,0,0,0,0,0,0,0.0.0.0,,";
     let blueprint_string = blueprint::serialization(HEADER, &content_string);
 
+    // 4. 写入blueprint文件
     match std::fs::write(file_out, blueprint_string) {
         Ok(_) => {
             info!(
@@ -246,12 +254,11 @@ fn process_content_files(
 
 // 主函数
 fn cook(args: &Args) {
+    let zopfli_options = configure_zopfli_options(args);
     let path_in = &args.input;
     let path_out = args.output.as_deref().unwrap_or(path_in);
 
     let (blueprints, contents) = collect_files(path_in);
-
-    let zopfli_options = configure_zopfli_options(args);
 
     process_blueprint_files(blueprints, path_in, path_out, &zopfli_options);
     process_content_files(contents, path_in, path_out, &zopfli_options);
