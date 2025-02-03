@@ -1,7 +1,5 @@
-/*
-TODO 整理测试用例
-FIXME 现在的warn之类的很乱，逐个检查log等级和输出内容
-*/
+// TODO 整理测试用例
+// FIXME 现在的warn之类的很乱，逐个检查log等级和输出内容
 
 mod blueprint;
 mod md5;
@@ -16,69 +14,10 @@ use walkdir::WalkDir;
 use crate::blueprint::content::ContentData;
 use blueprint::error::BlueprintError;
 
-// fn recompress_blueprint(
-//     blueprint_in: &str,
-//     zopfli_options: &zopfli::Options,
-// ) -> Result<(String, Vec<String>), BlueprintError<String>> {
-//     let mut warnings = Vec::new();
-
-//     // 1. 解析blueprint
-//     let blueprint_data = blueprint::parse(blueprint_in)?;
-//     if blueprint_data.unknown.len() > 9 {
-//         warnings.push(format!(
-//             "{} unknown after blueprint: (QUITE A LOT)",
-//             blueprint_data.unknown.len()
-//         ));
-//     } else if blueprint_data.unknown.len() > 0 {
-//         warnings.push(format!(
-//             "{} unknown after blueprint: {:?}",
-//             blueprint_data.unknown.len(),
-//             blueprint_data.unknown
-//         ));
-//     }
-
-//     // 2. 解析content
-//     let mut content_data = data_from_string(blueprint_data.content)?;
-//     if content_data.unknown.len() > 9 {
-//         warnings.push(format!(
-//             "{} unknown after content: (QUITE A LOT)",
-//             content_data.unknown.len()
-//         ));
-//     } else if content_data.unknown.len() > 0 {
-//         warnings.push(format!(
-//             "{} unknown after content: {:?}",
-//             content_data.unknown.len(),
-//             content_data.unknown
-//         ));
-//     }
-
-//     // 3. 重新排序建筑
-//     sort_buildings(&mut content_data.buildings);
-//     fix_buildings_index(&mut content_data.buildings);
-
-//     // 4. 序列化content
-//     let content_string = string_from_data(content_data, zopfli_options)?;
-
-//     // 5. 序列化blueprint
-//     let blueprint_string = blueprint::serialization(blueprint_data.header, &content_string);
-
-//     Ok((blueprint_string, warnings))
-// }
-
 fn read_content_file(file_in: &std::path::PathBuf) -> Result<Vec<u8>, std::io::Error> {
     let content_bin = std::fs::read(file_in)?;
     debug!("Ok: read from {}", file_in.display());
     Ok(content_bin)
-}
-
-fn encode_content_file(
-    content_bin: Vec<u8>,
-    file_in: &std::path::PathBuf,
-    zopfli_options: &zopfli::Options,
-) -> Result<String, BlueprintError<String>> {
-    let content_string = blueprint::content::string_from_bin(content_bin, zopfli_options)?;
-    debug!("Ok: encode from {}", file_in.display());
-    Ok(content_string)
 }
 
 fn write_blueprint_file(
@@ -86,71 +25,13 @@ fn write_blueprint_file(
     blueprint: String,
 ) -> Result<(), std::io::Error> {
     std::fs::write(path, blueprint)?;
-    info!("Ok: encode to {}", path.display());
     Ok(())
 }
 
 fn write_content_file(path: &std::path::PathBuf, content: Vec<u8>) -> Result<(), std::io::Error> {
     std::fs::write(path, content)?;
-    info!("Ok: encode to {}", path.display());
     Ok(())
 }
-
-fn blueprint_from_content_file(
-    file_in: &std::path::PathBuf,
-    file_out: &std::path::PathBuf,
-    zopfli_options: &zopfli::Options,
-) {
-    // 1. 读取content文件
-    let content_bin = match read_content_file(file_in) {
-        Ok(result) => result,
-        Err(why) => {
-            error!("{:#?}: read from {}", why, file_in.display());
-            return;
-        }
-    };
-
-    // 2. 编码content文件
-    let content_string = match encode_content_file(content_bin, file_in, zopfli_options) {
-        Ok(content) => content,
-        Err(why) => {
-            error!("{:#?}: encode from {}", why, file_in.display());
-            return;
-        }
-    };
-
-    // 3. 生成blueprint字符串
-    const HEADER: &str = "BLUEPRINT:0,0,0,0,0,0,0,0,0,0.0.0.0,,";
-    let blueprint_string = blueprint::serialization(HEADER, &content_string);
-
-    // 4. 写入blueprint文件
-    if let Err(why) = write_blueprint_file(file_out, blueprint_string) {
-        error!("{:#?}: encode from {}", why, file_out.display());
-    }
-}
-
-// fn recompress_blueprint_file(
-//     file_in: &std::path::PathBuf,
-//     file_out: &std::path::PathBuf,
-//     zopfli_options: &zopfli::Options,
-// ) {
-//     // 1. 读取blueprint文件
-//     let blueprint_in = read_blueprint_file(file_in);
-
-//     // 2. 检查是否为blueprint
-//     if !is_valid_blueprint(&blueprint_in, file_in) {
-//         return;
-//     }
-
-//     // 3. 重新压缩blueprint文件并处理警告信息
-//     let (blueprint_out, _) = process_recompression(&blueprint_in, file_in, zopfli_options);
-
-//     // 4. 分析压缩率
-//     let _ = calculate_compression_rate(&blueprint_in, &blueprint_out);
-
-//     // 5. 创建输出目录和写入文件
-//     write_recompressed_file(file_out, &blueprint_out);
-// }
 
 // 读取blueprint文件内容
 // FIXME 返回错误而不是空字符串
@@ -167,6 +48,7 @@ fn read_blueprint_file(file_in: &std::path::PathBuf) -> String {
     }
 }
 
+// FIXME 检查还没接入
 // 检查是否为有效的blueprint文件
 fn is_valid_blueprint(blueprint_content: &str, file_in: &std::path::PathBuf) -> bool {
     if blueprint_content.chars().take(12).collect::<String>() != "BLUEPRINT:0," {
@@ -178,30 +60,8 @@ fn is_valid_blueprint(blueprint_content: &str, file_in: &std::path::PathBuf) -> 
     }
 }
 
-// // TODO 更优雅的警告处理
-// // 处理重新压缩并收集警告信息
-// fn process_recompression(
-//     blueprint_in: &str,
-//     file_in: &std::path::PathBuf,
-//     zopfli_options: &zopfli::Options,
-// ) -> (String, Vec<String>) {
-//     match recompress_blueprint(blueprint_in, zopfli_options) {
-//         Ok((blueprint, warnings)) => {
-//             warnings.iter().for_each(|warning| {
-//                 warn!("{} from {}", warning, file_in.display());
-//             });
-//             debug!("Ok: recompress from {}", file_in.display());
-//             (blueprint, warnings)
-//         }
-//         Err(why) => {
-//             error!("{:#?}: recompress from {}", why, file_in.display());
-//             // 返回空字符串和空警告列表以避免后续处理失败
-//             return ("".to_string(), Vec::new());
-//         }
-//     }
-// }
-
-// FIXME 现在的输出难以对应到正确的文件路径，用户反馈不足。思考有没有更优雅的解决方法。
+// TODO 接入
+// FIXME 现在的输出难以对应到正确的文件路径，用户反馈不足。
 // 计算压缩率并返回统计信息
 fn calculate_compression_rate(blueprint_in: &str, blueprint_out: &str) -> (usize, usize, f64) {
     let string_in_length = blueprint_in.len();
@@ -212,24 +72,6 @@ fn calculate_compression_rate(blueprint_in: &str, blueprint_out: &str) -> (usize
         percent, string_in_length, string_out_length
     );
     (string_in_length, string_out_length, percent)
-}
-
-// 创建输出目录并写入重新压缩后的文件
-fn write_recompressed_file(file_out: &std::path::PathBuf, blueprint_out: &str) {
-    // 创建输出目录
-    if let Err(why) = std::fs::create_dir_all(file_out.parent().unwrap()) {
-        error!("{:#?}: create dir {}", why, file_out.display());
-        return;
-    }
-
-    match std::fs::write(file_out, blueprint_out) {
-        Ok(_) => {
-            info!("Ok: write to {}", file_out.display());
-        }
-        Err(why) => {
-            error!("{:#?}: write to {}", why, file_out.display());
-        }
-    }
 }
 
 pub enum FileType {
@@ -289,7 +131,6 @@ fn process_front_end(file_path_in: &PathBuf) -> Result<(String, Vec<u8>), Bluepr
             // 1.1 读取blueprint文件
             let blueprint_str = read_blueprint_file(file_path_in);
 
-            // FIXME 没实现异常返回
             // 1.2 解析blueprint
             let blueprint_data = blueprint::parse(&blueprint_str)?;
             if blueprint_data.unknown.len() > 9 {
@@ -311,7 +152,6 @@ fn process_front_end(file_path_in: &PathBuf) -> Result<(String, Vec<u8>), Bluepr
             Ok((blueprint_data.header.to_string(), content_bin))
         }
         FileType::Content => {
-            // FIXME 蓝图和content的异常处理代码结构上不同，需要统一
             // 1.1. 读取content文件
             let content_bin = match read_content_file(file_path_in) {
                 Ok(result) => result,
@@ -400,7 +240,14 @@ fn process_back_end(
             };
             let blueprint_string = blueprint::serialization(header_str, &content_string);
 
-            write_blueprint_file(&file_path_out, blueprint_string);
+            match write_blueprint_file(&file_path_out, blueprint_string) {
+                Ok(_) => {
+                    info!("Ok: encode to {}", file_path_out.display());
+                }
+                Err(why) => {
+                    error!("can not write file: {}", why)
+                }
+            }
         }
         FileType::Content => {
             let content_bin = match bin_from_data(content_data) {
@@ -410,7 +257,14 @@ fn process_back_end(
                     return;
                 }
             };
-            write_content_file(&file_path_out, content_bin);
+            match write_content_file(&file_path_out, content_bin) {
+                Ok(_) => {
+                    info!("Ok: encode to {}", file_path_out.display());
+                }
+                Err(why) => {
+                    error!("can not write file: {}", why)
+                }
+            }
         }
         _ => {
             panic!("Fatal error: unknown file type"); // Should not reach here
@@ -418,7 +272,6 @@ fn process_back_end(
     }
 }
 
-// TODO 函数太大了，拆分成小函数
 fn process_files(
     files: Vec<PathBuf>,
     path_in: &Path,
@@ -426,8 +279,6 @@ fn process_files(
     zopfli_options: &zopfli::Options,
     output_type: &FileType,
 ) {
-    use blueprint::content::{bin_from_data, data_from_bin};
-
     // TODO 改成map(|path| result)，收集处理结果
     files.par_iter().for_each(|file_path_in| {
         let file_path_out = generate_output_path(path_in, path_out, file_path_in);
