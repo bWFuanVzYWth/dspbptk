@@ -1,5 +1,3 @@
-pub mod sorter;
-
 use nom::{
     branch::alt,
     bytes::complete::tag,
@@ -8,60 +6,46 @@ use nom::{
     IResult,
 };
 
-const NULL: i32 = 0; // 00 00 00 00
+const ZERO: i32 = 0; // 00 00 00 00
 const NEG_100: i32 = -100; // 9C FF FF FF
 const NEG_101: i32 = -101; // 9B FF FF FF
 
 pub const INDEX_NULL: i32 = -1;
 
-// TODO 测试用例：区分不同建筑
 const BELT_LOW: i16 = 2001;
-const BELT_HIGH: i16 = 2010;
+const BELT_HIGH: i16 = 2009;
 const SORTER_LOW: i16 = 2011;
-const SORTER_HIGH: i16 = 2020;
-
-// TODO 重构+续写，注意零成本抽象
+const SORTER_HIGH: i16 = 2019;
 
 #[derive(Debug)]
 pub struct BuildingData {
-    // TODO 考虑是否需要允许用户用上version字段
-    // 暂时用不到，但是保留字段
-    pub _version: i32,
-
+    pub _version: i32, // version不参与序列化/反序列化，但是保留字段
     pub index: i32,
     pub area_index: i8,
-
     pub local_offset_x: f32,
     pub local_offset_y: f32,
     pub local_offset_z: f32,
     pub yaw: f32,
     pub tilt: f32,
     pub pitch: f32,
-
     pub local_offset_x2: f32,
     pub local_offset_y2: f32,
     pub local_offset_z2: f32,
     pub yaw2: f32,
     pub tilt2: f32,
     pub pitch2: f32,
-
     pub item_id: i16,
     pub model_index: i16,
-
     pub temp_output_obj_idx: i32,
     pub temp_input_obj_idx: i32,
-
     pub output_to_slot: i8,
     pub input_from_slot: i8,
     pub output_from_slot: i8,
     pub input_to_slot: i8,
-
     pub output_offset: i8,
     pub input_offset: i8,
-
     pub recipe_id: i16,
     pub filter_id: i16,
-
     pub parameters_length: i16,
     pub parameters: Vec<i32>,
 }
@@ -92,8 +76,7 @@ fn deserialization_version_neg101(bin: &[u8]) -> IResult<&[u8], BuildingData> {
             pitch2,
         ),
     ) = match item_id {
-        SORTER_LOW..SORTER_HIGH => {
-            // 分拣器
+        SORTER_LOW..=SORTER_HIGH => {
             let (unknown, local_offset_x) = le_f32(unknown)?;
             let (unknown, local_offset_y) = le_f32(unknown)?;
             let (unknown, local_offset_z) = le_f32(unknown)?;
@@ -124,8 +107,7 @@ fn deserialization_version_neg101(bin: &[u8]) -> IResult<&[u8], BuildingData> {
                 ),
             )
         }
-        BELT_LOW..BELT_HIGH => {
-            // 传送带
+        BELT_LOW..=BELT_HIGH => {
             let (unknown, local_offset_x) = le_f32(unknown)?;
             let (unknown, local_offset_y) = le_f32(unknown)?;
             let (unknown, local_offset_z) = le_f32(unknown)?;
@@ -320,7 +302,7 @@ fn deserialization_version_0(bin: &[u8]) -> IResult<&[u8], BuildingData> {
     Ok((
         unknown,
         BuildingData {
-            _version: 0,
+            _version: ZERO,
             index: index,
             area_index: area_index,
             local_offset_x: local_offset_x,
@@ -370,7 +352,7 @@ fn serialization_version_neg101(bin: &mut Vec<u8>, data: &BuildingData) {
     bin.extend_from_slice(&data.area_index.to_le_bytes());
 
     match data.item_id {
-        SORTER_LOW..SORTER_HIGH => {
+        SORTER_LOW..=SORTER_HIGH => {
             bin.extend_from_slice(&data.local_offset_x.to_le_bytes());
             bin.extend_from_slice(&data.local_offset_y.to_le_bytes());
             bin.extend_from_slice(&data.local_offset_z.to_le_bytes());
@@ -384,7 +366,7 @@ fn serialization_version_neg101(bin: &mut Vec<u8>, data: &BuildingData) {
             bin.extend_from_slice(&data.tilt2.to_le_bytes());
             bin.extend_from_slice(&data.pitch2.to_le_bytes());
         }
-        BELT_LOW..BELT_HIGH => {
+        BELT_LOW..=BELT_HIGH => {
             bin.extend_from_slice(&data.local_offset_x.to_le_bytes());
             bin.extend_from_slice(&data.local_offset_y.to_le_bytes());
             bin.extend_from_slice(&data.local_offset_z.to_le_bytes());
@@ -481,34 +463,5 @@ pub fn serialization(bin: &mut Vec<u8>, data: &BuildingData) {
 
 #[cfg(test)]
 mod test {
-    use super::*;
-    // FIXME 测试用例有点问题
-    // #[test]
-    // fn test_deserialization_version_neg101() {
-    //     let bin = vec![
-    //         0x9B, 0xFF, 0xFF, 0xFF, 0x57, 0x00, 0x00, 0x00, 0xDB, 0x07, 0x29, 0x00, 0x00, 0xC7,
-    //         0xFF, 0xFF, 0x3F, 0xB1, 0x47, 0x53, 0x41, 0x71, 0xE6, 0x2B, 0xBB, 0x02, 0x00, 0x34,
-    //         0x43, 0xCC, 0x58, 0x26, 0x35, 0x84, 0xC9, 0x54, 0x3E, 0xC7, 0xFF, 0xFF, 0x3F, 0xC5,
-    //         0x07, 0x40, 0x41, 0x71, 0xE6, 0x01, 0xBB, 0xE5, 0xF3, 0x33, 0x43, 0x4A, 0x97, 0x8C,
-    //         0x39, 0x03, 0xEF, 0xB3, 0x43, 0x1F, 0x00, 0x00, 0x00, 0x87, 0x00, 0x00, 0x00, 0xFF,
-    //         0x07, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x01, 0x00, 0x00,
-    //         0x00,
-    //     ];
-
-    //     let result = deserialization_version_neg101(&bin);
-    //     println!("{:#?}", result);
-
-    //     match result {
-    //         Ok((_, data)) => {
-    //             // 验证反序列化结果
-    //             assert_eq!(data._version, -100);
-    //             assert_eq!(data.index, 87); // 根据二进制数据计算的 index 值
-    //             assert_eq!(data.item_id, 0); // 根据二进制数据计算的 item_id 值
-    //                                          // 添加更多字段验证...
-    //         }
-    //         Err(e) => {
-    //             panic!("反序列化失败: {}", e);
-    //         }
-    //     }
-    // }
+    // TODO 测试用例：检查每一种不同建筑
 }

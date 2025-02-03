@@ -335,6 +335,8 @@ fn configure_zopfli_options(args: &Args) -> zopfli::Options {
     }
 }
 
+// TODO 蓝图分析命令：分析蓝图文件，输出统计信息
+
 #[derive(Parser, Debug)]
 #[command(
     version = "dspbptk0.2.0-dsp0.10.31.24632",

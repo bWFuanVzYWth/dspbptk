@@ -57,6 +57,7 @@ const INIT_MD5F: [u32; 4] = [
     u32::from_le_bytes([0x46, 0x57, 0x32, 0x10]),
 ];
 
+#[allow(dead_code)]
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub enum Algo {
     MD5,

@@ -1,4 +1,3 @@
-/// 在蓝图编辑中有通用性的工具箱
 use std::f64::consts::PI;
 
 use approx::abs_diff_eq;
@@ -388,6 +387,8 @@ mod test_quaternion {
         assert!(abs_diff_eq!(q_inv.j, 0.0, epsilon = 1e-6));
         assert!(abs_diff_eq!(q_inv.k, 0.0, epsilon = 1e-6));
     }
+
+    // TODO 检查测试用例，查漏补缺
 
     #[test]
     fn test_orthogonal_vectors() {
