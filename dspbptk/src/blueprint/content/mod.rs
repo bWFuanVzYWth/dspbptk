@@ -63,15 +63,10 @@ fn deserialization_non_finish(bin: &[u8]) -> IResult<&[u8], ContentData> {
 
 fn deserialization(bin: &[u8]) -> Result<ContentData, BlueprintError<String>> {
     use nom::Finish;
-    let tmp = Ok(deserialization_non_finish(bin)
+    Ok(deserialization_non_finish(bin)
         .finish()
         .map_err(|e| CanNotDeserializationContent(format!("{:?}", e)))?
-        .1);
-
-    // FIXME debug
-    println!("{:#?}", tmp);
-
-    tmp
+        .1)
 }
 
 fn serialization(data: ContentData) -> Vec<u8> {
@@ -148,8 +143,6 @@ fn bin_from_gzip(gzip: Vec<u8>) -> Result<Vec<u8>, BlueprintError<String>> {
 }
 
 fn data_from_bin(bin: Vec<u8>) -> Result<ContentData, BlueprintError<String>> {
-    // FIXME debug
-    println!("{:#?}", tmp);
     deserialization(bin.as_slice())
 }
 

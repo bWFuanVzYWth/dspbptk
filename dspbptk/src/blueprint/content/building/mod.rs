@@ -14,6 +14,12 @@ const NEG_101: i32 = -101; // 9B FF FF FF
 
 pub const INDEX_NULL: i32 = -1;
 
+// TODO 测试用例：区分不同建筑
+const BELT_LOW: i16 = 2001;
+const BELT_HIGH: i16 = 2010;
+const SORTER_LOW: i16 = 2011;
+const SORTER_HIGH: i16 = 2020;
+
 // TODO 重构+续写，注意零成本抽象
 
 #[derive(Debug)]
@@ -86,7 +92,7 @@ fn deserialization_version_neg101(bin: &[u8]) -> IResult<&[u8], BuildingData> {
             pitch2,
         ),
     ) = match item_id {
-        2011..2021 => {
+        SORTER_LOW..SORTER_HIGH => {
             // 分拣器
             let (unknown, local_offset_x) = le_f32(unknown)?;
             let (unknown, local_offset_y) = le_f32(unknown)?;
@@ -118,7 +124,7 @@ fn deserialization_version_neg101(bin: &[u8]) -> IResult<&[u8], BuildingData> {
                 ),
             )
         }
-        2001..2011 => {
+        BELT_LOW..BELT_HIGH => {
             // 传送带
             let (unknown, local_offset_x) = le_f32(unknown)?;
             let (unknown, local_offset_y) = le_f32(unknown)?;
@@ -364,8 +370,7 @@ fn serialization_version_neg101(bin: &mut Vec<u8>, data: &BuildingData) {
     bin.extend_from_slice(&data.area_index.to_le_bytes());
 
     match data.item_id {
-        2011..2021 => {
-            // 分拣器
+        SORTER_LOW..SORTER_HIGH => {
             bin.extend_from_slice(&data.local_offset_x.to_le_bytes());
             bin.extend_from_slice(&data.local_offset_y.to_le_bytes());
             bin.extend_from_slice(&data.local_offset_z.to_le_bytes());
@@ -379,7 +384,7 @@ fn serialization_version_neg101(bin: &mut Vec<u8>, data: &BuildingData) {
             bin.extend_from_slice(&data.tilt2.to_le_bytes());
             bin.extend_from_slice(&data.pitch2.to_le_bytes());
         }
-        2001..2011 => {
+        BELT_LOW..BELT_HIGH => {
             bin.extend_from_slice(&data.local_offset_x.to_le_bytes());
             bin.extend_from_slice(&data.local_offset_y.to_le_bytes());
             bin.extend_from_slice(&data.local_offset_z.to_le_bytes());
