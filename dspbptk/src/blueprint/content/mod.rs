@@ -134,30 +134,30 @@ fn compress_gzip(
     compress_gzip_zopfli(bin, zopfli_options)
 }
 
-fn gzip_from_string(string: &str) -> Result<Vec<u8>, BlueprintError<String>> {
+pub fn gzip_from_string(string: &str) -> Result<Vec<u8>, BlueprintError<String>> {
     decode_base64(string)
 }
 
-fn bin_from_gzip(gzip: Vec<u8>) -> Result<Vec<u8>, BlueprintError<String>> {
+pub fn bin_from_gzip(gzip: Vec<u8>) -> Result<Vec<u8>, BlueprintError<String>> {
     decompress_gzip(gzip)
 }
 
-fn data_from_bin(bin: Vec<u8>) -> Result<ContentData, BlueprintError<String>> {
+pub fn data_from_bin(bin: Vec<u8>) -> Result<ContentData, BlueprintError<String>> {
     deserialization(bin.as_slice())
 }
 
-fn bin_from_data(data: ContentData) -> Result<Vec<u8>, BlueprintError<String>> {
+pub fn bin_from_data(data: ContentData) -> Result<Vec<u8>, BlueprintError<String>> {
     Ok(serialization(data))
 }
 
-fn gzip_from_bin(
+pub fn gzip_from_bin(
     bin: Vec<u8>,
     zopfli_options: &zopfli::Options,
 ) -> Result<Vec<u8>, BlueprintError<String>> {
     Ok(compress_gzip(bin, zopfli_options).map_err(|e| CanNotCompressGzip(e.to_string()))?)
 }
 
-fn string_from_gzip(gzip: Vec<u8>) -> Result<String, BlueprintError<String>> {
+pub fn string_from_gzip(gzip: Vec<u8>) -> Result<String, BlueprintError<String>> {
     Ok(encode_base64(gzip))
 }
 
