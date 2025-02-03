@@ -297,6 +297,10 @@ fn process_content_files(
 }
 
 // 蓝图处理工作流
+// TODO 这里的逻辑需要大改，需要想办法统一蓝图和内容的处理逻辑。
+// 1. 集中先找出所有有效的文件
+// 2. 把蓝图和内容混一起处理
+
 fn process_workflow(args: &Args) {
     let zopfli_options = configure_zopfli_options(args);
     let path_in = &args.input;
@@ -370,4 +374,3 @@ fn main() {
 
     process_workflow(&args);
 }
-
