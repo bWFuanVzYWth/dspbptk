@@ -8,6 +8,10 @@ use nom::{
     IResult,
 };
 
+const NULL: i32 = 0; // 00 00 00 00
+const NEG_100: i32 = -100; // 9C FF FF FF
+const NEG_101: i32 = -101; // 9B FF FF FF
+
 pub const INDEX_NULL: i32 = -1;
 
 // TODO 重构+续写，注意零成本抽象
@@ -59,7 +63,7 @@ pub struct BuildingData {
 fn deserialization_version_neg101(bin: &[u8]) -> IResult<&[u8], BuildingData> {
     let unknown = bin;
 
-    let (unknown, _version) = tag((-101_i32).to_le_bytes())(unknown)?;
+    let (unknown, _version) = tag((NEG_101).to_le_bytes())(unknown)?;
     let (unknown, index) = le_i32(unknown)?;
     let (unknown, item_id) = le_i16(unknown)?;
     let (unknown, model_index) = le_i16(unknown)?;
@@ -180,7 +184,7 @@ fn deserialization_version_neg101(bin: &[u8]) -> IResult<&[u8], BuildingData> {
     Ok((
         unknown,
         BuildingData {
-            _version: -100,
+            _version: NEG_101,
             index: index,
             area_index: area_index,
             local_offset_x: local_offset_x,
@@ -216,7 +220,7 @@ fn deserialization_version_neg101(bin: &[u8]) -> IResult<&[u8], BuildingData> {
 fn deserialization_version_neg100(bin: &[u8]) -> IResult<&[u8], BuildingData> {
     let unknown = bin;
 
-    let (unknown, _version) = tag((-100_i32).to_le_bytes())(unknown)?;
+    let (unknown, _version) = tag((NEG_100).to_le_bytes())(unknown)?;
     let (unknown, index) = le_i32(unknown)?;
     let (unknown, area_index) = le_i8(unknown)?;
     let (unknown, local_offset_x) = le_f32(unknown)?;
@@ -246,7 +250,7 @@ fn deserialization_version_neg100(bin: &[u8]) -> IResult<&[u8], BuildingData> {
     Ok((
         unknown,
         BuildingData {
-            _version: -100,
+            _version: NEG_100,
             index: index,
             area_index: area_index,
             local_offset_x: local_offset_x,
@@ -344,13 +348,16 @@ fn deserialization_version_0(bin: &[u8]) -> IResult<&[u8], BuildingData> {
 }
 
 pub fn deserialization(bin: &[u8]) -> IResult<&[u8], BuildingData> {
-    let (unknown, data) =
-        alt((deserialization_version_neg101, deserialization_version_neg100, deserialization_version_0))(bin)?;
+    let (unknown, data) = alt((
+        deserialization_version_neg101,
+        deserialization_version_neg100,
+        deserialization_version_0,
+    ))(bin)?;
     Ok((unknown, data))
 }
 
 fn serialization_version_neg101(bin: &mut Vec<u8>, data: &BuildingData) {
-    bin.extend_from_slice(&(-101_i32).to_le_bytes());
+    bin.extend_from_slice(&(NEG_101).to_le_bytes());
     bin.extend_from_slice(&data.index.to_le_bytes());
     bin.extend_from_slice(&data.item_id.to_le_bytes());
     bin.extend_from_slice(&data.model_index.to_le_bytes());
@@ -398,14 +405,13 @@ fn serialization_version_neg101(bin: &mut Vec<u8>, data: &BuildingData) {
     bin.extend_from_slice(&data.recipe_id.to_le_bytes());
     bin.extend_from_slice(&data.filter_id.to_le_bytes());
     bin.extend_from_slice(&data.parameters_length.to_le_bytes());
-    data
-        .parameters
+    data.parameters
         .iter()
         .for_each(|x| bin.extend_from_slice(&x.to_le_bytes()));
 }
 
 fn _serialization_version_neg100(bin: &mut Vec<u8>, data: &BuildingData) {
-    bin.extend_from_slice(&(-100_i32).to_le_bytes());
+    bin.extend_from_slice(&(NEG_100).to_le_bytes());
     bin.extend_from_slice(&data.index.to_le_bytes());
     bin.extend_from_slice(&data.area_index.to_le_bytes());
     bin.extend_from_slice(&data.local_offset_x.to_le_bytes());
@@ -430,8 +436,7 @@ fn _serialization_version_neg100(bin: &mut Vec<u8>, data: &BuildingData) {
     bin.extend_from_slice(&data.recipe_id.to_le_bytes());
     bin.extend_from_slice(&data.filter_id.to_le_bytes());
     bin.extend_from_slice(&data.parameters_length.to_le_bytes());
-    data
-        .parameters
+    data.parameters
         .iter()
         .for_each(|x| bin.extend_from_slice(&x.to_le_bytes()));
 }
@@ -460,8 +465,7 @@ fn _serialization_version_0(bin: &mut Vec<u8>, data: &BuildingData) {
     bin.extend_from_slice(&data.recipe_id.to_le_bytes());
     bin.extend_from_slice(&data.filter_id.to_le_bytes());
     bin.extend_from_slice(&data.parameters_length.to_le_bytes());
-    data
-        .parameters
+    data.parameters
         .iter()
         .for_each(|x| bin.extend_from_slice(&x.to_le_bytes()));
 }
@@ -472,5 +476,34 @@ pub fn serialization(bin: &mut Vec<u8>, data: &BuildingData) {
 
 #[cfg(test)]
 mod test {
-    // TODO test
+    use super::*;
+    // FIXME 测试用例有点问题
+    // #[test]
+    // fn test_deserialization_version_neg101() {
+    //     let bin = vec![
+    //         0x9B, 0xFF, 0xFF, 0xFF, 0x57, 0x00, 0x00, 0x00, 0xDB, 0x07, 0x29, 0x00, 0x00, 0xC7,
+    //         0xFF, 0xFF, 0x3F, 0xB1, 0x47, 0x53, 0x41, 0x71, 0xE6, 0x2B, 0xBB, 0x02, 0x00, 0x34,
+    //         0x43, 0xCC, 0x58, 0x26, 0x35, 0x84, 0xC9, 0x54, 0x3E, 0xC7, 0xFF, 0xFF, 0x3F, 0xC5,
+    //         0x07, 0x40, 0x41, 0x71, 0xE6, 0x01, 0xBB, 0xE5, 0xF3, 0x33, 0x43, 0x4A, 0x97, 0x8C,
+    //         0x39, 0x03, 0xEF, 0xB3, 0x43, 0x1F, 0x00, 0x00, 0x00, 0x87, 0x00, 0x00, 0x00, 0xFF,
+    //         0x07, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x01, 0x00, 0x00,
+    //         0x00,
+    //     ];
+
+    //     let result = deserialization_version_neg101(&bin);
+    //     println!("{:#?}", result);
+
+    //     match result {
+    //         Ok((_, data)) => {
+    //             // 验证反序列化结果
+    //             assert_eq!(data._version, -100);
+    //             assert_eq!(data.index, 87); // 根据二进制数据计算的 index 值
+    //             assert_eq!(data.item_id, 0); // 根据二进制数据计算的 item_id 值
+    //                                          // 添加更多字段验证...
+    //         }
+    //         Err(e) => {
+    //             panic!("反序列化失败: {}", e);
+    //         }
+    //     }
+    // }
 }
