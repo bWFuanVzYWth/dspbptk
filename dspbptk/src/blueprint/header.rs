@@ -4,22 +4,22 @@ use nom::{
     Finish, IResult,
 };
 
-use crate::blueprint::error::BlueprintError;
-use crate::blueprint::error::BlueprintError::*;
+use crate::error::DspbptkError;
+use crate::error::DspbptkError::*;
 
 #[derive(Debug, PartialEq)]
-pub struct HeadData<'h> {
-    pub layout: &'h str,
-    pub icons_0: &'h str,
-    pub icons_1: &'h str,
-    pub icons_2: &'h str,
-    pub icons_3: &'h str,
-    pub icons_4: &'h str,
-    pub time: &'h str,
-    pub game_version: &'h str,
-    pub short_desc: &'h str,
-    pub desc: &'h str,
-    pub unknown: &'h str,
+pub struct HeadData<'a> {
+    pub layout: &'a str,
+    pub icons_0: &'a str,
+    pub icons_1: &'a str,
+    pub icons_2: &'a str,
+    pub icons_3: &'a str,
+    pub icons_4: &'a str,
+    pub time: &'a str,
+    pub game_version: &'a str,
+    pub short_desc: &'a str,
+    pub desc: &'a str,
+    pub unknown: &'a str,
 }
 
 fn tag_blueprint(string: &str) -> IResult<&str, &str> {
@@ -70,10 +70,10 @@ pub fn parse_non_finish(string: &str) -> IResult<&str, HeadData> {
     ))
 }
 
-pub fn parse(string: &str) -> Result<HeadData, BlueprintError<String>> {
+pub fn parse(string: &str) -> Result<HeadData, DspbptkError> {
     Ok(parse_non_finish(string)
         .finish()
-        .map_err(|e| CanNotDeserializationHeader(e.to_string()))?
+        .map_err(|e| BrokenHeader(e))?
         .1)
 }
 
@@ -104,8 +104,8 @@ mod test {
         let result = parse(string);
 
         assert_eq!(
-            result,
-            Ok(HeadData {
+            result.ok(),
+            Some(HeadData {
                 layout: "9",
                 icons_0: "0",
                 icons_1: "1",

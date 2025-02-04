@@ -1,6 +1,4 @@
 pub mod content;
-pub mod edit;
-pub mod error;
 pub mod header;
 
 use nom::{
@@ -9,15 +7,15 @@ use nom::{
     Finish, IResult,
 };
 
-use error::BlueprintError;
-use error::BlueprintError::*;
+use crate::error::DspbptkError;
+use crate::error::DspbptkError::*;
 
 #[derive(Debug, PartialEq)]
-pub struct BlueprintData<'b> {
-    pub header: &'b str,
-    pub content: &'b str,
-    pub md5f: &'b str,
-    pub unknown: &'b str,
+pub struct BlueprintData<'a> {
+    pub header: &'a str,
+    pub content: &'a str,
+    pub md5f: &'a str,
+    pub unknown: &'a str,
 }
 
 fn tag_quote(string: &str) -> IResult<&str, &str> {
@@ -49,10 +47,10 @@ fn parse_non_finish(string: &str) -> IResult<&str, BlueprintData> {
     ))
 }
 
-pub fn parse(string: &str) -> Result<BlueprintData, BlueprintError<String>> {
+pub fn parse(string: &str) -> Result<BlueprintData, DspbptkError> {
     Ok(parse_non_finish(string)
         .finish()
-        .map_err(|e| CanNotDeserializationBluePrint(e.to_string()))?
+        .map_err(|e| BrokenBlueprint(e))?
         .1)
 }
 
@@ -75,8 +73,8 @@ mod test {
         let result = parse(string);
 
         assert_eq!(
-            result,
-            Ok(BlueprintData {
+            result.ok(),
+            Some(BlueprintData {
                 header: "BLUEPRINT:0,0,0,0,0,0,0,0,0,0.0.0.0,,",
                 content: "H4sIAAAAAAAAA2NkQAWMUMyARCMBANjTKTsvAAAA",
                 md5f: "E4E5A1CF28F1EC611E33498CBD0DF02B",

@@ -1,14 +1,14 @@
 pub mod area;
 pub mod building;
 
+use crate::error::DspbptkError;
+use crate::error::DspbptkError::*;
+
 use nom::{
     multi::count,
     number::complete::{le_i32, le_i8},
     IResult,
 };
-
-use crate::blueprint::error::BlueprintError;
-use crate::blueprint::error::BlueprintError::*;
 
 #[derive(Debug)]
 pub struct ContentData {
@@ -61,11 +61,11 @@ fn deserialization_non_finish(bin: &[u8]) -> IResult<&[u8], ContentData> {
     ))
 }
 
-fn deserialization(bin: &[u8]) -> Result<ContentData, BlueprintError<String>> {
+fn deserialization(bin: &[u8]) -> Result<ContentData, DspbptkError> {
     use nom::Finish;
     Ok(deserialization_non_finish(bin)
         .finish()
-        .map_err(|e| CanNotDeserializationContent(format!("{:?}", e)))?
+        .map_err(|e| BrokenContent(e))?
         .1)
 }
 
@@ -89,11 +89,11 @@ fn serialization(data: ContentData) -> Vec<u8> {
     bin
 }
 
-fn decode_base64(string: &str) -> Result<Vec<u8>, BlueprintError<String>> {
+fn decode_base64(string: &str) -> Result<Vec<u8>, DspbptkError> {
     use base64::prelude::*;
     Ok(BASE64_STANDARD
         .decode(string)
-        .map_err(|e| ReadBrokenBase64(e.to_string()))?)
+        .map_err(|e| BrokenBase64(e))?)
 }
 
 fn encode_base64(bin: Vec<u8>) -> String {
@@ -101,21 +101,19 @@ fn encode_base64(bin: Vec<u8>) -> String {
     BASE64_STANDARD.encode(bin)
 }
 
-fn decompress_gzip(gzip: Vec<u8>) -> Result<Vec<u8>, BlueprintError<String>> {
+fn decompress_gzip<'a>(gzip: Vec<u8>) -> Result<Vec<u8>, DspbptkError<'a>> {
     use flate2::read::GzDecoder;
     use std::io::Read;
-    let mut decoder = GzDecoder::new(gzip.as_slice());
+    let mut decoder = GzDecoder::new(&gzip[..]);
     let mut bin = Vec::new();
-    decoder
-        .read_to_end(&mut bin)
-        .map_err(|e| ReadBrokenGzip(e.to_string()))?;
+    decoder.read_to_end(&mut bin).map_err(|e| BrokenGzip(e))?;
     Ok(bin)
 }
 
 fn compress_gzip_zopfli(
     bin: Vec<u8>,
     zopfli_options: &zopfli::Options,
-) -> Result<Vec<u8>, BlueprintError<std::io::Error>> {
+) -> Result<Vec<u8>, DspbptkError> {
     let mut gzip = Vec::new();
     zopfli::compress(
         *zopfli_options,
@@ -127,66 +125,50 @@ fn compress_gzip_zopfli(
     Ok(gzip)
 }
 
-fn compress_gzip(
-    bin: Vec<u8>,
-    zopfli_options: &zopfli::Options,
-) -> Result<Vec<u8>, BlueprintError<std::io::Error>> {
+fn compress_gzip(bin: Vec<u8>, zopfli_options: &zopfli::Options) -> Result<Vec<u8>, DspbptkError> {
     compress_gzip_zopfli(bin, zopfli_options)
 }
 
-pub fn gzip_from_string(string: &str) -> Result<Vec<u8>, BlueprintError<String>> {
+pub fn gzip_from_string(string: &str) -> Result<Vec<u8>, DspbptkError> {
     decode_base64(string)
 }
 
-pub fn bin_from_gzip(gzip: Vec<u8>) -> Result<Vec<u8>, BlueprintError<String>> {
+pub fn bin_from_gzip<'a>(gzip: Vec<u8>) -> Result<Vec<u8>, DspbptkError<'a>> {
     decompress_gzip(gzip)
 }
 
-pub fn data_from_bin(bin: Vec<u8>) -> Result<ContentData, BlueprintError<String>> {
-    deserialization(bin.as_slice())
+// FIXME 所有权
+pub fn data_from_bin<'a>(bin: &'a [u8]) -> Result<ContentData, DspbptkError<'a>> {
+    deserialization(bin)
 }
 
-pub fn bin_from_data(data: ContentData) -> Result<Vec<u8>, BlueprintError<String>> {
+pub fn bin_from_data<'a>(data: ContentData) -> Result<Vec<u8>, DspbptkError<'a>> {
     Ok(serialization(data))
 }
 
 pub fn gzip_from_bin(
     bin: Vec<u8>,
     zopfli_options: &zopfli::Options,
-) -> Result<Vec<u8>, BlueprintError<String>> {
-    Ok(compress_gzip(bin, zopfli_options).map_err(|e| CanNotCompressGzip(e.to_string()))?)
+) -> Result<Vec<u8>, DspbptkError> {
+    Ok(compress_gzip(bin, zopfli_options)?)
 }
 
-pub fn string_from_gzip(gzip: Vec<u8>) -> Result<String, BlueprintError<String>> {
-    Ok(encode_base64(gzip))
+pub fn string_from_gzip(gzip: Vec<u8>) -> String {
+    encode_base64(gzip)
 }
 
-pub fn bin_from_string(string: &str) -> Result<Vec<u8>, BlueprintError<String>> {
+pub fn bin_from_string(string: &str) -> Result<Vec<u8>, DspbptkError> {
     let gzip = gzip_from_string(string)?;
     bin_from_gzip(gzip)
-}
-
-pub fn string_from_bin(
-    bin: Vec<u8>,
-    zopfli_options: &zopfli::Options,
-) -> Result<String, BlueprintError<String>> {
-    let gzip = gzip_from_bin(bin, zopfli_options)?;
-    string_from_gzip(gzip)
-}
-
-pub fn data_from_string(string: &str) -> Result<ContentData, BlueprintError<String>> {
-    let gzip = gzip_from_string(string)?;
-    let bin = bin_from_gzip(gzip)?;
-    data_from_bin(bin)
 }
 
 pub fn string_from_data(
     data: ContentData,
     zopfli_options: &zopfli::Options,
-) -> Result<String, BlueprintError<String>> {
+) -> Result<String, DspbptkError> {
     let bin = bin_from_data(data)?;
     let gzip = gzip_from_bin(bin, zopfli_options)?;
-    string_from_gzip(gzip)
+    Ok(string_from_gzip(gzip))
 }
 
 #[cfg(test)]

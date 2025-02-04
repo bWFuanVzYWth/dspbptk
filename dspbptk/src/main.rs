@@ -2,49 +2,51 @@
 // FIXME 现在的warn之类的很乱，逐个检查log等级和输出内容
 
 mod blueprint;
+mod edit;
+mod error;
 mod md5;
 
 use std::path::{Path, PathBuf};
 
 use clap::Parser;
-use log::{debug, error, info, warn};
+use log::{error, info, warn};
 use rayon::prelude::*;
 use walkdir::WalkDir;
 
-use crate::blueprint::content::ContentData;
-use blueprint::error::BlueprintError;
+use crate::error::DspbptkError::*;
 
-fn read_content_file(file_in: &std::path::PathBuf) -> Result<Vec<u8>, std::io::Error> {
-    let content_bin = std::fs::read(file_in)?;
-    debug!("Ok: read from {}", file_in.display());
-    Ok(content_bin)
+fn read_content_file(path: &std::path::PathBuf) -> std::io::Result<Vec<u8>> {
+    match std::fs::read(path) {
+        Ok(content) => {
+            info!("Read content from {}", path.display());
+            Ok(content)
+        }
+        Err(why) => {
+            error!("{:#?}Read content from {}", why, path.display());
+            Err(why)
+        }
+    }
 }
 
-fn write_blueprint_file(
-    path: &std::path::PathBuf,
-    blueprint: String,
-) -> Result<(), std::io::Error> {
-    std::fs::write(path, blueprint)?;
-    Ok(())
+fn read_blueprint_file(path: &std::path::PathBuf) -> std::io::Result<String> {
+    std::fs::read_to_string(path)
 }
 
-fn write_content_file(path: &std::path::PathBuf, content: Vec<u8>) -> Result<(), std::io::Error> {
-    std::fs::write(path, content)?;
-    Ok(())
+fn write_blueprint_file(path: &std::path::PathBuf, blueprint: String) -> std::io::Result<()> {
+    std::fs::write(path, blueprint)
 }
 
-// 读取blueprint文件内容
-fn read_blueprint_file(file_in: &std::path::PathBuf) -> Result<String, std::io::Error> {
-    std::fs::read_to_string(file_in)
+fn write_content_file(path: &std::path::PathBuf, content: Vec<u8>) -> std::io::Result<()> {
+    std::fs::write(path, content)
 }
 
 // 检查是否为有效的blueprint文件
 fn is_valid_blueprint(blueprint_content: &str, file_in: &std::path::PathBuf) -> bool {
     if blueprint_content.chars().take(12).collect::<String>() != "BLUEPRINT:0," {
-        debug!("Not blueprint: {}", file_in.display());
+        info!("Not blueprint: {}", file_in.display());
         return false;
     } else {
-        debug!("Is blueprint: {}", file_in.display());
+        info!("Is blueprint: {}", file_in.display());
         return true;
     }
 }
@@ -123,26 +125,37 @@ fn generate_output_path(
     output_path
 }
 
-fn process_front_end(file_path_in: &PathBuf) -> Result<(String, Vec<u8>), BlueprintError<String>> {
+fn process_front_end(file_path_in: &PathBuf) -> Option<(String, Vec<u8>)> {
     match classify_file_type(file_path_in) {
         FileType::Txt => {
             // 1.1 读取blueprint文件
             let blueprint_str = match read_blueprint_file(file_path_in) {
-                Ok(result) => result,
+                Ok(result) => {
+                    info!("Ok: read from {}", file_path_in.display());
+                    result
+                }
                 Err(why) => {
-                    error!("{:#?}: read from {}", why, file_path_in.display());
-                    return Err(BlueprintError::CanNotReadFile(why.to_string()));
+                    error!("{:#?}", why);
+                    return None;
                 }
             };
 
             if is_valid_blueprint(&blueprint_str, file_path_in) == false {
-                return Err(BlueprintError::NotBlueprintFile(
-                    file_path_in.display().to_string(),
-                ));
+                info!(
+                    "{:#?}",
+                    NotBlueprint(std::ffi::OsString::from(file_path_in))
+                );
+                return None;
             }
 
             // 1.2 解析blueprint
-            let blueprint_data = blueprint::parse(&blueprint_str)?;
+            let blueprint_data = match blueprint::parse(&blueprint_str) {
+                Ok(result) => result,
+                Err(why) => {
+                    error!("{:#?}", why);
+                    return None;
+                }
+            };
             if blueprint_data.unknown.len() > 9 {
                 warn!(
                     "{} unknown after blueprint: (QUITE A LOT)",
@@ -157,25 +170,33 @@ fn process_front_end(file_path_in: &PathBuf) -> Result<(String, Vec<u8>), Bluepr
             }
 
             // 1.3. 解码content
-            let content_bin = blueprint::content::bin_from_string(&blueprint_data.content)?;
-
-            Ok((blueprint_data.header.to_string(), content_bin))
-        }
-        FileType::Content => {
-            // 1.1. 读取content文件
-            let content_bin = match read_content_file(file_path_in) {
+            let content_bin = match blueprint::content::bin_from_string(&blueprint_data.content) {
                 Ok(result) => result,
                 Err(why) => {
-                    error!("{:#?}: read from {}", why, file_path_in.display());
-                    return Err(BlueprintError::CanNotReadFile(why.to_string()));
+                    error!("{:#?}: decode from content", why);
+                    return None;
+                }
+            };
+
+            Some((blueprint_data.header.to_string(), content_bin))
+        }
+        FileType::Content => {
+            let content_bin = match read_content_file(file_path_in) {
+                Ok(result) => {
+                    info!("Ok: read from {}", file_path_in.display());
+                    result
+                }
+                Err(why) => {
+                    error!("{:#?}", CanNotReadFile(why));
+                    return None;
                 }
             };
 
             const HEADER: &str = "BLUEPRINT:0,0,0,0,0,0,0,0,0,0.0.0.0,,";
-            Ok((HEADER.to_string(), content_bin))
+            Some((HEADER.to_string(), content_bin))
         }
         _ => {
-            panic!("Fatal error: unknown file type"); // Should not reach here
+            panic!("Fatal error: unknown file type");
         }
     }
 }
@@ -189,13 +210,13 @@ fn process_middle_layer(
     should_sort_buildings: bool,
 ) {
     use blueprint::content::data_from_bin;
-    use blueprint::edit::{fix_buildings_index, sort_buildings};
+    use edit::{fix_buildings_index, sort_buildings};
 
     // 可以用来分析蓝图数据，备用
     // use blueprint::header::parse;
     // let header_data = parse(header_str)?;
 
-    let mut content_data = match data_from_bin(content_bin) {
+    let mut content_data = match data_from_bin(&content_bin) {
         Ok(content) => content,
         Err(why) => {
             error!("{:#?}: decode from content", why);
@@ -233,7 +254,7 @@ fn process_middle_layer(
 fn process_back_end(
     file_path_out: &PathBuf,
     header_str: &str,
-    content_data: ContentData,
+    content_data: blueprint::content::ContentData,
     zopfli_options: &zopfli::Options,
     output_type: &FileType,
 ) {
@@ -296,7 +317,7 @@ fn process_files(
         let file_path_out = generate_output_path(path_in, path_out, file_path_in, output_type);
 
         match process_front_end(file_path_in) {
-            Ok((header_str, content_bin)) => {
+            Some((header_str, content_bin)) => {
                 process_middle_layer(
                     &file_path_out,
                     &header_str,
@@ -306,13 +327,14 @@ fn process_files(
                     sort_buildings,
                 );
             }
-            Err(why) => {
-                error!("{:#?}: process from {}", why, file_path_in.display());
+            None => {
+                error!("can not process {}", file_path_in.display());
             }
         }
     });
 }
 
+// FIXME 直接传递args的引用
 // 蓝图处理工作流
 fn process_workflow(args: &Args) {
     let zopfli_options = configure_zopfli_options(args);
