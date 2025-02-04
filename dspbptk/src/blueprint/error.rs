@@ -13,7 +13,7 @@ pub enum BlueprintError<E> {
     CanNotCompressGzip(E),
 }
 
-// TODO 简化异常处理，考虑使用AnyHow之类的库
+// TODO 简化异常处理，考虑使用ThisError之类的库
 // TODO 出现异常的时候，打印导致错误的输入数据
 
 impl<E: std::error::Error + 'static> std::error::Error for BlueprintError<E> {
