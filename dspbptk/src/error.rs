@@ -4,10 +4,16 @@ use thiserror::Error;
 
 #[derive(Error, Debug)]
 pub enum DspbptkError<'a> {
-    #[error("Can not read file: {0}")]
-    CanNotReadFile(std::io::Error),
-    #[error("Can not write file: {0}")]
-    CanNotWriteFile(std::io::Error),
+    #[error("Can not read file: {path:?}, because {source}")]
+    CanNotReadFile{
+        path: std::ffi::OsString,
+        source: std::io::Error,
+    },
+    #[error("Can not write file: {path:?}, because {source}")]
+    CanNotWriteFile{
+        path: std::ffi::OsString,
+        source: std::io::Error,
+    },
     #[error("not blueprint: {0:?}")]
     NotBlueprint(std::ffi::OsString),
     #[error("broken base64: {0}")]

@@ -58,7 +58,7 @@ fn calculate_compression_rate(blueprint_in: &str, blueprint_out: &str) -> (usize
     let string_out_length = blueprint_out.len();
     let percent = (string_out_length as f64 / string_in_length as f64) * 100.0;
     info!(
-        "Ok: {:3.3}%, {} -> {}",
+        "{:3.3}%, {} -> {}",
         percent, string_in_length, string_out_length
     );
     (string_in_length, string_out_length, percent)
@@ -131,7 +131,7 @@ fn process_front_end(file_path_in: &PathBuf) -> Option<(String, Vec<u8>)> {
             // 1.1 读取blueprint文件
             let blueprint_str = match read_blueprint_file(file_path_in) {
                 Ok(result) => {
-                    info!("Ok: read from {}", file_path_in.display());
+                    info!("read from {}", file_path_in.display());
                     result
                 }
                 Err(why) => {
@@ -183,11 +183,17 @@ fn process_front_end(file_path_in: &PathBuf) -> Option<(String, Vec<u8>)> {
         FileType::Content => {
             let content_bin = match read_content_file(file_path_in) {
                 Ok(result) => {
-                    info!("Ok: read from {}", file_path_in.display());
+                    info!("read from {}", file_path_in.display());
                     result
                 }
                 Err(why) => {
-                    error!("{:#?}", CanNotReadFile(why));
+                    error!(
+                        "{:#?}",
+                        CanNotReadFile {
+                            path: std::ffi::OsString::from(file_path_in),
+                            source: why
+                        }
+                    );
                     return None;
                 }
             };
@@ -274,7 +280,7 @@ fn process_back_end(
 
             match write_blueprint_file(&file_path_out, blueprint_string) {
                 Ok(_) => {
-                    info!("Ok: encode to {}", file_path_out.display());
+                    info!("encode to {}", file_path_out.display());
                 }
                 Err(why) => {
                     error!("can not write file: {}", why)
@@ -291,7 +297,7 @@ fn process_back_end(
             };
             match write_content_file(&file_path_out, content_bin) {
                 Ok(_) => {
-                    info!("Ok: encode to {}", file_path_out.display());
+                    info!("encode to {}", file_path_out.display());
                 }
                 Err(why) => {
                     error!("can not write file: {}", why)
