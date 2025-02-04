@@ -49,8 +49,7 @@ fn is_valid_blueprint(blueprint_content: &str, file_in: &std::path::PathBuf) -> 
     }
 }
 
-// TODO 接入
-// FIXME 现在的输出难以对应到正确的文件路径，用户反馈不足。
+// TODO 接入，现在的输出难以对应到正确的文件路径，用户反馈不足。
 // 计算压缩率并返回统计信息
 fn calculate_compression_rate(blueprint_in: &str, blueprint_out: &str) -> (usize, usize, f64) {
     let string_in_length = blueprint_in.len();
@@ -123,40 +122,6 @@ fn generate_output_path(
     output_path.set_extension(extension);
     output_path
 }
-// fn generate_output_path(
-//     root_path_in: &Path,
-//     root_path_out: &Path,
-//     relative_path: &Path,
-//     file_type: &FileType,
-// ) -> PathBuf {
-//     let extension = match file_type {
-//         FileType::Txt => "txt",
-//         FileType::Content => "content",
-//         _ => panic!("Unsupported file type"),
-//     };
-
-//     // 去掉相对路径中的根输入部分
-//     let relative_path_stripped = relative_path
-//         .strip_prefix(root_path_in)
-//         // .expect("Relative path is not under root input");
-//         .unwrap_or(relative_path);
-
-//     // 获取文件名和父目录
-//     let file_name = relative_path_stripped
-//         .file_stem()
-//         .unwrap_or_else(|| Path::new("unknown"));
-//         // .expect("File has no name");
-
-//     let parent_dir = relative_path_stripped.parent();
-
-//     // 构建新的相对路径部分
-//     let new_relative: PathBuf = match parent_dir {
-//         Some(p) => p.join(format!("{}.{}", file_name.to_str().unwrap(), extension)),
-//         None => format!("{}.{}", file_name.to_str().unwrap(), extension).into(),
-//     };
-
-//     root_path_out.join(new_relative)
-// }
 
 fn process_front_end(file_path_in: &PathBuf) -> Result<(String, Vec<u8>), BlueprintError<String>> {
     match classify_file_type(file_path_in) {
@@ -221,6 +186,7 @@ fn process_middle_layer(
     content_bin: Vec<u8>,
     zopfli_options: &zopfli::Options,
     output_type: &FileType,
+    should_sort_buildings: bool,
 ) {
     use blueprint::content::data_from_bin;
     use blueprint::edit::{fix_buildings_index, sort_buildings};
@@ -250,7 +216,7 @@ fn process_middle_layer(
     }
 
     // 3. 重新排序建筑
-    {
+    if should_sort_buildings {
         sort_buildings(&mut content_data.buildings);
         fix_buildings_index(&mut content_data.buildings);
     }
@@ -323,10 +289,10 @@ fn process_files(
     path_out: &Path,
     zopfli_options: &zopfli::Options,
     output_type: &FileType,
+    sort_buildings: bool,
 ) {
     // TODO 改成map(|path| result)，收集处理结果
     files.par_iter().for_each(|file_path_in| {
-        // TODO 这个file_path_out为什么放在这里
         let file_path_out = generate_output_path(path_in, path_out, file_path_in, output_type);
 
         match process_front_end(file_path_in) {
@@ -337,6 +303,7 @@ fn process_files(
                     content_bin,
                     zopfli_options,
                     output_type,
+                    sort_buildings,
                 );
             }
             Err(why) => {
@@ -346,7 +313,6 @@ fn process_files(
     });
 }
 
-// FIXME 处理失败就不要输出了
 // 蓝图处理工作流
 fn process_workflow(args: &Args) {
     let zopfli_options = configure_zopfli_options(args);
@@ -361,7 +327,16 @@ fn process_workflow(args: &Args) {
         _ => panic!("Unsupported file type"),
     };
 
-    process_files(files, path_in, path_out, &zopfli_options, &output_type);
+    let sort_buildings = args.sort_buildings;
+
+    process_files(
+        files,
+        path_in,
+        path_out,
+        &zopfli_options,
+        &output_type,
+        sort_buildings,
+    );
 }
 
 // 创建zopfli选项
@@ -386,7 +361,6 @@ fn configure_zopfli_options(args: &Args) -> zopfli::Options {
 }
 
 // TODO 蓝图分析命令：分析蓝图文件，输出统计信息
-// TODO 选项：不重新排序建筑
 
 #[derive(Parser, Debug)]
 #[command(
@@ -410,6 +384,10 @@ struct Args {
     /// Actions of edit blueprint.
     #[clap(short, long, num_args = 0..)]
     actions: Option<Vec<String>>,
+
+    /// Sort buildings for smaller blueprint.
+    #[clap(short, long, default_value = "true")]
+    sort_buildings: bool,
 
     /// Compress arguments: zopfli iteration_count.
     #[clap(long, default_value = "256")]
