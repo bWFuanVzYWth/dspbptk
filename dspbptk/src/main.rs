@@ -13,6 +13,7 @@ use log::{error, info, warn};
 use rayon::prelude::*;
 use walkdir::WalkDir;
 
+use crate::error::DspbptkError;
 use crate::error::DspbptkError::*;
 
 fn read_content_file(path: &std::path::PathBuf) -> std::io::Result<Vec<u8>> {
@@ -32,12 +33,60 @@ fn read_blueprint_file(path: &std::path::PathBuf) -> std::io::Result<String> {
     std::fs::read_to_string(path)
 }
 
-fn write_blueprint_file(path: &std::path::PathBuf, blueprint: String) -> std::io::Result<()> {
-    std::fs::write(path, blueprint)
+// fn write_blueprint_file(path: &std::path::PathBuf, blueprint: String) -> Result<(), DspbptkError> {
+//     // create dir
+
+//     std::fs::write(path, blueprint).map_err(|e| CanNotWriteFile {
+//         path: std::ffi::OsString::from(path),
+//         source: e,
+//     })
+// }
+
+fn write_blueprint_file(path: &PathBuf, blueprint: String) -> Result<(), DspbptkError> {
+    // 获取父目录
+    let parent = match path.parent() {
+        Some(p) => p.to_path_buf(),
+        None => PathBuf::from("."),
+    };
+
+    // 创建所有必要的父目录
+    std::fs::create_dir_all(&parent).map_err(|e| DspbptkError::CanNotWriteFile {
+        path: std::ffi::OsString::from(path),
+        source: e,
+    })?;
+
+    // 写入文件内容到指定路径
+    std::fs::write(path, blueprint).map_err(|e| DspbptkError::CanNotWriteFile {
+        path: std::ffi::OsString::from(path),
+        source: e,
+    })
 }
 
-fn write_content_file(path: &std::path::PathBuf, content: Vec<u8>) -> std::io::Result<()> {
-    std::fs::write(path, content)
+// fn write_content_file(path: &std::path::PathBuf, content: Vec<u8>) -> Result<(), DspbptkError> {
+//     std::fs::write(path, content).map_err(|e| CanNotWriteFile {
+//         path: std::ffi::OsString::from(path),
+//         source: e,
+//     })
+// }
+
+fn write_content_file(path: &PathBuf, content: Vec<u8>) -> Result<(), DspbptkError> {
+    // 获取父目录
+    let parent = match path.parent() {
+        Some(p) => p.to_path_buf(),
+        None => PathBuf::from("."),
+    };
+
+    // 创建所有必要的父目录
+    std::fs::create_dir_all(&parent).map_err(|e| DspbptkError::CanNotWriteFile {
+        path: std::ffi::OsString::from(path),
+        source: e,
+    })?;
+
+    // 写入文件内容到指定路径
+    std::fs::write(path, content).map_err(|e| DspbptkError::CanNotWriteFile {
+        path: std::ffi::OsString::from(path),
+        source: e,
+    })
 }
 
 // 检查是否为有效的blueprint文件
@@ -46,7 +95,6 @@ fn is_valid_blueprint(blueprint_content: &str, file_in: &std::path::PathBuf) -> 
         info!("Not blueprint: {}", file_in.display());
         return false;
     } else {
-        info!("Is blueprint: {}", file_in.display());
         return true;
     }
 }
@@ -141,7 +189,7 @@ fn process_front_end(file_path_in: &PathBuf) -> Option<(String, Vec<u8>)> {
             };
 
             if is_valid_blueprint(&blueprint_str, file_path_in) == false {
-                info!(
+                error!(
                     "{:#?}",
                     NotBlueprint(std::ffi::OsString::from(file_path_in))
                 );
@@ -283,7 +331,7 @@ fn process_back_end(
                     info!("encode to {}", file_path_out.display());
                 }
                 Err(why) => {
-                    error!("can not write file: {}", why)
+                    error!("can not write file: {:?}", why)
                 }
             }
         }
