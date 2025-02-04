@@ -15,32 +15,46 @@ use walkdir::WalkDir;
 
 use crate::error::DspbptkError;
 use crate::error::DspbptkError::*;
+use crate::error::DspbptkInfo::*;
+use crate::error::DspbptkWarn::*;
 
-fn read_content_file(path: &std::path::PathBuf) -> std::io::Result<Vec<u8>> {
+fn read_content_file(path: &std::path::PathBuf) -> Option<Vec<u8>> {
     match std::fs::read(path) {
         Ok(content) => {
-            info!("Read content from {}", path.display());
-            Ok(content)
+            info!("{:?}", ReadFile(std::ffi::OsString::from(path)));
+            Some(content)
         }
         Err(why) => {
-            error!("{:#?}Read content from {}", why, path.display());
-            Err(why)
+            error!(
+                "{:?}",
+                CanNotReadFile {
+                    path: std::ffi::OsString::from(path),
+                    source: why,
+                }
+            );
+            None
         }
     }
 }
 
-fn read_blueprint_file(path: &std::path::PathBuf) -> std::io::Result<String> {
-    std::fs::read_to_string(path)
+fn read_blueprint_file(path: &std::path::PathBuf) -> Option<String> {
+    match std::fs::read_to_string(path) {
+        Ok(content) => {
+            info!("{:?}", ReadFile(std::ffi::OsString::from(path)));
+            Some(content)
+        }
+        Err(why) => {
+            error!(
+                "{:?}",
+                CanNotReadFile {
+                    path: std::ffi::OsString::from(path),
+                    source: why,
+                }
+            );
+            None
+        }
+    }
 }
-
-// fn write_blueprint_file(path: &std::path::PathBuf, blueprint: String) -> Result<(), DspbptkError> {
-//     // create dir
-
-//     std::fs::write(path, blueprint).map_err(|e| CanNotWriteFile {
-//         path: std::ffi::OsString::from(path),
-//         source: e,
-//     })
-// }
 
 fn write_blueprint_file(path: &PathBuf, blueprint: String) -> Result<(), DspbptkError> {
     // 获取父目录
@@ -61,13 +75,6 @@ fn write_blueprint_file(path: &PathBuf, blueprint: String) -> Result<(), Dspbptk
         source: e,
     })
 }
-
-// fn write_content_file(path: &std::path::PathBuf, content: Vec<u8>) -> Result<(), DspbptkError> {
-//     std::fs::write(path, content).map_err(|e| CanNotWriteFile {
-//         path: std::ffi::OsString::from(path),
-//         source: e,
-//     })
-// }
 
 fn write_content_file(path: &PathBuf, content: Vec<u8>) -> Result<(), DspbptkError> {
     // 获取父目录
@@ -90,12 +97,12 @@ fn write_content_file(path: &PathBuf, content: Vec<u8>) -> Result<(), DspbptkErr
 }
 
 // 检查是否为有效的blueprint文件
-fn is_valid_blueprint(blueprint_content: &str, file_in: &std::path::PathBuf) -> bool {
+fn is_valid_blueprint<'a>(blueprint_content: &str, file_in: &std::path::PathBuf) -> Option<()> {
     if blueprint_content.chars().take(12).collect::<String>() != "BLUEPRINT:0," {
-        info!("Not blueprint: {}", file_in.display());
-        return false;
+        error!("{:?}", NotBlueprint(std::ffi::OsString::from(file_in)));
+        None
     } else {
-        return true;
+        Some(())
     }
 }
 
@@ -173,81 +180,21 @@ fn generate_output_path(
     output_path
 }
 
-fn process_front_end(file_path_in: &PathBuf) -> Option<(String, Vec<u8>)> {
+fn process_front_end(file_path_in: &PathBuf) -> Option<(String, blueprint::content::ContentData)> {
     match classify_file_type(file_path_in) {
         FileType::Txt => {
-            // 1.1 读取blueprint文件
-            let blueprint_str = match read_blueprint_file(file_path_in) {
-                Ok(result) => {
-                    info!("read from {}", file_path_in.display());
-                    result
-                }
-                Err(why) => {
-                    error!("{:#?}", why);
-                    return None;
-                }
-            };
-
-            if is_valid_blueprint(&blueprint_str, file_path_in) == false {
-                error!(
-                    "{:#?}",
-                    NotBlueprint(std::ffi::OsString::from(file_path_in))
-                );
-                return None;
-            }
-
-            // 1.2 解析blueprint
-            let blueprint_data = match blueprint::parse(&blueprint_str) {
-                Ok(result) => result,
-                Err(why) => {
-                    error!("{:#?}", why);
-                    return None;
-                }
-            };
-            if blueprint_data.unknown.len() > 9 {
-                warn!(
-                    "{} unknown after blueprint: (QUITE A LOT)",
-                    blueprint_data.unknown.len()
-                );
-            } else if blueprint_data.unknown.len() > 0 {
-                warn!(
-                    "{} unknown after blueprint: {:?}",
-                    blueprint_data.unknown.len(),
-                    blueprint_data.unknown
-                );
-            }
-
-            // 1.3. 解码content
-            let content_bin = match blueprint::content::bin_from_string(&blueprint_data.content) {
-                Ok(result) => result,
-                Err(why) => {
-                    error!("{:#?}: decode from content", why);
-                    return None;
-                }
-            };
-
-            Some((blueprint_data.header.to_string(), content_bin))
+            let blueprint_str = read_blueprint_file(file_path_in)?;
+            is_valid_blueprint(&blueprint_str, file_path_in)?;
+            let blueprint_data = blueprint::parse(&blueprint_str)?;
+            let content_bin = blueprint::content::bin_from_string(&blueprint_data.content)?;
+            let content_data = blueprint::content::data_from_bin(&content_bin)?;
+            Some((blueprint_data.header.to_string(), content_data))
         }
         FileType::Content => {
-            let content_bin = match read_content_file(file_path_in) {
-                Ok(result) => {
-                    info!("read from {}", file_path_in.display());
-                    result
-                }
-                Err(why) => {
-                    error!(
-                        "{:#?}",
-                        CanNotReadFile {
-                            path: std::ffi::OsString::from(file_path_in),
-                            source: why
-                        }
-                    );
-                    return None;
-                }
-            };
-
+            let content_bin = read_content_file(file_path_in)?;
+            let content_data = blueprint::content::data_from_bin(&content_bin)?;
             const HEADER: &str = "BLUEPRINT:0,0,0,0,0,0,0,0,0,0.0.0.0,,";
-            Some((HEADER.to_string(), content_bin))
+            Some((HEADER.to_string(), content_data))
         }
         _ => {
             panic!("Fatal error: unknown file type");
@@ -255,54 +202,28 @@ fn process_front_end(file_path_in: &PathBuf) -> Option<(String, Vec<u8>)> {
     }
 }
 
-fn process_middle_layer(
+// TODO 就地处理错误，用option而不是result处理
+fn process_middle_layer<'a>(
     file_path_out: &PathBuf,
-    header_str: &str,
-    content_bin: Vec<u8>,
+    header_str: String,
+    content_bin_in: Vec<u8>,
     zopfli_options: &zopfli::Options,
     output_type: &FileType,
     should_sort_buildings: bool,
-) {
+) -> Result<(String, Vec<u8>), DspbptkError<'a>> {
     use blueprint::content::data_from_bin;
     use edit::{fix_buildings_index, sort_buildings};
 
-    // 可以用来分析蓝图数据，备用
-    // use blueprint::header::parse;
-    // let header_data = parse(header_str)?;
+    // FIXME 丢到前端去
+    let mut content_data = data_from_bin(&content_bin_in)?;
 
-    let mut content_data = match data_from_bin(&content_bin) {
-        Ok(content) => content,
-        Err(why) => {
-            error!("{:#?}: decode from content", why);
-            return;
-        }
-    };
-    if content_data.unknown.len() > 9 {
-        warn!(
-            "{} unknown after content: (QUITE A LOT)",
-            content_data.unknown.len()
-        );
-    } else if content_data.unknown.len() > 0 {
-        warn!(
-            "{} unknown after content: {:?}",
-            content_data.unknown.len(),
-            content_data.unknown
-        );
-    }
-
-    // 3. 重新排序建筑
+    // edit
     if should_sort_buildings {
         sort_buildings(&mut content_data.buildings);
         fix_buildings_index(&mut content_data.buildings);
     }
 
-    process_back_end(
-        file_path_out,
-        header_str,
-        content_data,
-        zopfli_options,
-        output_type,
-    );
+    Ok((header_str, content_data))
 }
 
 fn process_back_end(
@@ -320,7 +241,7 @@ fn process_back_end(
             let content_string = match string_from_data(content_data, zopfli_options) {
                 Ok(content) => content,
                 Err(why) => {
-                    error!("{:#?}: encode from {}", why, file_path_out.display());
+                    error!("{:?}: encode from {}", why, file_path_out.display());
                     return;
                 }
             };
@@ -339,7 +260,7 @@ fn process_back_end(
             let content_bin = match bin_from_data(content_data) {
                 Ok(content) => content,
                 Err(why) => {
-                    error!("{:#?}: encode from {}", why, file_path_out.display());
+                    error!("{:?}: encode from {}", why, file_path_out.display());
                     return;
                 }
             };

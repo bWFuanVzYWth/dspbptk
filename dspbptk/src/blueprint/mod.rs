@@ -1,6 +1,8 @@
 pub mod content;
 pub mod header;
 
+use log::{error, warn};
+
 use nom::{
     bytes::complete::{tag, take, take_till},
     sequence::preceded,
@@ -9,6 +11,8 @@ use nom::{
 
 use crate::error::DspbptkError;
 use crate::error::DspbptkError::*;
+use crate::error::DspbptkInfo::*;
+use crate::error::DspbptkWarn::*;
 
 #[derive(Debug, PartialEq)]
 pub struct BlueprintData<'a> {
@@ -47,11 +51,22 @@ fn parse_non_finish(string: &str) -> IResult<&str, BlueprintData> {
     ))
 }
 
-pub fn parse(string: &str) -> Result<BlueprintData, DspbptkError> {
-    Ok(parse_non_finish(string)
-        .finish()
-        .map_err(|e| BrokenBlueprint(e))?
-        .1)
+pub fn parse(string: &str) -> Option<BlueprintData> {
+    match parse_non_finish(string).finish() {
+        Err(why) => {
+            error!("{:?}", BrokenBlueprint(why));
+            None
+        }
+        Ok((unknown, result)) => {
+            let unknown_length = unknown.len();
+            match unknown_length {
+                10.. => warn!("{:?}", LotUnknownAfterBlueprint(unknown_length)),
+                1..=9 => warn!("{:?}", FewUnknownAfterBlueprint(unknown)),
+                _ => {}
+            };
+            Some(result)
+        }
+    }
 }
 
 pub fn serialization(header: &str, content: &str) -> String {
@@ -73,7 +88,7 @@ mod test {
         let result = parse(string);
 
         assert_eq!(
-            result.ok(),
+            result,
             Some(BlueprintData {
                 header: "BLUEPRINT:0,0,0,0,0,0,0,0,0,0.0.0.0,,",
                 content: "H4sIAAAAAAAAA2NkQAWMUMyARCMBANjTKTsvAAAA",

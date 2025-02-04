@@ -1,8 +1,12 @@
 pub mod area;
 pub mod building;
 
+use log::{error, warn};
+
 use crate::error::DspbptkError;
 use crate::error::DspbptkError::*;
+use crate::error::DspbptkInfo::*;
+use crate::error::DspbptkWarn::*;
 
 use nom::{
     multi::count,
@@ -61,12 +65,23 @@ fn deserialization_non_finish(bin: &[u8]) -> IResult<&[u8], ContentData> {
     ))
 }
 
-fn deserialization(bin: &[u8]) -> Result<ContentData, DspbptkError> {
+fn deserialization(bin: &[u8]) -> Option<ContentData> {
     use nom::Finish;
-    Ok(deserialization_non_finish(bin)
-        .finish()
-        .map_err(|e| BrokenContent(e))?
-        .1)
+    match deserialization_non_finish(bin).finish() {
+        Err(why) => {
+            error!("{:?}", BrokenContent(why));
+            None
+        }
+        Ok((unknown, result)) => {
+            let unknown_length = unknown.len();
+            match unknown_length {
+                10.. => warn!("{:?}", LotUnknownAfterContent(unknown_length)),
+                1..=9 => warn!("{:?}", FewUnknownAfterContent(unknown)),
+                _ => {}
+            };
+            Some(result)
+        }
+    }
 }
 
 fn serialization(data: ContentData) -> Vec<u8> {
@@ -89,11 +104,15 @@ fn serialization(data: ContentData) -> Vec<u8> {
     bin
 }
 
-fn decode_base64(string: &str) -> Result<Vec<u8>, DspbptkError> {
+fn decode_base64(string: &str) -> Option<Vec<u8>> {
     use base64::prelude::*;
-    Ok(BASE64_STANDARD
-        .decode(string)
-        .map_err(|e| BrokenBase64(e))?)
+    match BASE64_STANDARD.decode(string) {
+        Ok(bin) => Some(bin),
+        Err(why) => {
+            error!("{:?}", BrokenBase64(why));
+            None
+        }
+    }
 }
 
 fn encode_base64(bin: Vec<u8>) -> String {
@@ -101,13 +120,18 @@ fn encode_base64(bin: Vec<u8>) -> String {
     BASE64_STANDARD.encode(bin)
 }
 
-fn decompress_gzip<'a>(gzip: Vec<u8>) -> Result<Vec<u8>, DspbptkError<'a>> {
+fn decompress_gzip<'a>(gzip: Vec<u8>) -> Option<Vec<u8>> {
     use flate2::read::GzDecoder;
     use std::io::Read;
     let mut decoder = GzDecoder::new(&gzip[..]);
     let mut bin = Vec::new();
-    decoder.read_to_end(&mut bin).map_err(|e| BrokenGzip(e))?;
-    Ok(bin)
+    match decoder.read_to_end(&mut bin) {
+        Ok(_size) => Some(bin),
+        Err(why) => {
+            error!("{:?}", BrokenGzip(why));
+            None
+        }
+    }
 }
 
 fn compress_gzip_zopfli(
@@ -129,16 +153,16 @@ fn compress_gzip(bin: Vec<u8>, zopfli_options: &zopfli::Options) -> Result<Vec<u
     compress_gzip_zopfli(bin, zopfli_options)
 }
 
-pub fn gzip_from_string(string: &str) -> Result<Vec<u8>, DspbptkError> {
+pub fn gzip_from_string(string: &str) -> Option<Vec<u8>> {
     decode_base64(string)
 }
 
-pub fn bin_from_gzip<'a>(gzip: Vec<u8>) -> Result<Vec<u8>, DspbptkError<'a>> {
+pub fn bin_from_gzip<'a>(gzip: Vec<u8>) -> Option<Vec<u8>> {
     decompress_gzip(gzip)
 }
 
 // FIXME 所有权
-pub fn data_from_bin<'a>(bin: &'a [u8]) -> Result<ContentData, DspbptkError<'a>> {
+pub fn data_from_bin<'a>(bin: &'a [u8]) -> Option<ContentData> {
     deserialization(bin)
 }
 
@@ -157,7 +181,7 @@ pub fn string_from_gzip(gzip: Vec<u8>) -> String {
     encode_base64(gzip)
 }
 
-pub fn bin_from_string(string: &str) -> Result<Vec<u8>, DspbptkError> {
+pub fn bin_from_string(string: &str) -> Option<Vec<u8>> {
     let gzip = gzip_from_string(string)?;
     bin_from_gzip(gzip)
 }

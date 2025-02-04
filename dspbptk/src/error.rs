@@ -1,16 +1,14 @@
 use thiserror::Error;
 
-// FIXME nom::error::ErrorKind
-
 #[derive(Error, Debug)]
 pub enum DspbptkError<'a> {
     #[error("Can not read file: {path:?}, because {source}")]
-    CanNotReadFile{
+    CanNotReadFile {
         path: std::ffi::OsString,
         source: std::io::Error,
     },
     #[error("Can not write file: {path:?}, because {source}")]
-    CanNotWriteFile{
+    CanNotWriteFile {
         path: std::ffi::OsString,
         source: std::io::Error,
     },
@@ -28,4 +26,26 @@ pub enum DspbptkError<'a> {
     BrokenContent(nom::error::Error<&'a [u8]>),
     #[error("can not compress gzip: {0}")]
     CanNotCompressGzip(std::io::Error),
+}
+
+#[derive(Error, Debug)]
+pub enum DspbptkWarn<'a> {
+    #[error("few unknown after blueprint: {0:?}")]
+    FewUnknownAfterBlueprint(&'a str),
+    #[error("lot unknown after blueprint: length = {0}")]
+    LotUnknownAfterBlueprint(usize),
+    #[error("few unknown after content: {0:?}")]
+    FewUnknownAfterContent(&'a [u8]),
+    #[error("lot unknown after content: length = {0}")]
+    LotUnknownAfterContent(usize),
+    #[error("unexpected MD5F: expected = {0:?}, actual = {1:?}")]
+    UnexpectedMD5F(&'a str, &'a str),
+}
+
+#[derive(Error, Debug)]
+pub enum DspbptkInfo {
+    #[error("read file: {0:?}")]
+    ReadFile(std::ffi::OsString),
+    #[error("write file: {0:?}")]
+    WriteFile(std::ffi::OsString),
 }
