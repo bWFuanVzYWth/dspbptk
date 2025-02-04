@@ -38,7 +38,6 @@ fn read_blueprint_file(file_in: &std::path::PathBuf) -> Result<String, std::io::
     std::fs::read_to_string(file_in)
 }
 
-// FIXME 检查还没接入
 // 检查是否为有效的blueprint文件
 fn is_valid_blueprint(blueprint_content: &str, file_in: &std::path::PathBuf) -> bool {
     if blueprint_content.chars().take(12).collect::<String>() != "BLUEPRINT:0," {
@@ -104,16 +103,60 @@ fn generate_output_path(
     root_path_in: &Path,
     root_path_out: &Path,
     relative_path: &Path,
+    file_type: &FileType,
 ) -> PathBuf {
+    let extension = match file_type {
+        FileType::Txt => "txt",
+        FileType::Content => "content",
+        _ => panic!("Unsupported file type"),
+    };
+
     let relative_path = relative_path.strip_prefix(root_path_in).unwrap();
-    let output_path = root_path_out;
-    if relative_path == Path::new("") {
-        output_path.to_path_buf()
+    // 把relative_path的文件后缀名替换为file_type的后缀名
+
+    let mut output_path = if relative_path == Path::new("") {
+        root_path_out.to_path_buf()
     } else {
-        output_path.join(relative_path)
-    }
-    // FIXME 处理content的后缀名
+        root_path_out.join(relative_path)
+    };
+
+    output_path.set_extension(extension);
+    output_path
 }
+// fn generate_output_path(
+//     root_path_in: &Path,
+//     root_path_out: &Path,
+//     relative_path: &Path,
+//     file_type: &FileType,
+// ) -> PathBuf {
+//     let extension = match file_type {
+//         FileType::Txt => "txt",
+//         FileType::Content => "content",
+//         _ => panic!("Unsupported file type"),
+//     };
+
+//     // 去掉相对路径中的根输入部分
+//     let relative_path_stripped = relative_path
+//         .strip_prefix(root_path_in)
+//         // .expect("Relative path is not under root input");
+//         .unwrap_or(relative_path);
+
+//     // 获取文件名和父目录
+//     let file_name = relative_path_stripped
+//         .file_stem()
+//         .unwrap_or_else(|| Path::new("unknown"));
+//         // .expect("File has no name");
+
+//     let parent_dir = relative_path_stripped.parent();
+
+//     // 构建新的相对路径部分
+//     let new_relative: PathBuf = match parent_dir {
+//         Some(p) => p.join(format!("{}.{}", file_name.to_str().unwrap(), extension)),
+//         None => format!("{}.{}", file_name.to_str().unwrap(), extension).into(),
+//     };
+
+//     root_path_out.join(new_relative)
+// }
 
 fn process_front_end(file_path_in: &PathBuf) -> Result<(String, Vec<u8>), BlueprintError<String>> {
     match classify_file_type(file_path_in) {
@@ -284,7 +327,7 @@ fn process_files(
     // TODO 改成map(|path| result)，收集处理结果
     files.par_iter().for_each(|file_path_in| {
         // TODO 这个file_path_out为什么放在这里
-        let file_path_out = generate_output_path(path_in, path_out, file_path_in);
+        let file_path_out = generate_output_path(path_in, path_out, file_path_in, output_type);
 
         match process_front_end(file_path_in) {
             Ok((header_str, content_bin)) => {
@@ -311,8 +354,14 @@ fn process_workflow(args: &Args) {
     let path_out = args.output.as_deref().unwrap_or(path_in);
 
     let files = collect_files(path_in);
+    // TODO
+    let output_type = match args.filetype.as_deref() {
+        Some("txt") => FileType::Txt,
+        Some("content") => FileType::Content,
+        _ => panic!("Unsupported file type"),
+    };
 
-    process_files(files, path_in, path_out, &zopfli_options, &FileType::Txt);
+    process_files(files, path_in, path_out, &zopfli_options, &output_type);
 }
 
 // 创建zopfli选项
@@ -353,6 +402,10 @@ struct Args {
     /// Output to file/dir. (*.txt dir/)
     #[clap(long, short)]
     output: Option<std::path::PathBuf>,
+
+    /// Output type: txt, content.
+    #[clap(long, short, default_value = "txt")]
+    filetype: Option<String>,
 
     /// Actions of edit blueprint.
     #[clap(short, long, num_args = 0..)]
