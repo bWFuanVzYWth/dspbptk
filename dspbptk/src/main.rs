@@ -34,18 +34,8 @@ fn write_content_file(path: &std::path::PathBuf, content: Vec<u8>) -> Result<(),
 }
 
 // 读取blueprint文件内容
-// FIXME 返回错误而不是空字符串
-fn read_blueprint_file(file_in: &std::path::PathBuf) -> String {
-    match std::fs::read_to_string(file_in) {
-        Ok(result) => {
-            debug!("Ok: read from {}", file_in.display());
-            result
-        }
-        Err(why) => {
-            error!("{:#?}: read from {}", why, file_in.display());
-            return "".to_string(); // 返回空字符串以避免后续处理失败
-        }
-    }
+fn read_blueprint_file(file_in: &std::path::PathBuf) -> Result<String, std::io::Error> {
+    std::fs::read_to_string(file_in)
 }
 
 // FIXME 检查还没接入
@@ -129,7 +119,19 @@ fn process_front_end(file_path_in: &PathBuf) -> Result<(String, Vec<u8>), Bluepr
     match classify_file_type(file_path_in) {
         FileType::Txt => {
             // 1.1 读取blueprint文件
-            let blueprint_str = read_blueprint_file(file_path_in);
+            let blueprint_str = match read_blueprint_file(file_path_in) {
+                Ok(result) => result,
+                Err(why) => {
+                    error!("{:#?}: read from {}", why, file_path_in.display());
+                    return Err(BlueprintError::CanNotReadFile(why.to_string()));
+                }
+            };
+
+            if is_valid_blueprint(&blueprint_str, file_path_in) == false {
+                return Err(BlueprintError::NotBlueprintFile(
+                    file_path_in.display().to_string(),
+                ));
+            }
 
             // 1.2 解析blueprint
             let blueprint_data = blueprint::parse(&blueprint_str)?;
@@ -281,9 +283,8 @@ fn process_files(
 ) {
     // TODO 改成map(|path| result)，收集处理结果
     files.par_iter().for_each(|file_path_in| {
+        // TODO 这个file_path_out为什么放在这里
         let file_path_out = generate_output_path(path_in, path_out, file_path_in);
-
-        // 1. 前端：输入
 
         match process_front_end(file_path_in) {
             Ok((header_str, content_bin)) => {

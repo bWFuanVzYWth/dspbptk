@@ -2,14 +2,12 @@
 pub enum BlueprintError<E> {
     CanNotReadFile(E),
     CanNotWriteFile(E),
-
+    NotBlueprintFile(E),
     ReadBrokenBase64(E),
     ReadBrokenGzip(E),
-
     CanNotDeserializationBluePrint(E),
     CanNotDeserializationHeader(E),
     CanNotDeserializationContent(E),
-
     CanNotCompressGzip(E),
 }
 
@@ -21,14 +19,12 @@ impl<E: std::error::Error + 'static> std::error::Error for BlueprintError<E> {
         match self {
             BlueprintError::CanNotReadFile(e) => Some(e),
             BlueprintError::CanNotWriteFile(e) => Some(e),
-
+            BlueprintError::NotBlueprintFile(e) => Some(e),
             BlueprintError::ReadBrokenBase64(e) => Some(e),
             BlueprintError::ReadBrokenGzip(e) => Some(e),
-
             BlueprintError::CanNotDeserializationBluePrint(e) => Some(e),
             BlueprintError::CanNotDeserializationHeader(e) => Some(e),
             BlueprintError::CanNotDeserializationContent(e) => Some(e),
-
             BlueprintError::CanNotCompressGzip(e) => Some(e),
         }
     }
@@ -39,10 +35,9 @@ impl<E: std::error::Error> std::fmt::Display for BlueprintError<E> {
         match self {
             BlueprintError::CanNotWriteFile(e) => write!(f, "can not write file: {:#?}", e),
             BlueprintError::CanNotReadFile(e) => write!(f, "can not read file: {:#?}", e),
-
+            BlueprintError::NotBlueprintFile(e) => write!(f, "not blueprint file: {:#?}", e),
             BlueprintError::ReadBrokenBase64(e) => write!(f, "read broken base64: {:#?}", e),
             BlueprintError::ReadBrokenGzip(e) => write!(f, "read broken gzip: {:#?}", e),
-
             BlueprintError::CanNotDeserializationBluePrint(e) => {
                 write!(f, "can not parse blueprint: {:#?}", e)
             }
@@ -52,7 +47,6 @@ impl<E: std::error::Error> std::fmt::Display for BlueprintError<E> {
             BlueprintError::CanNotDeserializationContent(e) => {
                 write!(f, "can not parse memory_stream: {:#?}", e)
             }
-
             BlueprintError::CanNotCompressGzip(e) => write!(f, "can not compress gzip: {:#?}", e),
         }
     }
