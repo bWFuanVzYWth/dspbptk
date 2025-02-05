@@ -1,5 +1,4 @@
 // TODO 整理测试用例
-// FIXME 现在的warn之类的很乱，逐个检查log等级和输出内容
 
 mod blueprint;
 mod edit;
@@ -18,6 +17,7 @@ use crate::error::DspbptkError::*;
 use crate::error::DspbptkInfo::*;
 use crate::error::DspbptkWarn::*;
 
+use crate::blueprint::header::HeaderData;
 use blueprint::content::ContentData;
 
 fn read_content_file(path: &std::path::PathBuf) -> Option<Vec<u8>> {
@@ -55,6 +55,31 @@ fn read_blueprint_file(path: &std::path::PathBuf) -> Option<String> {
             );
             None
         }
+    }
+}
+
+fn is_valid_blueprint<'a>(blueprint_content: &str, file_in: &std::path::PathBuf) -> Option<()> {
+    if blueprint_content.chars().take(12).collect::<String>() != "BLUEPRINT:0," {
+        error!("{:?}", NotBlueprint(std::ffi::OsString::from(file_in)));
+        None
+    } else {
+        Some(())
+    }
+}
+
+fn read_file(path: &PathBuf) -> Option<BlueprintKind> {
+    use crate::BlueprintKind::*;
+    match classify_file_type(path) {
+        FileType::Txt => {
+            let blueprint_string = read_blueprint_file(path)?;
+            is_valid_blueprint(&blueprint_string, path)?;
+            Some(Blueprint(blueprint_string))
+        }
+        FileType::Content => {
+            let content_bin = read_content_file(path)?;
+            Some(Content(content_bin))
+        }
+        _ => None,
     }
 }
 
@@ -112,13 +137,10 @@ fn write_content_file(path: &PathBuf, content: Vec<u8>) -> Option<()> {
     }
 }
 
-// 检查是否为有效的blueprint文件
-fn is_valid_blueprint<'a>(blueprint_content: &str, file_in: &std::path::PathBuf) -> Option<()> {
-    if blueprint_content.chars().take(12).collect::<String>() != "BLUEPRINT:0," {
-        error!("{:?}", NotBlueprint(std::ffi::OsString::from(file_in)));
-        None
-    } else {
-        Some(())
+fn write_file(path: &PathBuf, blueprint_kind: BlueprintKind) -> Option<()> {
+    match blueprint_kind {
+        BlueprintKind::Blueprint(blueprint) => write_blueprint_file(path, blueprint),
+        BlueprintKind::Content(content) => write_content_file(path, content),
     }
 }
 
@@ -128,6 +150,7 @@ fn calculate_compression_rate(blueprint_in: &str, blueprint_out: &str) -> (usize
     let string_in_length = blueprint_in.len();
     let string_out_length = blueprint_out.len();
     let percent = (string_out_length as f64 / string_in_length as f64) * 100.0;
+    // FIXME 改结构化
     info!(
         "{:3.3}%, {} -> {}",
         percent, string_in_length, string_out_length
@@ -193,38 +216,41 @@ fn generate_output_path(
     output_path
 }
 
-fn process_front_end(file_path_in: &PathBuf) -> Option<(String, blueprint::content::ContentData)> {
-    match classify_file_type(file_path_in) {
-        FileType::Txt => {
-            let blueprint_str = read_blueprint_file(file_path_in)?;
-            is_valid_blueprint(&blueprint_str, file_path_in)?;
-            let blueprint_data = blueprint::parse(&blueprint_str)?;
+pub enum BlueprintKind {
+    Blueprint(String),
+    Content(Vec<u8>),
+}
+
+// FIXME 把文件读写提出去
+fn process_front_end<'a>(blueprint: BlueprintKind) -> Option<(HeaderData, ContentData)> {
+    match blueprint {
+        BlueprintKind::Blueprint(blueprint_string) => {
+            let blueprint_data = blueprint::parse(&blueprint_string)?;
             let content_bin = blueprint::content::bin_from_string(&blueprint_data.content)?;
             let content_data = blueprint::content::data_from_bin(&content_bin)?;
-            Some((blueprint_data.header.to_string(), content_data))
+            let header_data = blueprint::header::parse(&blueprint_data.header)?;
+            Some((header_data, content_data))
         }
-        FileType::Content => {
-            let content_bin = read_content_file(file_path_in)?;
+        BlueprintKind::Content(content_bin) => {
             let content_data = blueprint::content::data_from_bin(&content_bin)?;
             const HEADER: &str = "BLUEPRINT:0,0,0,0,0,0,0,0,0,0.0.0.0,,";
-            Some((HEADER.to_string(), content_data))
+            let header_data = blueprint::header::parse(HEADER)?;
+            Some((header_data, content_data))
         }
-        _ => {
-            panic!("Fatal error: unknown file type");
-        }
+        _ => None,
     }
 }
 
 fn process_middle_layer(
-    header_str_in: String,
+    header_data_in: HeaderData,
     content_data_in: ContentData,
     should_sort_buildings: bool,
-) -> Option<(String, ContentData)> {
+) -> Option<(HeaderData, ContentData)> {
     use edit::{fix_buildings_index, sort_buildings};
 
     // 这里应该是唯一一处深拷贝，这是符合直觉的，可以极大优化用户的使用体验
     // FIXME 传入解析过的头，而不是字符串
-    let header_str_out = header_str_in.clone();
+    let header_data_out = header_data_in.clone();
     let mut content_data_out = content_data_in.clone();
 
     // edit
@@ -233,31 +259,28 @@ fn process_middle_layer(
         fix_buildings_index(&mut content_data_out.buildings);
     }
 
-    Some((header_str_out, content_data_out))
+    Some((header_data_out, content_data_out))
 }
 
 fn process_back_end(
-    file_path_out: &PathBuf,
-    header_str: &str,
-    content_data: blueprint::content::ContentData,
+    header_data: &HeaderData,
+    content_data: &ContentData,
     zopfli_options: &zopfli::Options,
     output_type: &FileType,
-) -> Option<()> {
+) -> Option<BlueprintKind> {
     use crate::blueprint::content::bin_from_data;
     use crate::blueprint::content::string_from_data;
     match output_type {
         FileType::Txt => {
+            let header_string = blueprint::header::serialization(header_data);
             let content_string = string_from_data(content_data, zopfli_options)?;
-            let blueprint_string = blueprint::serialization(header_str, &content_string);
-            write_blueprint_file(&file_path_out, blueprint_string)
+            Some(BlueprintKind::Blueprint(blueprint::serialization(
+                &header_string,
+                &content_string,
+            )))
         }
-        FileType::Content => {
-            let content_bin = bin_from_data(content_data);
-            write_content_file(&file_path_out, content_bin)
-        }
-        _ => {
-            panic!("Fatal error: unknown file type");
-        }
+        FileType::Content => Some(BlueprintKind::Content(bin_from_data(content_data))),
+        _ => None,
     }
 }
 
@@ -269,17 +292,20 @@ fn process_one_file(
     output_type: &FileType,
     sort_buildings: bool,
 ) -> Option<()> {
-    let file_path_out = generate_output_path(path_in, path_out, file_path_in, output_type);
-    let (header_data_in, content_data_in) = process_front_end(file_path_in)?;
+    let blueprint_kind_in = read_file(file_path_in)?;
+
+    let (header_data_in, content_data_in) = process_front_end(blueprint_kind_in)?;
     let (header_data_out, content_data_out) =
         process_middle_layer(header_data_in, content_data_in, sort_buildings)?;
-    process_back_end(
-        &file_path_out,
+    let blueprint_kind_out = process_back_end(
         &header_data_out,
-        content_data_out,
-        zopfli_options,
-        output_type,
-    )
+        &content_data_out,
+        &zopfli_options,
+        &output_type,
+    )?;
+
+    let file_path_out = generate_output_path(path_in, path_out, file_path_in, output_type);
+    write_file(&file_path_out, blueprint_kind_out)
 }
 
 fn process_all_files(

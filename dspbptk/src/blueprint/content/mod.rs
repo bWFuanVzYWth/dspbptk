@@ -84,7 +84,7 @@ fn deserialization(bin: &[u8]) -> Option<ContentData> {
     }
 }
 
-fn serialization(data: ContentData) -> Vec<u8> {
+fn serialization(data: &ContentData) -> Vec<u8> {
     let mut bin = Vec::new();
     bin.extend_from_slice(&data.patch.to_le_bytes());
     bin.extend_from_slice(&data.cursor_offset_x.to_le_bytes());
@@ -167,7 +167,7 @@ pub fn data_from_bin<'a>(bin: &'a [u8]) -> Option<ContentData> {
     deserialization(bin)
 }
 
-pub fn bin_from_data<'a>(data: ContentData) -> Vec<u8> {
+pub fn bin_from_data<'a>(data: &ContentData) -> Vec<u8> {
     serialization(data)
 }
 
@@ -184,7 +184,7 @@ pub fn bin_from_string(string: &str) -> Option<Vec<u8>> {
     bin_from_gzip(gzip)
 }
 
-pub fn string_from_data(data: ContentData, zopfli_options: &zopfli::Options) -> Option<String> {
+pub fn string_from_data(data: &ContentData, zopfli_options: &zopfli::Options) -> Option<String> {
     let bin = bin_from_data(data);
     let gzip = gzip_from_bin(bin, zopfli_options)?;
     Some(string_from_gzip(gzip))

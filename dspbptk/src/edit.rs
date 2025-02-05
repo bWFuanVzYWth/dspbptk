@@ -123,6 +123,7 @@ fn compute_3d_rotation_vector(
     Vector3::new(to_quat.i, to_quat.j, to_quat.k)
 }
 
+// FIXME 把warn改结构化
 // 将局部偏移转换为方向向量
 pub fn local_offset_to_direction(local_offset_x: f32, local_offset_y: f32) -> Vector3<f64> {
     const ANGLE_SCALE: f64 = PI / HALF_EQUATORIAL_GRID;

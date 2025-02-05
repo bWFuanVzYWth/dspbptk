@@ -4,22 +4,24 @@ use nom::{
     Finish, IResult,
 };
 
+use log::{error, warn};
+
 use crate::error::DspbptkError;
 use crate::error::DspbptkError::*;
 
 #[derive(Debug, Clone, PartialEq)]
-pub struct HeadData<'a> {
-    pub layout: &'a str,
-    pub icons_0: &'a str,
-    pub icons_1: &'a str,
-    pub icons_2: &'a str,
-    pub icons_3: &'a str,
-    pub icons_4: &'a str,
-    pub time: &'a str,
-    pub game_version: &'a str,
-    pub short_desc: &'a str,
-    pub desc: &'a str,
-    pub unknown: &'a str,
+pub struct HeaderData {
+    pub layout: String,
+    pub icons_0: String,
+    pub icons_1: String,
+    pub icons_2: String,
+    pub icons_3: String,
+    pub icons_4: String,
+    pub time: String,
+    pub game_version: String,
+    pub short_desc: String,
+    pub desc: String,
+    pub unknown: String,
 }
 
 fn tag_blueprint(string: &str) -> IResult<&str, &str> {
@@ -38,7 +40,7 @@ fn take_till_comma(string: &str) -> IResult<&str, &str> {
     take_till(|c| c == ',')(string)
 }
 
-pub fn parse_non_finish(string: &str) -> IResult<&str, HeadData> {
+pub fn parse_non_finish(string: &str) -> IResult<&str, HeaderData> {
     let unknown = string;
 
     let (unknown, layout) = preceded(tag_blueprint, take_till_comma)(unknown)?;
@@ -54,30 +56,33 @@ pub fn parse_non_finish(string: &str) -> IResult<&str, HeadData> {
 
     Ok((
         unknown,
-        HeadData {
-            layout: layout,
-            icons_0: icons_0,
-            icons_1: icons_1,
-            icons_2: icons_2,
-            icons_3: icons_3,
-            icons_4: icons_4,
-            time: time,
-            game_version: game_version,
-            short_desc: short_desc,
-            desc: desc,
-            unknown: unknown,
+        HeaderData {
+            layout: layout.to_string(),
+            icons_0: icons_0.to_string(),
+            icons_1: icons_1.to_string(),
+            icons_2: icons_2.to_string(),
+            icons_3: icons_3.to_string(),
+            icons_4: icons_4.to_string(),
+            time: time.to_string(),
+            game_version: game_version.to_string(),
+            short_desc: short_desc.to_string(),
+            desc: desc.to_string(),
+            unknown: unknown.to_string(),
         },
     ))
 }
 
-pub fn parse(string: &str) -> Result<HeadData, DspbptkError> {
-    Ok(parse_non_finish(string)
-        .finish()
-        .map_err(|e| BrokenHeader(e))?
-        .1)
+pub fn parse(string: &str) -> Option<HeaderData> {
+    match parse_non_finish(string).finish() {
+        Ok((_unknown, header_data)) => Some(header_data),
+        Err(why) => {
+            error!("{:?}", BrokenHeader(why));
+            None
+        }
+    }
 }
 
-pub fn serialization(data: &HeadData) -> String {
+pub fn serialization(data: &HeaderData) -> String {
     format!(
         "BLUEPRINT:0,{},{},{},{},{},{},0,{},{},{},{}",
         data.layout,
@@ -104,19 +109,19 @@ mod test {
         let result = parse(string);
 
         assert_eq!(
-            result.ok(),
-            Some(HeadData {
-                layout: "9",
-                icons_0: "0",
-                icons_1: "1",
-                icons_2: "2",
-                icons_3: "3",
-                icons_4: "4",
-                time: "5",
-                game_version: "6.7.8.9",
-                short_desc: "",
-                desc: "",
-                unknown: "",
+            result,
+            Some(HeaderData {
+                layout: "9".to_string(),
+                icons_0: "0".to_string(),
+                icons_1: "1".to_string(),
+                icons_2: "2".to_string(),
+                icons_3: "3".to_string(),
+                icons_4: "4".to_string(),
+                time: "5".to_string(),
+                game_version: "6.7.8.9".to_string(),
+                short_desc: "".to_string(),
+                desc: "".to_string(),
+                unknown: "".to_string(),
             })
         );
     }
