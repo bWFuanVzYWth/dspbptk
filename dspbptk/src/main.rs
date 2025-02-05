@@ -60,7 +60,7 @@ fn read_blueprint_file(path: &std::path::PathBuf) -> Option<String> {
 
 fn is_valid_blueprint<'a>(blueprint_content: &str, file_in: &std::path::PathBuf) -> Option<()> {
     if blueprint_content.chars().take(12).collect::<String>() != "BLUEPRINT:0," {
-        error!("{:?}", NotBlueprint(std::ffi::OsString::from(file_in)));
+        warn!("{:?}", NotBlueprint(std::ffi::OsString::from(file_in)));
         None
     } else {
         Some(())
