@@ -49,7 +49,7 @@ fn read_blueprint_file(path: &std::path::PathBuf) -> Option<String> {
     }
 }
 
-fn is_valid_blueprint<'a>(blueprint_content: &str, file_in: &std::path::PathBuf) -> Option<()> {
+fn is_valid_blueprint(blueprint_content: &str, file_in: &std::path::PathBuf) -> Option<()> {
     if blueprint_content.chars().take(12).collect::<String>() != "BLUEPRINT:0," {
         warn!("{:?}", NotBlueprint(std::ffi::OsString::from(file_in)));
         None
@@ -196,7 +196,7 @@ pub enum BlueprintKind {
     Content(Vec<u8>),
 }
 
-fn process_front_end<'a>(blueprint: BlueprintKind) -> Option<(HeaderData, ContentData)> {
+fn process_front_end(blueprint: BlueprintKind) -> Option<(HeaderData, ContentData)> {
     match blueprint {
         BlueprintKind::Blueprint(blueprint_string) => {
             let blueprint_data = blueprint::parse(&blueprint_string)?;

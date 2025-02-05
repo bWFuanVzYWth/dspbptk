@@ -116,7 +116,7 @@ fn encode_base64(bin: Vec<u8>) -> String {
     BASE64_STANDARD.encode(bin)
 }
 
-fn decompress_gzip<'a>(gzip: Vec<u8>) -> Option<Vec<u8>> {
+fn decompress_gzip(gzip: Vec<u8>) -> Option<Vec<u8>> {
     use flate2::read::GzDecoder;
     use std::io::Read;
     let mut decoder = GzDecoder::new(&gzip[..]);
@@ -154,15 +154,15 @@ pub fn gzip_from_string(string: &str) -> Option<Vec<u8>> {
     decode_base64(string)
 }
 
-pub fn bin_from_gzip<'a>(gzip: Vec<u8>) -> Option<Vec<u8>> {
+pub fn bin_from_gzip(gzip: Vec<u8>) -> Option<Vec<u8>> {
     decompress_gzip(gzip)
 }
 
-pub fn data_from_bin<'a>(bin: &'a [u8]) -> Option<ContentData> {
+pub fn data_from_bin(bin: &[u8]) -> Option<ContentData> {
     deserialization(bin)
 }
 
-pub fn bin_from_data<'a>(data: &ContentData) -> Vec<u8> {
+pub fn bin_from_data(data: &ContentData) -> Vec<u8> {
     serialization(data)
 }
 
