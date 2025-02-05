@@ -6,11 +6,11 @@ use nom::{
     IResult,
 };
 
+pub const INDEX_NULL: i32 = -1;
+
 const ZERO: i32 = 0; // 00 00 00 00
 const NEG_100: i32 = -100; // 9C FF FF FF
 const NEG_101: i32 = -101; // 9B FF FF FF
-
-pub const INDEX_NULL: i32 = -1;
 
 const BELT_LOW: i16 = 2001;
 const BELT_HIGH: i16 = 2009;

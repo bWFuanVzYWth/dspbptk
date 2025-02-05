@@ -1,6 +1,7 @@
 pub mod content;
 pub mod header;
 
+use crate::error::{DspbptkError::*, DspbptkWarn::*};
 use log::{error, warn};
 
 use nom::{
@@ -8,9 +9,6 @@ use nom::{
     sequence::preceded,
     Finish, IResult,
 };
-
-use crate::error::DspbptkError::*;
-use crate::error::DspbptkWarn::*;
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct BlueprintData<'a> {

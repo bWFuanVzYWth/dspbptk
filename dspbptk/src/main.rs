@@ -1,5 +1,3 @@
-// TODO 整理测试用例
-
 mod blueprint;
 mod edit;
 mod error;
@@ -8,15 +6,16 @@ mod md5;
 use std::path::{Path, PathBuf};
 
 use clap::Parser;
-use log::{error, warn};
 use rayon::prelude::*;
 use walkdir::WalkDir;
 
-use crate::error::DspbptkError::*;
-use crate::error::DspbptkWarn::*;
+use error::{DspbptkError::*, DspbptkWarn::*};
+use log::{error, warn};
 
-use crate::blueprint::header::HeaderData;
 use blueprint::content::ContentData;
+use blueprint::header::HeaderData;
+
+// TODO 把文件io单独拆一个mod
 
 fn read_content_file(path: &std::path::PathBuf) -> Option<Vec<u8>> {
     match std::fs::read(path) {
@@ -155,7 +154,6 @@ fn classify_file_type(entry: &std::path::PathBuf) -> FileType {
     }
 }
 
-// 收集文件路径
 fn collect_files(path_in: &Path) -> Vec<PathBuf> {
     let mut files = Vec::new();
     for entry in WalkDir::new(path_in).into_iter().filter_map(|e| e.ok()) {
@@ -169,7 +167,6 @@ fn collect_files(path_in: &Path) -> Vec<PathBuf> {
     files
 }
 
-// 计算输出路径
 fn generate_output_path(
     root_path_in: &Path,
     root_path_out: &Path,
@@ -199,7 +196,6 @@ pub enum BlueprintKind {
     Content(Vec<u8>),
 }
 
-// FIXME 把文件读写提出去
 fn process_front_end<'a>(blueprint: BlueprintKind) -> Option<(HeaderData, ContentData)> {
     match blueprint {
         BlueprintKind::Blueprint(blueprint_string) => {
@@ -225,12 +221,10 @@ fn process_middle_layer(
 ) -> Option<(HeaderData, ContentData)> {
     use edit::{fix_buildings_index, sort_buildings};
 
-    // 这里应该是唯一一处深拷贝，这是符合直觉的，可以极大优化用户的使用体验
-    // FIXME 传入解析过的头，而不是字符串
+    // 这里应该是唯一一处非必要的深拷贝，但这是符合直觉的，可以极大优化用户的使用体验
     let header_data_out = header_data_in.clone();
     let mut content_data_out = content_data_in.clone();
 
-    // edit
     if should_sort_buildings {
         sort_buildings(&mut content_data_out.buildings);
         fix_buildings_index(&mut content_data_out.buildings);
@@ -312,7 +306,6 @@ fn process_all_files(
     // TODO 数据统计
 }
 
-// 蓝图处理工作流
 fn process_workflow(args: &Args) {
     let zopfli_options = configure_zopfli_options(args);
     let path_in = &args.input;
@@ -338,7 +331,6 @@ fn process_workflow(args: &Args) {
     );
 }
 
-// 创建zopfli选项
 fn configure_zopfli_options(args: &Args) -> zopfli::Options {
     let iteration_count = args
         .iteration_count
@@ -359,8 +351,6 @@ fn configure_zopfli_options(args: &Args) -> zopfli::Options {
     }
 }
 
-// TODO 蓝图分析命令：分析蓝图文件，输出统计信息
-
 #[derive(Parser, Debug)]
 #[command(
     version = "dspbptk0.2.0-dsp0.10.31.24632",
@@ -368,6 +358,8 @@ fn configure_zopfli_options(args: &Args) -> zopfli::Options {
     about = "Dyson Sphere Program Blueprint Toolkit"
 )]
 struct Args {
+    // TODO 蓝图分析命令：分析蓝图文件，输出统计信息
+
     // TODO 多文件同时输入
     /// Input from file/dir. (*.txt *.content dir/)
     input: std::path::PathBuf,

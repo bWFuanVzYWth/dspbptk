@@ -1,10 +1,8 @@
 pub mod area;
 pub mod building;
 
+use crate::error::{DspbptkError::*, DspbptkWarn::*};
 use log::{error, warn};
-
-use crate::error::DspbptkError::*;
-use crate::error::DspbptkWarn::*;
 
 use nom::{
     multi::count,

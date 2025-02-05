@@ -4,9 +4,8 @@ use nom::{
     Finish, IResult,
 };
 
-use log::error;
-
 use crate::error::DspbptkError::*;
+use log::error;
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct HeaderData {
