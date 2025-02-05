@@ -38,17 +38,17 @@ pub fn fix_buildings_index(buildings: &mut Vec<building::BuildingData>) {
         index_lut.insert(building.index, index as i32);
     });
     for building in buildings {
-        // 使用 unwrap 是安全的，因为 lut 包含所有建筑的索引
-        building.index = *index_lut.get(&building.index).unwrap();
+        // 这里panic是安全的，因为理论上所有的building.index都应该在index_lut里
+        building.index = *index_lut
+            .get(&building.index)
+            .expect("Fatal error: unknown building index");
 
-        // 处理 temp_output_obj_idx，不存在则使用 INDEX_NULL
         if let Some(idx) = index_lut.get(&building.temp_output_obj_idx) {
             building.temp_output_obj_idx = *idx;
         } else {
             building.temp_output_obj_idx = building::INDEX_NULL;
         }
 
-        // 同样处理 temp_input_obj_idx
         if let Some(idx) = index_lut.get(&building.temp_input_obj_idx) {
             building.temp_input_obj_idx = *idx;
         } else {
@@ -61,12 +61,11 @@ fn calculate_quaternion_between_vectors(
     from: &Vector3<f64>,
     to: &Vector3<f64>,
 ) -> (Quaternion<f64>, Quaternion<f64>) {
+    // FIXME 这里不一定要检查？
     assert!(abs_diff_eq!(from.norm_squared(), 1.0, epsilon = 1e-6));
     assert!(abs_diff_eq!(to.norm_squared(), 1.0, epsilon = 1e-6));
 
     let cos_theta = from.dot(to).clamp(-1.0, 1.0);
-
-    // 处理浮点精度问题，确保在 [-1.0, 1.0] 范围内
     let cos_theta = cos_theta.clamp(-1.0, 1.0);
 
     if cos_theta >= 1.0 - f64::EPSILON {
@@ -123,6 +122,7 @@ fn compute_3d_rotation_vector(
     Vector3::new(to_quat.i, to_quat.j, to_quat.k)
 }
 
+// FIXME 检查所有坐标转换，强制direction是单位向量
 // FIXME 把warn改结构化
 // 将局部偏移转换为方向向量
 pub fn local_offset_to_direction(local_offset_x: f32, local_offset_y: f32) -> Vector3<f64> {
@@ -146,7 +146,7 @@ pub fn local_offset_to_direction(local_offset_x: f32, local_offset_y: f32) -> Ve
 
     let (sin_theta_x, cos_theta_x) = theta_x.sin_cos();
 
-    Vector3::new(radius * cos_theta_x, radius * sin_theta_x, z)
+    Vector3::new(radius * cos_theta_x, radius * sin_theta_x, z).normalize()
 }
 
 // 将方向向量转换为局部偏移

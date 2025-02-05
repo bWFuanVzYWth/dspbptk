@@ -179,7 +179,7 @@ fn generate_output_path(
         _ => panic!("Unsupported file type"),
     };
 
-    let relative_path = relative_path.strip_prefix(root_path_in).unwrap();
+    let relative_path = relative_path.strip_prefix(root_path_in).expect("Fatal error: can not process file path");
 
     let mut output_path = if relative_path == Path::new("") {
         root_path_out.to_path_buf()
@@ -332,6 +332,7 @@ fn process_workflow(args: &Args) {
 }
 
 fn configure_zopfli_options(args: &Args) -> zopfli::Options {
+    // 参数的正确性必须由用户保证，如果参数无效则拒绝处理，然后立即退出程序
     let iteration_count = args
         .iteration_count
         .expect("Fatal error: unknown iteration_count");
@@ -341,7 +342,6 @@ fn configure_zopfli_options(args: &Args) -> zopfli::Options {
     let maximum_block_splits = args
         .maximum_block_splits
         .expect("Fatal error: unknown maximum_block_splits");
-
     zopfli::Options {
         iteration_count: std::num::NonZero::new(iteration_count)
             .expect("Fatal error: iteration_count must > 0"),
