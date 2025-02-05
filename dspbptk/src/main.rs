@@ -18,6 +18,8 @@ use crate::error::DspbptkError::*;
 use crate::error::DspbptkInfo::*;
 use crate::error::DspbptkWarn::*;
 
+use blueprint::content::ContentData;
+
 fn read_content_file(path: &std::path::PathBuf) -> Option<Vec<u8>> {
     match std::fs::read(path) {
         Ok(content) => {
@@ -56,44 +58,58 @@ fn read_blueprint_file(path: &std::path::PathBuf) -> Option<String> {
     }
 }
 
-fn write_blueprint_file(path: &PathBuf, blueprint: String) -> Result<(), DspbptkError> {
-    // 获取父目录
+fn creat_father_dir(path: &PathBuf) -> Option<()> {
     let parent = match path.parent() {
         Some(p) => p.to_path_buf(),
         None => PathBuf::from("."),
     };
-
-    // 创建所有必要的父目录
-    std::fs::create_dir_all(&parent).map_err(|e| DspbptkError::CanNotWriteFile {
-        path: std::ffi::OsString::from(path),
-        source: e,
-    })?;
-
-    // 写入文件内容到指定路径
-    std::fs::write(path, blueprint).map_err(|e| DspbptkError::CanNotWriteFile {
-        path: std::ffi::OsString::from(path),
-        source: e,
-    })
+    match std::fs::create_dir_all(&parent) {
+        Err(why) => {
+            error!(
+                "{:?}",
+                CanNotWriteFile {
+                    path: std::ffi::OsString::from(path),
+                    source: why,
+                }
+            );
+            None
+        }
+        Ok(_) => Some(()),
+    }
 }
 
-fn write_content_file(path: &PathBuf, content: Vec<u8>) -> Result<(), DspbptkError> {
-    // 获取父目录
-    let parent = match path.parent() {
-        Some(p) => p.to_path_buf(),
-        None => PathBuf::from("."),
-    };
+fn write_blueprint_file(path: &PathBuf, blueprint: String) -> Option<()> {
+    creat_father_dir(path)?;
+    match std::fs::write(path, blueprint) {
+        Ok(_) => Some(()),
+        Err(why) => {
+            error!(
+                "{:?}",
+                CanNotWriteFile {
+                    path: std::ffi::OsString::from(path),
+                    source: why,
+                }
+            );
+            None
+        }
+    }
+}
 
-    // 创建所有必要的父目录
-    std::fs::create_dir_all(&parent).map_err(|e| DspbptkError::CanNotWriteFile {
-        path: std::ffi::OsString::from(path),
-        source: e,
-    })?;
-
-    // 写入文件内容到指定路径
-    std::fs::write(path, content).map_err(|e| DspbptkError::CanNotWriteFile {
-        path: std::ffi::OsString::from(path),
-        source: e,
-    })
+fn write_content_file(path: &PathBuf, content: Vec<u8>) -> Option<()> {
+    creat_father_dir(path)?;
+    match std::fs::write(path, content) {
+        Ok(_) => Some(()),
+        Err(why) => {
+            error!(
+                "{:?}",
+                CanNotWriteFile {
+                    path: std::ffi::OsString::from(path),
+                    source: why,
+                }
+            );
+            None
+        }
+    }
 }
 
 // 检查是否为有效的blueprint文件
@@ -141,7 +157,6 @@ fn classify_file_type(entry: &std::path::PathBuf) -> FileType {
 // 收集文件路径
 fn collect_files(path_in: &Path) -> Vec<PathBuf> {
     let mut files = Vec::new();
-
     for entry in WalkDir::new(path_in).into_iter().filter_map(|e| e.ok()) {
         let entry_path = entry.into_path();
         match classify_file_type(&entry_path) {
@@ -150,7 +165,6 @@ fn collect_files(path_in: &Path) -> Vec<PathBuf> {
             _ => {}
         }
     }
-
     files
 }
 
@@ -168,7 +182,6 @@ fn generate_output_path(
     };
 
     let relative_path = relative_path.strip_prefix(root_path_in).unwrap();
-    // 把relative_path的文件后缀名替换为file_type的后缀名
 
     let mut output_path = if relative_path == Path::new("") {
         root_path_out.to_path_buf()
@@ -202,28 +215,25 @@ fn process_front_end(file_path_in: &PathBuf) -> Option<(String, blueprint::conte
     }
 }
 
-// TODO 就地处理错误，用option而不是result处理
-fn process_middle_layer<'a>(
-    file_path_out: &PathBuf,
-    header_str: String,
-    content_bin_in: Vec<u8>,
-    zopfli_options: &zopfli::Options,
-    output_type: &FileType,
+fn process_middle_layer(
+    header_str_in: String,
+    content_data_in: ContentData,
     should_sort_buildings: bool,
-) -> Result<(String, Vec<u8>), DspbptkError<'a>> {
-    use blueprint::content::data_from_bin;
+) -> Option<(String, ContentData)> {
     use edit::{fix_buildings_index, sort_buildings};
 
-    // FIXME 丢到前端去
-    let mut content_data = data_from_bin(&content_bin_in)?;
+    // 这里应该是唯一一处深拷贝，这是符合直觉的，可以极大优化用户的使用体验
+    // FIXME 传入解析过的头，而不是字符串
+    let header_str_out = header_str_in.clone();
+    let mut content_data_out = content_data_in.clone();
 
     // edit
     if should_sort_buildings {
-        sort_buildings(&mut content_data.buildings);
-        fix_buildings_index(&mut content_data.buildings);
+        sort_buildings(&mut content_data_out.buildings);
+        fix_buildings_index(&mut content_data_out.buildings);
     }
 
-    Ok((header_str, content_data))
+    Some((header_str_out, content_data_out))
 }
 
 fn process_back_end(
@@ -232,54 +242,47 @@ fn process_back_end(
     content_data: blueprint::content::ContentData,
     zopfli_options: &zopfli::Options,
     output_type: &FileType,
-) {
+) -> Option<()> {
     use crate::blueprint::content::bin_from_data;
     use crate::blueprint::content::string_from_data;
-    // 3. 后端：输出
     match output_type {
         FileType::Txt => {
-            let content_string = match string_from_data(content_data, zopfli_options) {
-                Ok(content) => content,
-                Err(why) => {
-                    error!("{:?}: encode from {}", why, file_path_out.display());
-                    return;
-                }
-            };
+            let content_string = string_from_data(content_data, zopfli_options)?;
             let blueprint_string = blueprint::serialization(header_str, &content_string);
-
-            match write_blueprint_file(&file_path_out, blueprint_string) {
-                Ok(_) => {
-                    info!("encode to {}", file_path_out.display());
-                }
-                Err(why) => {
-                    error!("can not write file: {:?}", why)
-                }
-            }
+            write_blueprint_file(&file_path_out, blueprint_string)
         }
         FileType::Content => {
-            let content_bin = match bin_from_data(content_data) {
-                Ok(content) => content,
-                Err(why) => {
-                    error!("{:?}: encode from {}", why, file_path_out.display());
-                    return;
-                }
-            };
-            match write_content_file(&file_path_out, content_bin) {
-                Ok(_) => {
-                    info!("encode to {}", file_path_out.display());
-                }
-                Err(why) => {
-                    error!("can not write file: {}", why)
-                }
-            }
+            let content_bin = bin_from_data(content_data);
+            write_content_file(&file_path_out, content_bin)
         }
         _ => {
-            panic!("Fatal error: unknown file type"); // Should not reach here
+            panic!("Fatal error: unknown file type");
         }
     }
 }
 
-fn process_files(
+fn process_one_file(
+    file_path_in: &PathBuf,
+    path_in: &Path,
+    path_out: &Path,
+    zopfli_options: &zopfli::Options,
+    output_type: &FileType,
+    sort_buildings: bool,
+) -> Option<()> {
+    let file_path_out = generate_output_path(path_in, path_out, file_path_in, output_type);
+    let (header_data_in, content_data_in) = process_front_end(file_path_in)?;
+    let (header_data_out, content_data_out) =
+        process_middle_layer(header_data_in, content_data_in, sort_buildings)?;
+    process_back_end(
+        &file_path_out,
+        &header_data_out,
+        content_data_out,
+        zopfli_options,
+        output_type,
+    )
+}
+
+fn process_all_files(
     files: Vec<PathBuf>,
     path_in: &Path,
     path_out: &Path,
@@ -288,25 +291,19 @@ fn process_files(
     sort_buildings: bool,
 ) {
     // TODO 改成map(|path| result)，收集处理结果
-    files.par_iter().for_each(|file_path_in| {
-        let file_path_out = generate_output_path(path_in, path_out, file_path_in, output_type);
-
-        match process_front_end(file_path_in) {
-            Some((header_str, content_bin)) => {
-                process_middle_layer(
-                    &file_path_out,
-                    &header_str,
-                    content_bin,
-                    zopfli_options,
-                    output_type,
-                    sort_buildings,
-                );
-            }
-            None => {
-                error!("can not process {}", file_path_in.display());
-            }
-        }
-    });
+    let squares: Vec<Option<()>> = files
+        .par_iter()
+        .map(|file_path_in| {
+            process_one_file(
+                file_path_in,
+                path_in,
+                path_out,
+                zopfli_options,
+                output_type,
+                sort_buildings,
+            )
+        })
+        .collect();
 }
 
 // FIXME 直接传递args的引用
@@ -326,7 +323,7 @@ fn process_workflow(args: &Args) {
 
     let sort_buildings = args.sort_buildings;
 
-    process_files(
+    process_all_files(
         files,
         path_in,
         path_out,

@@ -14,7 +14,7 @@ use crate::error::DspbptkError::*;
 use crate::error::DspbptkInfo::*;
 use crate::error::DspbptkWarn::*;
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct BlueprintData<'a> {
     pub header: &'a str,
     pub content: &'a str,

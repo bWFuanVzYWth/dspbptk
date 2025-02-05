@@ -3,7 +3,7 @@ use nom::{
     IResult,
 };
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct AreaData {
     pub index: i8,
     pub parent_index: i8,

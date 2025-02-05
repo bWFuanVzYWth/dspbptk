@@ -14,7 +14,7 @@ use nom::{
     IResult,
 };
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct ContentData {
     pub patch: i32,
     pub cursor_offset_x: i32,
@@ -134,22 +134,23 @@ fn decompress_gzip<'a>(gzip: Vec<u8>) -> Option<Vec<u8>> {
     }
 }
 
-fn compress_gzip_zopfli(
-    bin: Vec<u8>,
-    zopfli_options: &zopfli::Options,
-) -> Result<Vec<u8>, DspbptkError> {
+fn compress_gzip_zopfli(bin: Vec<u8>, zopfli_options: &zopfli::Options) -> Option<Vec<u8>> {
     let mut gzip = Vec::new();
-    zopfli::compress(
+    match zopfli::compress(
         *zopfli_options,
         zopfli::Format::Gzip,
         bin.as_slice(),
         &mut gzip,
-    )
-    .map_err(|e| CanNotCompressGzip(e))?;
-    Ok(gzip)
+    ) {
+        Ok(_) => Some(gzip),
+        Err(why) => {
+            error!("{:?}", CanNotCompressGzip(why));
+            None
+        }
+    }
 }
 
-fn compress_gzip(bin: Vec<u8>, zopfli_options: &zopfli::Options) -> Result<Vec<u8>, DspbptkError> {
+fn compress_gzip(bin: Vec<u8>, zopfli_options: &zopfli::Options) -> Option<Vec<u8>> {
     compress_gzip_zopfli(bin, zopfli_options)
 }
 
@@ -166,15 +167,12 @@ pub fn data_from_bin<'a>(bin: &'a [u8]) -> Option<ContentData> {
     deserialization(bin)
 }
 
-pub fn bin_from_data<'a>(data: ContentData) -> Result<Vec<u8>, DspbptkError<'a>> {
-    Ok(serialization(data))
+pub fn bin_from_data<'a>(data: ContentData) -> Vec<u8> {
+    serialization(data)
 }
 
-pub fn gzip_from_bin(
-    bin: Vec<u8>,
-    zopfli_options: &zopfli::Options,
-) -> Result<Vec<u8>, DspbptkError> {
-    Ok(compress_gzip(bin, zopfli_options)?)
+pub fn gzip_from_bin(bin: Vec<u8>, zopfli_options: &zopfli::Options) -> Option<Vec<u8>> {
+    compress_gzip(bin, zopfli_options)
 }
 
 pub fn string_from_gzip(gzip: Vec<u8>) -> String {
@@ -186,13 +184,10 @@ pub fn bin_from_string(string: &str) -> Option<Vec<u8>> {
     bin_from_gzip(gzip)
 }
 
-pub fn string_from_data(
-    data: ContentData,
-    zopfli_options: &zopfli::Options,
-) -> Result<String, DspbptkError> {
-    let bin = bin_from_data(data)?;
+pub fn string_from_data(data: ContentData, zopfli_options: &zopfli::Options) -> Option<String> {
+    let bin = bin_from_data(data);
     let gzip = gzip_from_bin(bin, zopfli_options)?;
-    Ok(string_from_gzip(gzip))
+    Some(string_from_gzip(gzip))
 }
 
 #[cfg(test)]

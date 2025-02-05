@@ -7,7 +7,7 @@ use nom::{
 use crate::error::DspbptkError;
 use crate::error::DspbptkError::*;
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct HeadData<'a> {
     pub layout: &'a str,
     pub icons_0: &'a str,
