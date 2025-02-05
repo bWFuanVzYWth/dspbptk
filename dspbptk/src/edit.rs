@@ -459,12 +459,12 @@ mod test_quaternion {
     #[test]
     fn test_cos_theta_out_of_range() {
         let from = Vector3::new(1.0, 0.0, 0.0).normalize();
-        // 构造一个cosθ=1.0000001的情况
+        // 构造一个cos θ = 1.0000001的情况
         let to = Vector3::new(1.00000005, 0.0, 0.0).normalize();
 
         let (q, q_inv) = calculate_quaternion_between_vectors(&from, &to);
 
-        // 预期cosθ被截断为1.0，返回单位四元数
+        // 预期cos θ 被截断为1.0，返回单位四元数
         assert!(abs_diff_eq!(q.w, 1.0, epsilon = 1e-6));
         assert!(abs_diff_eq!(q.i, 0.0, epsilon = 1e-6));
         assert!(abs_diff_eq!(q.j, 0.0, epsilon = 1e-6));

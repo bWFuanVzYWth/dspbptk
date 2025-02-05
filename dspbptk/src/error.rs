@@ -12,8 +12,6 @@ pub enum DspbptkError<'a> {
         path: std::ffi::OsString,
         source: std::io::Error,
     },
-    #[error("not blueprint: {0:?}")]
-    NotBlueprint(std::ffi::OsString),
     #[error("broken base64: {0}")]
     BrokenBase64(base64::DecodeError),
     #[error("broken gzip: {0}")]
@@ -38,6 +36,8 @@ pub enum DspbptkWarn<'a> {
     FewUnknownAfterContent(&'a [u8]),
     #[error("lot unknown after content: length = {0}")]
     LotUnknownAfterContent(usize),
+    #[error("not blueprint: {0:?}")]
+    NotBlueprint(std::ffi::OsString),
     #[error("unexpected MD5F: expected = {0:?}, actual = {1:?}")]
     UnexpectedMD5F(&'a str, &'a str),
 }

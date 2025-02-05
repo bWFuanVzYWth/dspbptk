@@ -3,9 +3,7 @@ pub mod building;
 
 use log::{error, warn};
 
-use crate::error::DspbptkError;
 use crate::error::DspbptkError::*;
-use crate::error::DspbptkInfo::*;
 use crate::error::DspbptkWarn::*;
 
 use nom::{
@@ -72,11 +70,11 @@ fn deserialization(bin: &[u8]) -> Option<ContentData> {
             error!("{:?}", BrokenContent(why));
             None
         }
-        Ok((unknown, result)) => {
-            let unknown_length = unknown.len();
+        Ok((_, result)) => {
+            let unknown_length = result.unknown.len();
             match unknown_length {
                 10.. => warn!("{:?}", LotUnknownAfterContent(unknown_length)),
-                1..=9 => warn!("{:?}", FewUnknownAfterContent(unknown)),
+                1..=9 => warn!("{:?}", FewUnknownAfterContent(&result.unknown)),
                 _ => {}
             };
             Some(result)
@@ -162,7 +160,6 @@ pub fn bin_from_gzip<'a>(gzip: Vec<u8>) -> Option<Vec<u8>> {
     decompress_gzip(gzip)
 }
 
-// FIXME 所有权
 pub fn data_from_bin<'a>(bin: &'a [u8]) -> Option<ContentData> {
     deserialization(bin)
 }

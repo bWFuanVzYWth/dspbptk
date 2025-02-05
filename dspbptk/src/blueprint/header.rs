@@ -4,9 +4,8 @@ use nom::{
     Finish, IResult,
 };
 
-use log::{error, warn};
+use log::error;
 
-use crate::error::DspbptkError;
 use crate::error::DspbptkError::*;
 
 #[derive(Debug, Clone, PartialEq)]

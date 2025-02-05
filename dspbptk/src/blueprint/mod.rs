@@ -9,9 +9,7 @@ use nom::{
     Finish, IResult,
 };
 
-use crate::error::DspbptkError;
 use crate::error::DspbptkError::*;
-use crate::error::DspbptkInfo::*;
 use crate::error::DspbptkWarn::*;
 
 #[derive(Debug, Clone, PartialEq)]
@@ -57,11 +55,11 @@ pub fn parse(string: &str) -> Option<BlueprintData> {
             error!("{:?}", BrokenBlueprint(why));
             None
         }
-        Ok((unknown, result)) => {
-            let unknown_length = unknown.len();
+        Ok((_, result)) => {
+            let unknown_length = result.unknown.len();
             match unknown_length {
                 10.. => warn!("{:?}", LotUnknownAfterBlueprint(unknown_length)),
-                1..=9 => warn!("{:?}", FewUnknownAfterBlueprint(unknown)),
+                1..=9 => warn!("{:?}", FewUnknownAfterBlueprint(result.unknown)),
                 _ => {}
             };
             Some(result)

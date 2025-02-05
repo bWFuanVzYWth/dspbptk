@@ -8,13 +8,11 @@ mod md5;
 use std::path::{Path, PathBuf};
 
 use clap::Parser;
-use log::{error, info, warn};
+use log::{error, warn};
 use rayon::prelude::*;
 use walkdir::WalkDir;
 
-use crate::error::DspbptkError;
 use crate::error::DspbptkError::*;
-use crate::error::DspbptkInfo::*;
 use crate::error::DspbptkWarn::*;
 
 use crate::blueprint::header::HeaderData;
@@ -22,10 +20,7 @@ use blueprint::content::ContentData;
 
 fn read_content_file(path: &std::path::PathBuf) -> Option<Vec<u8>> {
     match std::fs::read(path) {
-        Ok(content) => {
-            info!("{:?}", ReadFile(std::ffi::OsString::from(path)));
-            Some(content)
-        }
+        Ok(content) => Some(content),
         Err(why) => {
             error!(
                 "{:?}",
@@ -41,10 +36,7 @@ fn read_content_file(path: &std::path::PathBuf) -> Option<Vec<u8>> {
 
 fn read_blueprint_file(path: &std::path::PathBuf) -> Option<String> {
     match std::fs::read_to_string(path) {
-        Ok(content) => {
-            info!("{:?}", ReadFile(std::ffi::OsString::from(path)));
-            Some(content)
-        }
+        Ok(content) => Some(content),
         Err(why) => {
             error!(
                 "{:?}",
@@ -83,7 +75,7 @@ fn read_file(path: &PathBuf) -> Option<BlueprintKind> {
     }
 }
 
-fn creat_father_dir(path: &PathBuf) -> Option<()> {
+fn create_father_dir(path: &PathBuf) -> Option<()> {
     let parent = match path.parent() {
         Some(p) => p.to_path_buf(),
         None => PathBuf::from("."),
@@ -104,7 +96,7 @@ fn creat_father_dir(path: &PathBuf) -> Option<()> {
 }
 
 fn write_blueprint_file(path: &PathBuf, blueprint: String) -> Option<()> {
-    creat_father_dir(path)?;
+    create_father_dir(path)?;
     match std::fs::write(path, blueprint) {
         Ok(_) => Some(()),
         Err(why) => {
@@ -121,7 +113,7 @@ fn write_blueprint_file(path: &PathBuf, blueprint: String) -> Option<()> {
 }
 
 fn write_content_file(path: &PathBuf, content: Vec<u8>) -> Option<()> {
-    creat_father_dir(path)?;
+    create_father_dir(path)?;
     match std::fs::write(path, content) {
         Ok(_) => Some(()),
         Err(why) => {
@@ -142,20 +134,6 @@ fn write_file(path: &PathBuf, blueprint_kind: BlueprintKind) -> Option<()> {
         BlueprintKind::Blueprint(blueprint) => write_blueprint_file(path, blueprint),
         BlueprintKind::Content(content) => write_content_file(path, content),
     }
-}
-
-// TODO 接入，现在的输出难以对应到正确的文件路径，用户反馈不足。
-// 计算压缩率并返回统计信息
-fn calculate_compression_rate(blueprint_in: &str, blueprint_out: &str) -> (usize, usize, f64) {
-    let string_in_length = blueprint_in.len();
-    let string_out_length = blueprint_out.len();
-    let percent = (string_out_length as f64 / string_in_length as f64) * 100.0;
-    // FIXME 改结构化
-    info!(
-        "{:3.3}%, {} -> {}",
-        percent, string_in_length, string_out_length
-    );
-    (string_in_length, string_out_length, percent)
 }
 
 pub enum FileType {
@@ -237,7 +215,6 @@ fn process_front_end<'a>(blueprint: BlueprintKind) -> Option<(HeaderData, Conten
             let header_data = blueprint::header::parse(HEADER)?;
             Some((header_data, content_data))
         }
-        _ => None,
     }
 }
 
@@ -306,6 +283,8 @@ fn process_one_file(
 
     let file_path_out = generate_output_path(path_in, path_out, file_path_in, output_type);
     write_file(&file_path_out, blueprint_kind_out)
+
+    // TODO 数据统计
 }
 
 fn process_all_files(
@@ -316,8 +295,7 @@ fn process_all_files(
     output_type: &FileType,
     sort_buildings: bool,
 ) {
-    // TODO 改成map(|path| result)，收集处理结果
-    let squares: Vec<Option<()>> = files
+    let _result: Vec<Option<()>> = files
         .par_iter()
         .map(|file_path_in| {
             process_one_file(
@@ -330,9 +308,10 @@ fn process_all_files(
             )
         })
         .collect();
+
+    // TODO 数据统计
 }
 
-// FIXME 直接传递args的引用
 // 蓝图处理工作流
 fn process_workflow(args: &Args) {
     let zopfli_options = configure_zopfli_options(args);
@@ -340,7 +319,7 @@ fn process_workflow(args: &Args) {
     let path_out = args.output.as_deref().unwrap_or(path_in);
 
     let files = collect_files(path_in);
-    // TODO
+
     let output_type = match args.filetype.as_deref() {
         Some("txt") => FileType::Txt,
         Some("content") => FileType::Content,
