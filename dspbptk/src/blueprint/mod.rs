@@ -1,8 +1,7 @@
 pub mod content;
 pub mod header;
 
-use crate::error::{DspbptkError::*, DspbptkWarn::*};
-use log::{error, warn};
+use crate::error::{DspbptkError, DspbptkError::*, DspbptkWarn, DspbptkWarn::*};
 
 use nom::{
     bytes::complete::{tag, take, take_till},
@@ -47,22 +46,15 @@ fn parse_non_finish(string: &str) -> IResult<&str, BlueprintData> {
     ))
 }
 
-pub fn parse(string: &str) -> Option<BlueprintData> {
-    match parse_non_finish(string).finish() {
-        Err(why) => {
-            error!("{:?}", BrokenBlueprint(why));
-            None
-        }
-        Ok((_, result)) => {
-            let unknown_length = result.unknown.len();
-            match unknown_length {
-                10.. => warn!("{:?}", LotUnknownAfterBlueprint(unknown_length)),
-                1..=9 => warn!("{:?}", FewUnknownAfterBlueprint(result.unknown)),
-                _ => {}
-            };
-            Some(result)
-        }
-    }
+pub fn parse(string: &str) -> Result<(BlueprintData, Vec<DspbptkWarn>), DspbptkError> {
+    let (unknown, data) = parse_non_finish(string).finish().map_err(BrokenBlueprint)?;
+    let unknown_length = unknown.len();
+    let warns = match unknown.len() {
+        10.. => vec![LotUnknownAfterBlueprint(unknown_length)],
+        1..=9 => vec![FewUnknownAfterBlueprint(unknown.to_string())],
+        _ => Vec::new(),
+    };
+    Ok((data, warns))
 }
 
 pub fn serialization(header: &str, content: &str) -> String {
@@ -84,13 +76,16 @@ mod test {
         let result = parse(string);
 
         assert_eq!(
-            result,
-            Some(BlueprintData {
-                header: "BLUEPRINT:0,0,0,0,0,0,0,0,0,0.0.0.0,,",
-                content: "H4sIAAAAAAAAA2NkQAWMUMyARCMBANjTKTsvAAAA",
-                md5f: "E4E5A1CF28F1EC611E33498CBD0DF02B",
-                unknown: "\n\0",
-            })
+            result.ok(),
+            Some((
+                BlueprintData {
+                    header: "BLUEPRINT:0,0,0,0,0,0,0,0,0,0.0.0.0,,",
+                    content: "H4sIAAAAAAAAA2NkQAWMUMyARCMBANjTKTsvAAAA",
+                    md5f: "E4E5A1CF28F1EC611E33498CBD0DF02B",
+                    unknown: "\n\0",
+                },
+                Vec::new()
+            ))
         );
     }
 }

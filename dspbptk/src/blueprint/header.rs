@@ -4,8 +4,7 @@ use nom::{
     Finish, IResult,
 };
 
-use crate::error::DspbptkError::*;
-use log::error;
+use crate::error::{DspbptkError, DspbptkError::*, DspbptkWarn, DspbptkWarn::*};
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct HeaderData {
@@ -70,13 +69,11 @@ pub fn parse_non_finish(string: &str) -> IResult<&str, HeaderData> {
     ))
 }
 
-pub fn parse(string: &str) -> Option<HeaderData> {
-    match parse_non_finish(string).finish() {
-        Ok((_unknown, header_data)) => Some(header_data),
-        Err(why) => {
-            error!("{:?}", BrokenHeader(why));
-            None
-        }
+pub fn parse(string: &str) -> Result<(HeaderData, Vec<DspbptkWarn>), DspbptkError> {
+    let (unknown, data) = parse_non_finish(string).finish().map_err(BrokenHeader)?;
+    match unknown.len() {
+        0 => Ok((data, Vec::new())),
+        _ => Ok((data, vec![UnknownAfterHeader])),
     }
 }
 
@@ -107,20 +104,23 @@ mod test {
         let result = parse(string);
 
         assert_eq!(
-            result,
-            Some(HeaderData {
-                layout: "9".to_string(),
-                icons_0: "0".to_string(),
-                icons_1: "1".to_string(),
-                icons_2: "2".to_string(),
-                icons_3: "3".to_string(),
-                icons_4: "4".to_string(),
-                time: "5".to_string(),
-                game_version: "6.7.8.9".to_string(),
-                short_desc: "".to_string(),
-                desc: "".to_string(),
-                unknown: "".to_string(),
-            })
+            result.ok(),
+            Some((
+                HeaderData {
+                    layout: "9".to_string(),
+                    icons_0: "0".to_string(),
+                    icons_1: "1".to_string(),
+                    icons_2: "2".to_string(),
+                    icons_3: "3".to_string(),
+                    icons_4: "4".to_string(),
+                    time: "5".to_string(),
+                    game_version: "6.7.8.9".to_string(),
+                    short_desc: "".to_string(),
+                    desc: "".to_string(),
+                    unknown: "".to_string(),
+                },
+                Vec::new()
+            ))
         );
     }
 }

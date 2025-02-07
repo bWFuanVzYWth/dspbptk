@@ -9,7 +9,7 @@ use clap::Parser;
 use rayon::prelude::*;
 use walkdir::WalkDir;
 
-use error::{DspbptkError::*, DspbptkWarn::*};
+use error::{DspbptkError, DspbptkError::*, DspbptkWarn, DspbptkWarn::*};
 use log::{error, warn};
 
 use blueprint::content::ContentData;
@@ -17,118 +17,72 @@ use blueprint::header::HeaderData;
 
 // TODO 把文件io单独拆一个mod
 
-fn read_content_file(path: &std::path::PathBuf) -> Option<Vec<u8>> {
-    match std::fs::read(path) {
-        Ok(content) => Some(content),
-        Err(why) => {
-            error!(
-                "{:?}",
-                CanNotReadFile {
-                    path: std::ffi::OsString::from(path),
-                    source: why,
-                }
-            );
-            None
-        }
-    }
+fn read_content_file(path: &std::path::PathBuf) -> Result<Vec<u8>, DspbptkError> {
+    std::fs::read(path).map_err(|e| CanNotReadFile {
+        path: path,
+        source: e,
+    })
 }
 
-fn read_blueprint_file(path: &std::path::PathBuf) -> Option<String> {
-    match std::fs::read_to_string(path) {
-        Ok(content) => Some(content),
-        Err(why) => {
-            error!(
-                "{:?}",
-                CanNotReadFile {
-                    path: std::ffi::OsString::from(path),
-                    source: why,
-                }
-            );
-            None
-        }
-    }
+fn read_blueprint_file(path: &std::path::PathBuf) -> Result<String, DspbptkError> {
+    std::fs::read_to_string(path).map_err(|e| CanNotReadFile {
+        path: path,
+        source: e,
+    })
 }
 
-fn is_valid_blueprint<'a>(blueprint_content: &str, file_in: &std::path::PathBuf) -> Option<()> {
+fn is_valid_blueprint<'a>(blueprint_content: &str) -> Result<(), DspbptkError<'a>> {
     if blueprint_content.chars().take(12).collect::<String>() != "BLUEPRINT:0," {
-        warn!("{:?}", NotBlueprint(std::ffi::OsString::from(file_in)));
-        None
+        Err(NotBlueprint)
     } else {
-        Some(())
+        Ok(())
     }
 }
 
-fn read_file(path: &PathBuf) -> Option<BlueprintKind> {
+fn read_file(path: &PathBuf) -> Result<BlueprintKind, DspbptkError> {
     use crate::BlueprintKind::*;
     match classify_file_type(path) {
         FileType::Txt => {
             let blueprint_string = read_blueprint_file(path)?;
-            is_valid_blueprint(&blueprint_string, path)?;
-            Some(Blueprint(blueprint_string))
+            is_valid_blueprint(&blueprint_string)?;
+            Ok(Blueprint(blueprint_string))
         }
         FileType::Content => {
             let content_bin = read_content_file(path)?;
-            Some(Content(content_bin))
+            Ok(Content(content_bin))
         }
-        _ => None,
+        _ => Err(UnknownFileType),
     }
 }
 
-fn create_father_dir(path: &PathBuf) -> Option<()> {
+fn create_father_dir(path: &PathBuf) -> Result<(), DspbptkError> {
     let parent = match path.parent() {
         Some(p) => p.to_path_buf(),
         None => PathBuf::from("."),
     };
-    match std::fs::create_dir_all(&parent) {
-        Err(why) => {
-            error!(
-                "{:?}",
-                CanNotWriteFile {
-                    path: std::ffi::OsString::from(path),
-                    source: why,
-                }
-            );
-            None
-        }
-        Ok(_) => Some(()),
-    }
+    std::fs::create_dir_all(&parent).map_err(|e| CanNotWriteFile {
+        path: path,
+        source: e,
+    })
 }
 
-fn write_blueprint_file(path: &PathBuf, blueprint: String) -> Option<()> {
+fn write_blueprint_file(path: &PathBuf, blueprint: String) -> Result<(), DspbptkError> {
     create_father_dir(path)?;
-    match std::fs::write(path, blueprint) {
-        Ok(_) => Some(()),
-        Err(why) => {
-            error!(
-                "{:?}",
-                CanNotWriteFile {
-                    path: std::ffi::OsString::from(path),
-                    source: why,
-                }
-            );
-            None
-        }
-    }
+    std::fs::write(path, blueprint).map_err(|e| CanNotWriteFile {
+        path: path,
+        source: e,
+    })
 }
 
-fn write_content_file(path: &PathBuf, content: Vec<u8>) -> Option<()> {
+fn write_content_file(path: &PathBuf, content: Vec<u8>) -> Result<(), DspbptkError> {
     create_father_dir(path)?;
-    match std::fs::write(path, content) {
-        Ok(_) => Some(()),
-        Err(why) => {
-            error!(
-                "{:?}",
-                CanNotWriteFile {
-                    path: std::ffi::OsString::from(path),
-                    source: why,
-                }
-            );
-            None
-        }
-    }
+    std::fs::write(path, content).map_err(|e| CanNotWriteFile {
+        path: path,
+        source: e,
+    })
 }
 
-fn write_file(path: &PathBuf, blueprint_kind: BlueprintKind) -> Option<()> {
+fn write_file(path: &PathBuf, blueprint_kind: BlueprintKind) -> Result<(), DspbptkError> {
     match blueprint_kind {
         BlueprintKind::Blueprint(blueprint) => write_blueprint_file(path, blueprint),
         BlueprintKind::Content(content) => write_content_file(path, content),
@@ -196,20 +150,37 @@ pub enum BlueprintKind {
     Content(Vec<u8>),
 }
 
-fn process_front_end<'a>(blueprint: BlueprintKind) -> Option<(HeaderData, ContentData)> {
+fn process_front_end<'a>(
+    blueprint: &'a BlueprintKind,
+    blueprint_content_bin: &'a mut Vec<u8>,
+) -> Result<(HeaderData, ContentData, Vec<DspbptkWarn>), DspbptkError<'a>> {
     match blueprint {
         BlueprintKind::Blueprint(blueprint_string) => {
-            let blueprint_data = blueprint::parse(&blueprint_string)?;
-            let content_bin = blueprint::content::bin_from_string(&blueprint_data.content)?;
-            let content_data = blueprint::content::data_from_bin(&content_bin)?;
-            let header_data = blueprint::header::parse(&blueprint_data.header)?;
-            Some((header_data, content_data))
+            let (blueprint_data, warns_blueprint) = blueprint::parse(&blueprint_string)?;
+            blueprint::content::bin_from_string(blueprint_content_bin, &blueprint_data.content)?;
+            let (content_data, warns_content) =
+                blueprint::content::data_from_bin(blueprint_content_bin.as_slice())?;
+            let (header_data, warns_header) = blueprint::header::parse(&blueprint_data.header)?;
+            Ok((
+                header_data,
+                content_data,
+                [
+                    warns_blueprint.as_slice(),
+                    warns_content.as_slice(),
+                    warns_header.as_slice(),
+                ]
+                .concat(),
+            ))
         }
         BlueprintKind::Content(content_bin) => {
-            let content_data = blueprint::content::data_from_bin(&content_bin)?;
+            let (content_data, warns_content) = blueprint::content::data_from_bin(&content_bin)?;
             const HEADER: &str = "BLUEPRINT:0,0,0,0,0,0,0,0,0,0.0.0.0,,";
-            let header_data = blueprint::header::parse(HEADER)?;
-            Some((header_data, content_data))
+            let (header_data, warns_header) = blueprint::header::parse(HEADER)?;
+            Ok((
+                header_data,
+                content_data,
+                [warns_content.as_slice(), warns_header.as_slice()].concat(),
+            ))
         }
     }
 }
@@ -218,7 +189,7 @@ fn process_middle_layer(
     header_data_in: HeaderData,
     content_data_in: ContentData,
     should_sort_buildings: bool,
-) -> Option<(HeaderData, ContentData)> {
+) -> (HeaderData, ContentData) {
     use edit::{fix_buildings_index, sort_buildings};
 
     // 这里应该是唯一一处非必要的深拷贝，但这是符合直觉的，可以极大优化用户的使用体验
@@ -230,7 +201,7 @@ fn process_middle_layer(
         fix_buildings_index(&mut content_data_out.buildings);
     }
 
-    Some((header_data_out, content_data_out))
+    (header_data_out, content_data_out)
 }
 
 fn process_back_end(
@@ -238,20 +209,20 @@ fn process_back_end(
     content_data: &ContentData,
     zopfli_options: &zopfli::Options,
     output_type: &FileType,
-) -> Option<BlueprintKind> {
+) -> Result<BlueprintKind, DspbptkError<'static>> {
     use crate::blueprint::content::bin_from_data;
     use crate::blueprint::content::string_from_data;
     match output_type {
         FileType::Txt => {
             let header_string = blueprint::header::serialization(header_data);
             let content_string = string_from_data(content_data, zopfli_options)?;
-            Some(BlueprintKind::Blueprint(blueprint::serialization(
+            Ok(BlueprintKind::Blueprint(blueprint::serialization(
                 &header_string,
                 &content_string,
             )))
         }
-        FileType::Content => Some(BlueprintKind::Content(bin_from_data(content_data))),
-        _ => None,
+        FileType::Content => Ok(BlueprintKind::Content(bin_from_data(content_data))),
+        _ => Err(UnknownFileType),
     }
 }
 
@@ -263,20 +234,50 @@ fn process_one_file(
     output_type: &FileType,
     sort_buildings: bool,
 ) -> Option<()> {
-    let blueprint_kind_in = read_file(file_path_in)?;
+    let blueprint_kind_in = match read_file(file_path_in) {
+        Ok(result) => result,
+        Err(e) => {
+            error!("{:?}", e);
+            return None;
+        }
+    };
 
-    let (header_data_in, content_data_in) = process_front_end(blueprint_kind_in)?;
+    let mut content_bin_in = Vec::new();
+
+    let (header_data_in, content_data_in, warns_front_end) =
+        match process_front_end(&blueprint_kind_in, &mut content_bin_in) {
+            Ok(result) => {
+                result
+            },
+            Err(e) => {
+                error!("{:?}", e);
+                return None;
+            }
+        };
+
     let (header_data_out, content_data_out) =
-        process_middle_layer(header_data_in, content_data_in, sort_buildings)?;
-    let blueprint_kind_out = process_back_end(
+        process_middle_layer(header_data_in, content_data_in, sort_buildings);
+    let blueprint_kind_out = match process_back_end(
         &header_data_out,
         &content_data_out,
         &zopfli_options,
         &output_type,
-    )?;
+    ) {
+        Ok(result) => result,
+        Err(e) => {
+            error!("{:?}", e);
+            return None;
+        }
+    };
 
     let file_path_out = generate_output_path(path_in, path_out, file_path_in, output_type);
-    write_file(&file_path_out, blueprint_kind_out)
+    match write_file(&file_path_out, blueprint_kind_out) {
+        Ok(_) => Some(()),
+        Err(e) => {
+            error!("{:?}", e);
+            return None;
+        }
+    }
 
     // TODO 数据统计
 }

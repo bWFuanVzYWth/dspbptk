@@ -4,14 +4,18 @@ use thiserror::Error;
 pub enum DspbptkError<'a> {
     #[error("Can not read file: {path:?}, because {source}")]
     CanNotReadFile {
-        path: std::ffi::OsString,
+        path: &'a std::path::PathBuf,
         source: std::io::Error,
     },
     #[error("Can not write file: {path:?}, because {source}")]
     CanNotWriteFile {
-        path: std::ffi::OsString,
+        path: &'a std::path::PathBuf,
         source: std::io::Error,
     },
+    #[error("not blueprint")]
+    NotBlueprint,
+    #[error("unknown file type")]
+    UnknownFileType,
     #[error("broken base64: {0}")]
     BrokenBase64(base64::DecodeError),
     #[error("broken gzip: {0}")]
@@ -26,26 +30,26 @@ pub enum DspbptkError<'a> {
     CanNotCompressGzip(std::io::Error),
 }
 
-#[derive(Error, Debug)]
-pub enum DspbptkWarn<'a> {
+#[derive(Error, Debug, PartialEq, Clone)]
+pub enum DspbptkWarn {
     #[error("few unknown after blueprint: {0:?}")]
-    FewUnknownAfterBlueprint(&'a str),
+    FewUnknownAfterBlueprint(String),
     #[error("lot unknown after blueprint: length = {0}")]
     LotUnknownAfterBlueprint(usize),
     #[error("few unknown after content: {0:?}")]
-    FewUnknownAfterContent(&'a [u8]),
+    FewUnknownAfterContent(Vec<u8>),
     #[error("lot unknown after content: length = {0}")]
     LotUnknownAfterContent(usize),
-    #[error("not blueprint: {0:?}")]
-    NotBlueprint(std::ffi::OsString),
+    #[error("unknown after header")]
+    UnknownAfterHeader,
     #[error("unexpected MD5F: expected = {0:?}, actual = {1:?}")]
-    UnexpectedMD5F(&'a str, &'a str),
+    UnexpectedMD5F(String, String),
 }
 
 #[derive(Error, Debug)]
-pub enum DspbptkInfo {
+pub enum DspbptkInfo<'a> {
     #[error("read file: {0:?}")]
-    ReadFile(std::ffi::OsString),
+    ReadFile(&'a std::path::PathBuf),
     #[error("write file: {0:?}")]
-    WriteFile(std::ffi::OsString),
+    WriteFile(&'a std::path::PathBuf),
 }
