@@ -31,11 +31,7 @@ fn read_blueprint_file(path: &std::path::PathBuf) -> Result<String, DspbptkError
     })
 }
 
-<<<<<<< HEAD
 fn is_valid_blueprint<'a>(blueprint_content: &str) -> Result<(), DspbptkError<'a>> {
-=======
-fn is_valid_blueprint(blueprint_content: &str, file_in: &std::path::PathBuf) -> Option<()> {
->>>>>>> 2a97416ef636a5266e30c86f0f0ebf139b7f9ef2
     if blueprint_content.chars().take(12).collect::<String>() != "BLUEPRINT:0," {
         Err(NotBlueprint)
     } else {
@@ -154,7 +150,6 @@ pub enum BlueprintKind {
     Content(Vec<u8>),
 }
 
-<<<<<<< HEAD
 fn process_front_end<'a>(
     blueprint: &'a BlueprintKind,
     blueprint_content_bin: &'a mut Vec<u8>,
