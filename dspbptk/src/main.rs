@@ -237,20 +237,23 @@ fn process_one_file(
     let blueprint_kind_in = match read_file(file_path_in) {
         Ok(result) => result,
         Err(e) => {
-            error!("{:?}", e);
+            error!("\"{}\": {:?}", file_path_in.display(), e);
             return None;
         }
     };
 
     let mut content_bin_in = Vec::new();
 
-    let (header_data_in, content_data_in, warns_front_end) =
+    let (header_data_in, content_data_in) =
         match process_front_end(&blueprint_kind_in, &mut content_bin_in) {
-            Ok(result) => {
-                result
-            },
+            Ok((header_data_in, content_data_in, warns_front_end)) => {
+                for warn in warns_front_end {
+                    warn!("\"{}\": {:?}", file_path_in.display(), warn);
+                }
+                (header_data_in, content_data_in)
+            }
             Err(e) => {
-                error!("{:?}", e);
+                error!("\"{}\": {:?}", file_path_in.display(), e);
                 return None;
             }
         };
@@ -265,7 +268,7 @@ fn process_one_file(
     ) {
         Ok(result) => result,
         Err(e) => {
-            error!("{:?}", e);
+            error!("\"{}\": {:?}", file_path_in.display(), e);
             return None;
         }
     };
@@ -274,7 +277,7 @@ fn process_one_file(
     match write_file(&file_path_out, blueprint_kind_out) {
         Ok(_) => Some(()),
         Err(e) => {
-            error!("{:?}", e);
+            error!("\"{}\": {:?}", file_path_in.display(), e);
             return None;
         }
     }
