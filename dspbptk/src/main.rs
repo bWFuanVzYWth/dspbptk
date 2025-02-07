@@ -204,12 +204,12 @@ fn process_middle_layer(
     (header_data_out, content_data_out)
 }
 
-fn process_back_end(
+fn process_back_end<'a>(
     header_data: &HeaderData,
     content_data: &ContentData,
     zopfli_options: &zopfli::Options,
     output_type: &FileType,
-) -> Result<BlueprintKind, DspbptkError<'static>> {
+) -> Result<BlueprintKind, DspbptkError<'a>> {
     use crate::blueprint::content::bin_from_data;
     use crate::blueprint::content::string_from_data;
     match output_type {

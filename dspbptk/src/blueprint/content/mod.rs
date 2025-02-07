@@ -107,7 +107,7 @@ fn encode_base64(bin: &[u8]) -> String {
     BASE64_STANDARD.encode(bin)
 }
 
-fn decompress_gzip(bin: &mut Vec<u8>, gzip: Vec<u8>) -> Result<(), DspbptkError<'static>> {
+fn decompress_gzip<'a>(bin: &mut Vec<u8>, gzip: Vec<u8>) -> Result<(), DspbptkError<'a>> {
     use flate2::read::GzDecoder;
     use std::io::Read;
     let mut decoder = GzDecoder::new(&gzip[..]);
@@ -136,7 +136,7 @@ pub fn gzip_from_string(string: &str) -> Result<Vec<u8>, DspbptkError> {
     decode_base64(string)
 }
 
-pub fn bin_from_gzip(bin: &mut Vec<u8>, gzip: Vec<u8>) -> Result<(), DspbptkError<'static>> {
+pub fn bin_from_gzip<'a>(bin: &mut Vec<u8>, gzip: Vec<u8>) -> Result<(), DspbptkError<'a>> {
     decompress_gzip(bin, gzip)
 }
 
