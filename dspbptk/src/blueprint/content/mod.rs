@@ -144,7 +144,7 @@ pub fn data_from_bin(bin: &[u8]) -> Result<(ContentData, Vec<DspbptkWarn>), Dspb
     deserialization(bin)
 }
 
-pub fn bin_from_data<'a>(data: &ContentData) -> Vec<u8> {
+pub fn bin_from_data(data: &ContentData) -> Vec<u8> {
     serialization(data)
 }
 

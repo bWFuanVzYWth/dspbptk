@@ -31,7 +31,11 @@ fn read_blueprint_file(path: &std::path::PathBuf) -> Result<String, DspbptkError
     })
 }
 
+<<<<<<< HEAD
 fn is_valid_blueprint<'a>(blueprint_content: &str) -> Result<(), DspbptkError<'a>> {
+=======
+fn is_valid_blueprint(blueprint_content: &str, file_in: &std::path::PathBuf) -> Option<()> {
+>>>>>>> 2a97416ef636a5266e30c86f0f0ebf139b7f9ef2
     if blueprint_content.chars().take(12).collect::<String>() != "BLUEPRINT:0," {
         Err(NotBlueprint)
     } else {
@@ -133,7 +137,7 @@ fn generate_output_path(
         _ => panic!("Unsupported file type"),
     };
 
-    let relative_path = relative_path.strip_prefix(root_path_in).unwrap();
+    let relative_path = relative_path.strip_prefix(root_path_in).expect("Fatal error: can not process file path");
 
     let mut output_path = if relative_path == Path::new("") {
         root_path_out.to_path_buf()
@@ -150,6 +154,7 @@ pub enum BlueprintKind {
     Content(Vec<u8>),
 }
 
+<<<<<<< HEAD
 fn process_front_end<'a>(
     blueprint: &'a BlueprintKind,
     blueprint_content_bin: &'a mut Vec<u8>,
@@ -336,6 +341,7 @@ fn process_workflow(args: &Args) {
 }
 
 fn configure_zopfli_options(args: &Args) -> zopfli::Options {
+    // 参数的正确性必须由用户保证，如果参数无效则拒绝处理，然后立即退出程序
     let iteration_count = args
         .iteration_count
         .expect("Fatal error: unknown iteration_count");
