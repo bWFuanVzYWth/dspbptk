@@ -60,7 +60,7 @@ fn deserialization_non_finish(bin: &[u8]) -> IResult<&[u8], ContentData> {
     ))
 }
 
-fn deserialization(bin: &[u8]) -> Result<(ContentData, Vec<DspbptkWarn>), DspbptkError> {
+pub fn data_from_bin(bin: &[u8]) -> Result<(ContentData, Vec<DspbptkWarn>), DspbptkError> {
     use nom::Finish;
     let (unknown, content) = deserialization_non_finish(bin)
         .finish()
@@ -74,7 +74,7 @@ fn deserialization(bin: &[u8]) -> Result<(ContentData, Vec<DspbptkWarn>), Dspbpt
     Ok((content, warns))
 }
 
-fn serialization(data: &ContentData) -> Vec<u8> {
+pub fn bin_from_data(data: &ContentData) -> Vec<u8> {
     let mut bin = Vec::new();
     bin.extend_from_slice(&data.patch.to_le_bytes());
     bin.extend_from_slice(&data.cursor_offset_x.to_le_bytes());
@@ -94,7 +94,7 @@ fn serialization(data: &ContentData) -> Vec<u8> {
     bin
 }
 
-fn decode_base64(string: &str) -> Result<Vec<u8>, DspbptkError> {
+pub fn gzip_from_string(string: &str) -> Result<Vec<u8>, DspbptkError> {
     use base64::prelude::*;
     match BASE64_STANDARD.decode(string) {
         Ok(bin) => Ok(bin),
@@ -102,12 +102,12 @@ fn decode_base64(string: &str) -> Result<Vec<u8>, DspbptkError> {
     }
 }
 
-fn encode_base64(bin: &[u8]) -> String {
+pub fn string_from_gzip(gzip: &[u8]) -> String {
     use base64::prelude::*;
-    BASE64_STANDARD.encode(bin)
+    BASE64_STANDARD.encode(gzip)
 }
 
-fn decompress_gzip<'a>(bin: &mut Vec<u8>, gzip: Vec<u8>) -> Result<(), DspbptkError<'a>> {
+pub fn bin_from_gzip<'a>(bin: &mut Vec<u8>, gzip: Vec<u8>) -> Result<(), DspbptkError<'a>> {
     use flate2::read::GzDecoder;
     use std::io::Read;
     let mut decoder = GzDecoder::new(&gzip[..]);
@@ -115,7 +115,7 @@ fn decompress_gzip<'a>(bin: &mut Vec<u8>, gzip: Vec<u8>) -> Result<(), DspbptkEr
     Ok(())
 }
 
-fn compress_gzip_zopfli<'a>(
+pub fn compress_gzip_zopfli<'a>(
     bin: &[u8],
     zopfli_options: &zopfli::Options,
 ) -> Result<Vec<u8>, DspbptkError<'a>> {
@@ -125,38 +125,11 @@ fn compress_gzip_zopfli<'a>(
     Ok(gzip)
 }
 
-fn compress_gzip<'a>(
-    bin: &[u8],
-    zopfli_options: &zopfli::Options,
-) -> Result<Vec<u8>, DspbptkError<'a>> {
-    compress_gzip_zopfli(bin, zopfli_options)
-}
-
-pub fn gzip_from_string(string: &str) -> Result<Vec<u8>, DspbptkError> {
-    decode_base64(string)
-}
-
-pub fn bin_from_gzip<'a>(bin: &mut Vec<u8>, gzip: Vec<u8>) -> Result<(), DspbptkError<'a>> {
-    decompress_gzip(bin, gzip)
-}
-
-pub fn data_from_bin(bin: &[u8]) -> Result<(ContentData, Vec<DspbptkWarn>), DspbptkError> {
-    deserialization(bin)
-}
-
-pub fn bin_from_data(data: &ContentData) -> Vec<u8> {
-    serialization(data)
-}
-
 pub fn gzip_from_bin<'a>(
     bin: &[u8],
     zopfli_options: &zopfli::Options,
 ) -> Result<Vec<u8>, DspbptkError<'a>> {
-    compress_gzip(bin, zopfli_options)
-}
-
-pub fn string_from_gzip(gzip: &[u8]) -> String {
-    encode_base64(gzip)
+    compress_gzip_zopfli(bin, zopfli_options)
 }
 
 pub fn bin_from_string<'a>(
