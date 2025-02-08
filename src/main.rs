@@ -3,10 +3,12 @@
 mod blueprint;
 mod edit;
 mod error;
+mod io;
 
 use std::path::{Path, PathBuf};
 
 use clap::Parser;
+use io::{BlueprintKind, FileType};
 use rayon::prelude::*;
 use walkdir::WalkDir;
 
@@ -16,102 +18,11 @@ use log::{error, warn};
 use blueprint::content::ContentData;
 use blueprint::header::HeaderData;
 
-fn read_content_file(path: &std::path::PathBuf) -> Result<Vec<u8>, DspbptkError> {
-    std::fs::read(path).map_err(|e| CanNotReadFile {
-        path: path,
-        source: e,
-    })
-}
-
-fn read_blueprint_file(path: &std::path::PathBuf) -> Result<String, DspbptkError> {
-    std::fs::read_to_string(path).map_err(|e| CanNotReadFile {
-        path: path,
-        source: e,
-    })
-}
-
-fn is_valid_blueprint<'a>(blueprint_content: &str) -> Result<(), DspbptkError<'a>> {
-    if blueprint_content.chars().take(12).collect::<String>() != "BLUEPRINT:0," {
-        Err(NotBlueprint)
-    } else {
-        Ok(())
-    }
-}
-
-fn read_file(path: &PathBuf) -> Result<BlueprintKind, DspbptkError> {
-    use crate::BlueprintKind::*;
-    match classify_file_type(path) {
-        FileType::Txt => {
-            let blueprint_string = read_blueprint_file(path)?;
-            is_valid_blueprint(&blueprint_string)?;
-            Ok(Blueprint(blueprint_string))
-        }
-        FileType::Content => {
-            let content_bin = read_content_file(path)?;
-            Ok(Content(content_bin))
-        }
-        _ => Err(UnknownFileType),
-    }
-}
-
-fn create_father_dir(path: &PathBuf) -> Result<(), DspbptkError> {
-    let parent = match path.parent() {
-        Some(p) => p.to_path_buf(),
-        None => PathBuf::from("."),
-    };
-    std::fs::create_dir_all(&parent).map_err(|e| CanNotWriteFile {
-        path: path,
-        source: e,
-    })
-}
-
-fn write_blueprint_file(path: &PathBuf, blueprint: String) -> Result<(), DspbptkError> {
-    create_father_dir(path)?;
-    std::fs::write(path, blueprint).map_err(|e| CanNotWriteFile {
-        path: path,
-        source: e,
-    })
-}
-
-fn write_content_file(path: &PathBuf, content: Vec<u8>) -> Result<(), DspbptkError> {
-    create_father_dir(path)?;
-    std::fs::write(path, content).map_err(|e| CanNotWriteFile {
-        path: path,
-        source: e,
-    })
-}
-
-fn write_file(path: &PathBuf, blueprint_kind: BlueprintKind) -> Result<(), DspbptkError> {
-    match blueprint_kind {
-        BlueprintKind::Blueprint(blueprint) => write_blueprint_file(path, blueprint),
-        BlueprintKind::Content(content) => write_content_file(path, content),
-    }
-}
-
-pub enum FileType {
-    Unknown,
-    Other,
-    Txt,
-    Content,
-}
-
-fn classify_file_type(entry: &std::path::PathBuf) -> FileType {
-    if let Some(extension) = entry.extension() {
-        match extension.to_str() {
-            Some("txt") => FileType::Txt,
-            Some("content") => FileType::Content,
-            _ => FileType::Other,
-        }
-    } else {
-        FileType::Unknown
-    }
-}
-
 fn collect_files(path_in: &Path) -> Vec<PathBuf> {
     let mut files = Vec::new();
     for entry in WalkDir::new(path_in).into_iter().filter_map(|e| e.ok()) {
         let entry_path = entry.into_path();
-        match classify_file_type(&entry_path) {
+        match io::classify_file_type(&entry_path) {
             FileType::Txt => files.push(entry_path),
             FileType::Content => files.push(entry_path),
             _ => {}
@@ -144,11 +55,6 @@ fn generate_output_path(
 
     output_path.set_extension(extension);
     output_path
-}
-
-pub enum BlueprintKind {
-    Blueprint(String),
-    Content(Vec<u8>),
 }
 
 fn process_front_end<'a>(
@@ -235,7 +141,7 @@ fn process_one_file(
     output_type: &FileType,
     sort_buildings: bool,
 ) -> Option<()> {
-    let blueprint_kind_in = match read_file(file_path_in) {
+    let blueprint_kind_in = match io::read_file(file_path_in) {
         Ok(result) => result,
         Err(e) => {
             error!("\"{}\": {:?}", file_path_in.display(), e);
@@ -275,7 +181,7 @@ fn process_one_file(
     };
 
     let file_path_out = generate_output_path(path_in, path_out, file_path_in, output_type);
-    match write_file(&file_path_out, blueprint_kind_out) {
+    match io::write_file(&file_path_out, blueprint_kind_out) {
         Ok(_) => Some(()),
         Err(e) => {
             error!("\"{}\": {:?}", file_path_in.display(), e);
