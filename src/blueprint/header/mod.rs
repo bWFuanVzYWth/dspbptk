@@ -37,7 +37,7 @@ fn take_till_comma(string: &str) -> IResult<&str, &str> {
     take_till(|c| c == ',')(string)
 }
 
-pub fn parse_non_finish(string: &str) -> IResult<&str, HeaderData> {
+fn parse_non_finish(string: &str) -> IResult<&str, HeaderData> {
     let unknown = string;
 
     let (unknown, layout) = preceded(tag_blueprint, take_till_comma)(unknown)?;
