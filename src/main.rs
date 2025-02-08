@@ -1,3 +1,5 @@
+// TODO 拆分lib.rs，拆分模块
+
 mod blueprint;
 mod edit;
 mod error;
@@ -9,13 +11,11 @@ use clap::Parser;
 use rayon::prelude::*;
 use walkdir::WalkDir;
 
-use error::{DspbptkError, DspbptkError::*, DspbptkWarn, DspbptkWarn::*};
+use error::{DspbptkError, DspbptkError::*, DspbptkWarn};
 use log::{error, warn};
 
 use blueprint::content::ContentData;
 use blueprint::header::HeaderData;
-
-// TODO 把文件io单独拆一个mod
 
 fn read_content_file(path: &std::path::PathBuf) -> Result<Vec<u8>, DspbptkError> {
     std::fs::read(path).map_err(|e| CanNotReadFile {
@@ -133,7 +133,9 @@ fn generate_output_path(
         _ => panic!("Unsupported file type"),
     };
 
-    let relative_path = relative_path.strip_prefix(root_path_in).expect("Fatal error: can not process file path");
+    let relative_path = relative_path
+        .strip_prefix(root_path_in)
+        .expect("Fatal error: can not process file path");
 
     let mut output_path = if relative_path == Path::new("") {
         root_path_out.to_path_buf()

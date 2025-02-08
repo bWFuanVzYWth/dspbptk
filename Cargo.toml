@@ -1,8 +1,33 @@
-[workspace]
-members = ["dspbptk", "tammes_problem", "zopfli"]
-default-run = "dspbptk"
-workspace.resolver = "2"
+[package]
+name = "dspbptk"
+author = "bWFuanVzYWth"
+version = "0.1.0"                                      # TODO 这个版本不会自动更新
+edition = "2021"
+description = "Dyson Sphere Program Blueprint Toolkit"
 
-[profile.release]
-lto = "fat"
-codegen-units = 1
+[dependencies]
+# Multi-threaded
+rayon = "1.10.0"
+# Parser
+nom = "7.1.3"
+# decode/encode base64
+base64 = "0.22.1"
+# md5f
+lazy_static = "1.5.0"
+# Decompress GZIP
+flate2 = "1.0.35"
+# Compress GZIP
+zopfli = "0.8.1"
+# test float equal
+approx = "0.5.1"
+
+# Recursive directory traversal
+walkdir = "2.5.0"
+# Command Line Argument Parser
+clap = { version = "4.5.28", features = ["derive"] }
+# log
+log = "0.4.25"
+# log >> stderr
+env_logger = "0.11.6"
+nalgebra = "0.33.2"
+thiserror = "2.0.11"
