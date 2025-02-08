@@ -4,7 +4,7 @@ use nom::{
     IResult,
 };
 
-use crate::blueprint::content::building::BuildingData;
+use super::BuildingData;
 
 const ZERO: i32 = 0; // 00 00 00 00
 

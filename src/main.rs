@@ -3,7 +3,6 @@
 mod blueprint;
 mod edit;
 mod error;
-mod md5;
 
 use std::path::{Path, PathBuf};
 

@@ -2,16 +2,13 @@ mod building_0;
 mod building_neg100;
 mod building_neg101;
 
-use nom::{
-    branch::alt,
-    IResult,
-};
+use nom::{branch::alt, IResult};
+
+use building_0::*;
+use building_neg100::*;
+use building_neg101::*;
 
 pub const INDEX_NULL: i32 = -1;
-
-use crate::blueprint::content::building::building_0::*;
-use crate::blueprint::content::building::building_neg100::*;
-use crate::blueprint::content::building::building_neg101::*;
 
 #[derive(Debug, Clone)]
 pub struct BuildingData {

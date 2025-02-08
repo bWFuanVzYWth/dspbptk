@@ -5,7 +5,7 @@ use nom::{
     IResult,
 };
 
-use crate::blueprint::content::building::BuildingData;
+use super::BuildingData;
 
 const NEG_100: i32 = -100; // 9C FF FF FF
 
