@@ -1,28 +1,22 @@
-// TODO 拆分lib.rs，拆分模块
-
-mod blueprint;
-mod edit;
-mod error;
-mod io;
+use dspbptk;
 
 use std::path::{Path, PathBuf};
 
 use clap::Parser;
-use io::{BlueprintKind, FileType};
+use log::{error, warn};
 use rayon::prelude::*;
 use walkdir::WalkDir;
 
-use error::{DspbptkError, DspbptkError::*, DspbptkWarn};
-use log::{error, warn};
-
-use blueprint::content::ContentData;
-use blueprint::header::HeaderData;
+use dspbptk::blueprint::content::ContentData;
+use dspbptk::blueprint::header::HeaderData;
+use dspbptk::error::{DspbptkError, DspbptkError::*, DspbptkWarn};
+use dspbptk::io::{BlueprintKind, FileType};
 
 fn collect_files(path_in: &Path) -> Vec<PathBuf> {
     let mut files = Vec::new();
     for entry in WalkDir::new(path_in).into_iter().filter_map(|e| e.ok()) {
         let entry_path = entry.into_path();
-        match io::classify_file_type(&entry_path) {
+        match dspbptk::io::classify_file_type(&entry_path) {
             FileType::Txt => files.push(entry_path),
             FileType::Content => files.push(entry_path),
             _ => {}
@@ -61,13 +55,18 @@ fn process_front_end<'a>(
     blueprint: &'a BlueprintKind,
     blueprint_content_bin: &'a mut Vec<u8>,
 ) -> Result<(HeaderData, ContentData, Vec<DspbptkWarn>), DspbptkError<'a>> {
+    use dspbptk::{
+        blueprint,
+        blueprint::{content, header},
+    };
+
     match blueprint {
         BlueprintKind::Txt(blueprint_string) => {
             let (blueprint_data, warns_blueprint) = blueprint::parse(&blueprint_string)?;
-            blueprint::content::bin_from_string(blueprint_content_bin, &blueprint_data.content)?;
+            content::bin_from_string(blueprint_content_bin, &blueprint_data.content)?;
             let (content_data, warns_content) =
-                blueprint::content::data_from_bin(blueprint_content_bin.as_slice())?;
-            let (header_data, warns_header) = blueprint::header::parse(&blueprint_data.header)?;
+                content::data_from_bin(blueprint_content_bin.as_slice())?;
+            let (header_data, warns_header) = header::parse(&blueprint_data.header)?;
             Ok((
                 header_data,
                 content_data,
@@ -97,7 +96,7 @@ fn process_middle_layer(
     content_data_in: ContentData,
     should_sort_buildings: bool,
 ) -> (HeaderData, ContentData) {
-    use edit::{fix_buildings_index, sort_buildings};
+    use dspbptk::edit::{fix_buildings_index, sort_buildings};
 
     // 这里应该是唯一一处非必要的深拷贝，但这是符合直觉的，可以极大优化用户的使用体验
     let header_data_out = header_data_in.clone();
@@ -117,11 +116,14 @@ fn process_back_end<'a>(
     zopfli_options: &zopfli::Options,
     output_type: &FileType,
 ) -> Result<BlueprintKind, DspbptkError<'a>> {
-    use crate::blueprint::content::bin_from_data;
-    use crate::blueprint::content::string_from_data;
+    use dspbptk::{
+        blueprint,
+        blueprint::header,
+        blueprint::content::{string_from_data,bin_from_data}
+    };
     match output_type {
         FileType::Txt => {
-            let header_string = blueprint::header::serialization(header_data);
+            let header_string = header::serialization(header_data);
             let content_string = string_from_data(content_data, zopfli_options)?;
             Ok(BlueprintKind::Txt(blueprint::serialization(
                 &header_string,
@@ -141,7 +143,7 @@ fn process_one_file(
     output_type: &FileType,
     sort_buildings: bool,
 ) -> Option<()> {
-    let blueprint_kind_in = match io::read_file(file_path_in) {
+    let blueprint_kind_in = match dspbptk::io::read_file(file_path_in) {
         Ok(result) => result,
         Err(e) => {
             error!("\"{}\": {:?}", file_path_in.display(), e);
@@ -181,7 +183,7 @@ fn process_one_file(
     };
 
     let file_path_out = generate_output_path(path_in, path_out, file_path_in, output_type);
-    match io::write_file(&file_path_out, blueprint_kind_out) {
+    match dspbptk::io::write_file(&file_path_out, blueprint_kind_out) {
         Ok(_) => Some(()),
         Err(e) => {
             error!("\"{}\": {:?}", file_path_in.display(), e);

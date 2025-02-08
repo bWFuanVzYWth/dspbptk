@@ -5,6 +5,14 @@ version = "0.1.0"                                      # TODO 这个版本不会
 edition = "2021"
 description = "Dyson Sphere Program Blueprint Toolkit"
 
+[lib]
+name = "dspbptk"
+path = "src/lib.rs"
+
+[[bin]]
+name = "dspbptk"
+path = "src/main.rs"
+
 [dependencies]
 # Multi-threaded
 rayon = "1.10.0"
@@ -29,5 +37,7 @@ clap = { version = "4.5.28", features = ["derive"] }
 log = "0.4.25"
 # log >> stderr
 env_logger = "0.11.6"
+# test & debug
 nalgebra = "0.33.2"
+# error
 thiserror = "2.0.11"
