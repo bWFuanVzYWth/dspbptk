@@ -62,7 +62,7 @@ fn process_front_end<'a>(
     blueprint_content_bin: &'a mut Vec<u8>,
 ) -> Result<(HeaderData, ContentData, Vec<DspbptkWarn>), DspbptkError<'a>> {
     match blueprint {
-        BlueprintKind::Blueprint(blueprint_string) => {
+        BlueprintKind::Txt(blueprint_string) => {
             let (blueprint_data, warns_blueprint) = blueprint::parse(&blueprint_string)?;
             blueprint::content::bin_from_string(blueprint_content_bin, &blueprint_data.content)?;
             let (content_data, warns_content) =
@@ -123,7 +123,7 @@ fn process_back_end<'a>(
         FileType::Txt => {
             let header_string = blueprint::header::serialization(header_data);
             let content_string = string_from_data(content_data, zopfli_options)?;
-            Ok(BlueprintKind::Blueprint(blueprint::serialization(
+            Ok(BlueprintKind::Txt(blueprint::serialization(
                 &header_string,
                 &content_string,
             )))

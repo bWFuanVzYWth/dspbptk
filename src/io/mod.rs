@@ -3,7 +3,7 @@ use std::path::PathBuf;
 use crate::error::{DspbptkError, DspbptkError::*};
 
 pub enum BlueprintKind {
-    Blueprint(String),
+    Txt(String),
     Content(Vec<u8>),
 }
 
@@ -55,7 +55,7 @@ pub fn read_file(path: &PathBuf) -> Result<BlueprintKind, DspbptkError> {
     match classify_file_type(path) {
         FileType::Txt => {
             let blueprint_string = read_blueprint_file(path)?;
-            Ok(BlueprintKind::Blueprint(blueprint_string))
+            Ok(BlueprintKind::Txt(blueprint_string))
         }
         FileType::Content => {
             let content_bin = read_content_file(path)?;
@@ -83,7 +83,7 @@ fn write_content_file(path: &PathBuf, content: Vec<u8>) -> Result<(), DspbptkErr
 
 pub fn write_file(path: &PathBuf, blueprint_kind: BlueprintKind) -> Result<(), DspbptkError> {
     match blueprint_kind {
-        BlueprintKind::Blueprint(blueprint) => write_blueprint_file(path, blueprint),
+        BlueprintKind::Txt(blueprint) => write_blueprint_file(path, blueprint),
         BlueprintKind::Content(content) => write_content_file(path, content),
     }
 }

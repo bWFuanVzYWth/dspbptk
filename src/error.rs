@@ -12,8 +12,6 @@ pub enum DspbptkError<'a> {
         path: &'a std::path::PathBuf,
         source: std::io::Error,
     },
-    #[error("not blueprint")]
-    NotBlueprint,
     #[error("unknown file type")]
     UnknownFileType,
     #[error("broken base64: {0}")]
