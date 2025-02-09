@@ -43,6 +43,42 @@ pub struct BuildingData {
     pub parameters: Vec<i32>,
 }
 
+impl BuildingData {
+    pub fn new_default() -> Self {
+        Self {
+            _version: NEG_101,
+            index: INDEX_NULL,
+            area_index: 0,
+            local_offset_x: 0.0,
+            local_offset_y: 0.0,
+            local_offset_z: 0.0,
+            yaw: 0.0,
+            tilt: 0.0,
+            pitch: 0.0,
+            local_offset_x2: 0.0,
+            local_offset_y2: 0.0,
+            local_offset_z2: 0.0,
+            yaw2: 0.0,
+            tilt2: 0.0,
+            pitch2: 0.0,
+            item_id: 0,
+            model_index: 0,
+            temp_output_obj_idx: INDEX_NULL,
+            temp_input_obj_idx: INDEX_NULL,
+            output_to_slot: 0,
+            input_from_slot: 0,
+            output_from_slot: 0,
+            input_to_slot: 0,
+            output_offset: 0,
+            input_offset: 0,
+            recipe_id: 0,
+            filter_id: 0,
+            parameters_length: 0,
+            parameters: Vec::new(),
+        }
+    }
+}
+
 pub fn deserialization(bin: &[u8]) -> IResult<&[u8], BuildingData> {
     let (unknown, data) = alt((
         deserialization_version_neg101,

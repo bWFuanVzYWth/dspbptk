@@ -7,7 +7,7 @@ use nom::{
 
 use super::BuildingData;
 
-const NEG_101: i32 = -101; // 9B FF FF FF
+pub const NEG_101: i32 = -101; // 9B FF FF FF
 
 const BELT_LOW: i16 = 2001;
 const BELT_HIGH: i16 = 2009;

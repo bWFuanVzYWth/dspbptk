@@ -15,6 +15,21 @@ pub struct AreaData {
     pub height: i16,
 }
 
+impl AreaData {
+    pub fn new_default() -> Self {
+        Self {
+            index: 0,
+            parent_index: 0,
+            tropic_anchor: 0,
+            area_segments: 0,
+            anchor_local_offset_x: 0,
+            anchor_local_offset_y: 0,
+            width: 0,
+            height: 0,
+        }
+    }
+}
+
 pub fn deserialization(bin: &[u8]) -> IResult<&[u8], AreaData> {
     let unknown = bin;
 
