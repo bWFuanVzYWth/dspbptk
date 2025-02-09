@@ -9,8 +9,7 @@ use walkdir::WalkDir;
 
 use dspbptk::blueprint::content::ContentData;
 use dspbptk::blueprint::header::HeaderData;
-use dspbptk::error::{DspbptkError, DspbptkError::*, DspbptkWarn};
-use dspbptk::io::{self, BlueprintKind, FileType};
+use dspbptk::io::{self, FileType};
 
 fn collect_files(path_in: &Path) -> Vec<PathBuf> {
     let mut files = Vec::new();

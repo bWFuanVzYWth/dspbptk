@@ -9,10 +9,6 @@ description = "Dyson Sphere Program Blueprint Toolkit"
 name = "dspbptk"
 path = "src/lib.rs"
 
-[[bin]]
-name = "dspbptk"
-path = "src/bin/dspbptk.rs"
-
 [dependencies]
 # Multi-threaded
 rayon = "1.10.0"

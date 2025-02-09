@@ -102,11 +102,6 @@ pub fn process_front_end<'a>(
     blueprint: &'a BlueprintKind,
     blueprint_content_bin: &'a mut Vec<u8>,
 ) -> Result<(HeaderData, ContentData, Vec<DspbptkWarn>), DspbptkError<'a>> {
-    // use dspbptk::{
-    //     blueprint,
-    //     blueprint::{content, header},
-    // };
-
     match blueprint {
         BlueprintKind::Txt(blueprint_string) => {
             let (blueprint_data, warns_blueprint) = blueprint::parse(&blueprint_string)?;
