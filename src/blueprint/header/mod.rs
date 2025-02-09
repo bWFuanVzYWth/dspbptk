@@ -21,6 +21,24 @@ pub struct HeaderData {
     pub unknown: String,
 }
 
+impl HeaderData {
+    pub fn new_default() -> Self {
+        Self {
+            layout: "0".to_string(),
+            icons_0: "0".to_string(),
+            icons_1: "0".to_string(),
+            icons_2: "0".to_string(),
+            icons_3: "0".to_string(),
+            icons_4: "0".to_string(),
+            time: "0".to_string(),
+            game_version: "0.0.0.0".to_string(),
+            short_desc: "".to_string(),
+            desc: "".to_string(),
+            unknown: "".to_string(),
+        }
+    }
+}
+
 fn tag_blueprint(string: &str) -> IResult<&str, &str> {
     tag("BLUEPRINT:0,")(string)
 }
