@@ -24,13 +24,13 @@ pub struct HeaderData {
 impl Default for HeaderData {
     fn default() -> Self {
         Self {
-            layout: "".to_string(),
-            icons_0: "".to_string(),
-            icons_1: "".to_string(),
-            icons_2: "".to_string(),
-            icons_3: "".to_string(),
-            icons_4: "".to_string(),
-            time: "".to_string(),
+            layout: "0".to_string(),
+            icons_0: "0".to_string(),
+            icons_1: "0".to_string(),
+            icons_2: "0".to_string(),
+            icons_3: "0".to_string(),
+            icons_4: "0".to_string(),
+            time: "0".to_string(),
             game_version: "".to_string(),
             short_desc: "".to_string(),
             desc: "".to_string(),
