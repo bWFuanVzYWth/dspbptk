@@ -9,7 +9,7 @@ use nom::{
     IResult,
 };
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 pub struct ContentData {
     pub patch: i32,
     pub cursor_offset_x: i32,
