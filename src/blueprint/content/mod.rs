@@ -26,7 +26,7 @@ pub struct ContentData {
 }
 
 impl ContentData {
-    pub fn new_default() -> Self {
+    pub fn default() -> Self {
         Self {
             patch: 0,
             cursor_offset_x: 0,
@@ -36,7 +36,7 @@ impl ContentData {
             drag_box_size_y: 1,
             primary_area_idx: 0,
             areas_length: 1, // 默认一个区域
-            areas: vec![area::AreaData::new_default()],
+            areas: vec![area::AreaData::default()],
             buildings_length: 0,
             buildings: Vec::new(),
             unknown: Vec::new(),

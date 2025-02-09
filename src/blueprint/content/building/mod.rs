@@ -44,7 +44,7 @@ pub struct BuildingData {
 }
 
 impl BuildingData {
-    pub fn new_default() -> Self {
+    pub fn default() -> Self {
         Self {
             _version: NEG_101,
             index: INDEX_NULL,

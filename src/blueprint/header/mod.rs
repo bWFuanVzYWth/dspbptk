@@ -22,7 +22,7 @@ pub struct HeaderData {
 }
 
 impl HeaderData {
-    pub fn new_default() -> Self {
+    pub fn default() -> Self {
         Self {
             layout: "0".to_string(),
             icons_0: "0".to_string(),

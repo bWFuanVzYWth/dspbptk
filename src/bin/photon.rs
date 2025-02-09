@@ -1,5 +1,19 @@
-use dspbptk;
+use dspbptk::{
+    blueprint::{content::ContentData, header::HeaderData},
+    error::DspbptkError,
+    io::{BlueprintKind, FileType},
+};
 
-fn main() {
-    
+fn main() -> Result<(), DspbptkError<'static>> {
+    let header_data = HeaderData::default();
+    let content_data = ContentData::default();
+    let zopfli_options = zopfli::Options::default();
+
+    if let BlueprintKind::Txt(blueprint) =
+        dspbptk::io::process_back_end(&header_data, &content_data, &zopfli_options, &FileType::Txt)?
+    {
+        print!("{}", blueprint);
+    }
+
+    Ok(())
 }

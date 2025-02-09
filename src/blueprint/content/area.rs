@@ -16,7 +16,7 @@ pub struct AreaData {
 }
 
 impl AreaData {
-    pub fn new_default() -> Self {
+    pub fn default() -> Self {
         Self {
             index: 0,
             parent_index: 0,

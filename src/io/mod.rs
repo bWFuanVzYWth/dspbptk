@@ -1,6 +1,16 @@
 use std::path::PathBuf;
 
-use crate::error::{DspbptkError, DspbptkError::*};
+use crate::{
+    blueprint::{
+        self,
+        content::{self, bin_from_data, string_from_data, ContentData},
+        header::{self, HeaderData},
+    },
+    error::{
+        DspbptkError::{self, *},
+        DspbptkWarn,
+    },
+};
 
 pub enum BlueprintKind {
     Txt(String),
@@ -85,5 +95,65 @@ pub fn write_file(path: &PathBuf, blueprint_kind: BlueprintKind) -> Result<(), D
     match blueprint_kind {
         BlueprintKind::Txt(blueprint) => write_blueprint_file(path, blueprint),
         BlueprintKind::Content(content) => write_content_file(path, content),
+    }
+}
+
+pub fn process_front_end<'a>(
+    blueprint: &'a BlueprintKind,
+    blueprint_content_bin: &'a mut Vec<u8>,
+) -> Result<(HeaderData, ContentData, Vec<DspbptkWarn>), DspbptkError<'a>> {
+    // use dspbptk::{
+    //     blueprint,
+    //     blueprint::{content, header},
+    // };
+
+    match blueprint {
+        BlueprintKind::Txt(blueprint_string) => {
+            let (blueprint_data, warns_blueprint) = blueprint::parse(&blueprint_string)?;
+            content::bin_from_string(blueprint_content_bin, &blueprint_data.content)?;
+            let (content_data, warns_content) =
+                content::data_from_bin(blueprint_content_bin.as_slice())?;
+            let (header_data, warns_header) = header::parse(&blueprint_data.header)?;
+            Ok((
+                header_data,
+                content_data,
+                [
+                    warns_blueprint.as_slice(),
+                    warns_content.as_slice(),
+                    warns_header.as_slice(),
+                ]
+                .concat(),
+            ))
+        }
+        BlueprintKind::Content(content_bin) => {
+            let (content_data, warns_content) = blueprint::content::data_from_bin(&content_bin)?;
+            const HEADER: &str = "BLUEPRINT:0,0,0,0,0,0,0,0,0,0.0.0.0,,";
+            let (header_data, warns_header) = blueprint::header::parse(HEADER)?;
+            Ok((
+                header_data,
+                content_data,
+                [warns_content.as_slice(), warns_header.as_slice()].concat(),
+            ))
+        }
+    }
+}
+
+pub fn process_back_end<'a>(
+    header_data: &HeaderData,
+    content_data: &ContentData,
+    zopfli_options: &zopfli::Options,
+    output_type: &FileType,
+) -> Result<BlueprintKind, DspbptkError<'a>> {
+    match output_type {
+        FileType::Txt => {
+            let header_string = header::serialization(header_data);
+            let content_string = string_from_data(content_data, zopfli_options)?;
+            Ok(BlueprintKind::Txt(blueprint::serialization(
+                &header_string,
+                &content_string,
+            )))
+        }
+        FileType::Content => Ok(BlueprintKind::Content(bin_from_data(content_data))),
+        _ => Err(UnknownFileType),
     }
 }

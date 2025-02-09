@@ -10,7 +10,7 @@ use walkdir::WalkDir;
 use dspbptk::blueprint::content::ContentData;
 use dspbptk::blueprint::header::HeaderData;
 use dspbptk::error::{DspbptkError, DspbptkError::*, DspbptkWarn};
-use dspbptk::io::{BlueprintKind, FileType};
+use dspbptk::io::{self, BlueprintKind, FileType};
 
 fn collect_files(path_in: &Path) -> Vec<PathBuf> {
     let mut files = Vec::new();
@@ -51,46 +51,6 @@ fn generate_output_path(
     output_path
 }
 
-fn process_front_end<'a>(
-    blueprint: &'a BlueprintKind,
-    blueprint_content_bin: &'a mut Vec<u8>,
-) -> Result<(HeaderData, ContentData, Vec<DspbptkWarn>), DspbptkError<'a>> {
-    use dspbptk::{
-        blueprint,
-        blueprint::{content, header},
-    };
-
-    match blueprint {
-        BlueprintKind::Txt(blueprint_string) => {
-            let (blueprint_data, warns_blueprint) = blueprint::parse(&blueprint_string)?;
-            content::bin_from_string(blueprint_content_bin, &blueprint_data.content)?;
-            let (content_data, warns_content) =
-                content::data_from_bin(blueprint_content_bin.as_slice())?;
-            let (header_data, warns_header) = header::parse(&blueprint_data.header)?;
-            Ok((
-                header_data,
-                content_data,
-                [
-                    warns_blueprint.as_slice(),
-                    warns_content.as_slice(),
-                    warns_header.as_slice(),
-                ]
-                .concat(),
-            ))
-        }
-        BlueprintKind::Content(content_bin) => {
-            let (content_data, warns_content) = blueprint::content::data_from_bin(&content_bin)?;
-            const HEADER: &str = "BLUEPRINT:0,0,0,0,0,0,0,0,0,0.0.0.0,,";
-            let (header_data, warns_header) = blueprint::header::parse(HEADER)?;
-            Ok((
-                header_data,
-                content_data,
-                [warns_content.as_slice(), warns_header.as_slice()].concat(),
-            ))
-        }
-    }
-}
-
 fn process_middle_layer(
     header_data_in: HeaderData,
     content_data_in: ContentData,
@@ -108,31 +68,6 @@ fn process_middle_layer(
     }
 
     (header_data_out, content_data_out)
-}
-
-fn process_back_end<'a>(
-    header_data: &HeaderData,
-    content_data: &ContentData,
-    zopfli_options: &zopfli::Options,
-    output_type: &FileType,
-) -> Result<BlueprintKind, DspbptkError<'a>> {
-    use dspbptk::{
-        blueprint,
-        blueprint::header,
-        blueprint::content::{string_from_data,bin_from_data}
-    };
-    match output_type {
-        FileType::Txt => {
-            let header_string = header::serialization(header_data);
-            let content_string = string_from_data(content_data, zopfli_options)?;
-            Ok(BlueprintKind::Txt(blueprint::serialization(
-                &header_string,
-                &content_string,
-            )))
-        }
-        FileType::Content => Ok(BlueprintKind::Content(bin_from_data(content_data))),
-        _ => Err(UnknownFileType),
-    }
 }
 
 fn process_one_file(
@@ -154,7 +89,7 @@ fn process_one_file(
     let mut content_bin_in = Vec::new();
 
     let (header_data_in, content_data_in) =
-        match process_front_end(&blueprint_kind_in, &mut content_bin_in) {
+        match io::process_front_end(&blueprint_kind_in, &mut content_bin_in) {
             Ok((header_data_in, content_data_in, warns_front_end)) => {
                 for warn in warns_front_end {
                     warn!("\"{}\": {:?}", file_path_in.display(), warn);
@@ -169,7 +104,7 @@ fn process_one_file(
 
     let (header_data_out, content_data_out) =
         process_middle_layer(header_data_in, content_data_in, sort_buildings);
-    let blueprint_kind_out = match process_back_end(
+    let blueprint_kind_out = match io::process_back_end(
         &header_data_out,
         &content_data_out,
         &zopfli_options,
