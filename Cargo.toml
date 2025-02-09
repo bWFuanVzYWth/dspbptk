@@ -11,7 +11,7 @@ path = "src/lib.rs"
 
 [[bin]]
 name = "dspbptk"
-path = "src/main.rs"
+path = "src/bin/dspbptk.rs"
 
 [dependencies]
 # Multi-threaded
