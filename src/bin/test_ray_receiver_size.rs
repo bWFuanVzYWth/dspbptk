@@ -25,15 +25,12 @@ fn main() -> Result<(), DspbptkError<'static>> {
     let header_data = HeaderData::default();
     let zopfli_options = zopfli::Options::default();
 
-    let buildings_base: Vec<_> = (0..=9)
-        .map(|x| new_ray_receiver(x as i32, [10.0 * x as f32, 0.0, 0.0]))
-        .collect();
+    // let building_0 = new_ray_receiver(0, [0.0, 0.0, 0.0]);
+    // let buildings = vec![building_0];
 
-    let buildings_test = (0..=9)
-        .map(|x| new_ray_receiver(x as i32, [10.0 * x as f32, 8.0 + (0.1 * x as f32), 0.0]))
-        .collect();
-
-    let buildings = vec![buildings_base, buildings_test].concat();
+    let buildings_base = 0..=9
+        .iter()
+        .map(|x| new_ray_receiver(x as i32, [0.0, 7.0 * x as float, 0.0]));
 
     let content_data = ContentData {
         buildings_length: buildings.len() as i32,
