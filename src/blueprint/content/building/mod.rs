@@ -10,7 +10,7 @@ use building_neg101::*;
 
 pub const INDEX_NULL: i32 = -1;
 
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone)]
 pub struct BuildingData {
     pub _version: i32, // version不参与序列化/反序列化，但是保留字段
     pub index: i32,
@@ -49,8 +49,8 @@ pub struct Item {
     pub name: &'static str,
 }
 
-impl BuildingData {
-    pub fn default() -> Self {
+impl Default for BuildingData {
+    fn default() -> Self {
         Self {
             _version: NEG_101,
             index: INDEX_NULL,

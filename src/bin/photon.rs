@@ -15,6 +15,8 @@ fn new_ray_receiver(index: i32, local_offset: [f32; 3]) -> BuildingData {
         local_offset_x: local_offset[0],
         local_offset_y: local_offset[1],
         local_offset_z: local_offset[2],
+        parameters: vec![1208],
+        parameters_length: 1,
         ..Default::default()
     }
 }
@@ -30,6 +32,8 @@ fn main() -> Result<(), DspbptkError<'static>> {
         buildings: buildings,
         ..Default::default()
     };
+
+    println!("{:#?}", content_data);
 
     if let BlueprintKind::Txt(blueprint) =
         dspbptk::io::process_back_end(&header_data, &content_data, &zopfli_options, &FileType::Txt)?

@@ -3,9 +3,9 @@ use nom::{
     IResult,
 };
 
-pub const INDEX_NULL:i8 = -1;
+pub const INDEX_NULL: i8 = -1;
 
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone)]
 pub struct AreaData {
     pub index: i8,
     pub parent_index: i8,
@@ -17,17 +17,17 @@ pub struct AreaData {
     pub height: i16,
 }
 
-impl AreaData {
-    pub fn default() -> Self {
+impl Default for AreaData {
+    fn default() -> Self {
         Self {
             index: 0,
             parent_index: INDEX_NULL,
             tropic_anchor: 0,
-            area_segments: 200,
+            area_segments: 200, // Magic Number
             anchor_local_offset_x: 0,
             anchor_local_offset_y: 0,
-            width: 1,
-            height: 1,
+            width: 0,
+            height: 0,
         }
     }
 }
