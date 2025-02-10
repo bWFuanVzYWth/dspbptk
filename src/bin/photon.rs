@@ -30,14 +30,41 @@ struct Row {
     pub n: u64, // 这一行建筑的数量
 }
 
+fn calculate_circumference(y: f64) -> f64 {
+    use std::f64::consts::PI;
+    (y * (PI / 2.0) / (EQUATORIAL_CIRCUMFERENCE / 4.0)).cos() * EQUATORIAL_CIRCUMFERENCE
+}
+
 fn calculate_rows() -> Vec<Row> {
     let mut rows = Vec::new();
 
+    // 生成贴着赤道的一圈
     let row_0 = Row {
         y: SIZE_A / 2.0,
         n: (EQUATORIAL_CIRCUMFERENCE / SIZE_A).floor() as u64,
     };
     rows.push(row_0);
+
+    loop {
+        // 尝试在数量不变的情况下偏移一整行
+        let row_try_offset = Row {
+            y: rows.last().unwrap().y + SIZE_A,
+            n: rows.last().unwrap().n,
+        };
+
+        let row_next = if calculate_circumference(row_try_offset.y + SIZE_B / 2.0)
+            < row_try_offset.n as f64 * SIZE_A
+        {
+            // 如果这一行太挤了
+            const vector_length: f64 = (SIZE_A * SIZE_A + SIZE_B * SIZE_B).sqrt() / 2.0;
+        } else {
+            // 如果这一行放得下
+            row_try_offset
+        };
+
+        rows.push(row_next);
+    }
+
     rows
 }
 
