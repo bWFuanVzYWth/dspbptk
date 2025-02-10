@@ -25,10 +25,12 @@ fn main() -> Result<(), DspbptkError<'static>> {
     let header_data = HeaderData::default();
     let zopfli_options = zopfli::Options::default();
 
+    // 基础行
     let base: Vec<_> = (0..=9)
         .map(|x| new_ray_receiver(x as i32, [15.0 * x as f32, 0.0, 0.0]))
         .collect();
 
+    // 测试长轴碰撞
     let test_axis = (0..=9)
         .map(|x| {
             new_ray_receiver(
@@ -38,6 +40,7 @@ fn main() -> Result<(), DspbptkError<'static>> {
         })
         .collect(); // (7.30725, 7.30726)
 
+    // 测试角落碰撞
     let test_corner = (0..=9)
         .map(|x| {
             new_ray_receiver(
@@ -47,6 +50,8 @@ fn main() -> Result<(), DspbptkError<'static>> {
         })
         .collect(); // (4.19828, 4.19829)
 
+    // FIXME 修复建筑index
+    // 拼接所有建筑
     let buildings = vec![base, test_axis, test_corner].concat();
 
     let content_data = ContentData {
