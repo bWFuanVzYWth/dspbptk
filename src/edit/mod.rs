@@ -113,7 +113,7 @@ fn select_orthogonal_axis(v: &Vector3<f64>) -> Vector3<f64> {
 }
 
 // 使用给定的四元数旋转一个向量
-fn compute_3d_rotation_vector(
+pub fn compute_3d_rotation_vector(
     from: &Vector3<f64>,
     (quaternion, inverse_quaternion): (Quaternion<f64>, Quaternion<f64>),
 ) -> Vector3<f64> {
