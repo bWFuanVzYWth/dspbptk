@@ -7,6 +7,8 @@ use dspbptk::{
     io::{BlueprintKind, FileType},
 };
 
+use std::f64::consts::PI;
+
 fn new_ray_receiver(index: i32, local_offset: [f32; 3]) -> BuildingData {
     BuildingData {
         index: index,
@@ -31,7 +33,6 @@ struct Row {
 }
 
 fn calculate_circumference(y: f64) -> f64 {
-    use std::f64::consts::PI;
     (y * (PI / 2.0) / (EQUATORIAL_CIRCUMFERENCE / 4.0)).cos() * EQUATORIAL_CIRCUMFERENCE
 }
 
@@ -56,11 +57,26 @@ fn calculate_rows() -> Vec<Row> {
             < row_try_offset.n as f64 * SIZE_A
         {
             // 如果这一行太挤了
-            const vector_length: f64 = (SIZE_A * SIZE_A + SIZE_B * SIZE_B).sqrt() / 2.0;
+            let vector_theta = SIZE_A.atan2(SIZE_B);
+            let vector_length = (SIZE_A * SIZE_A + SIZE_B * SIZE_B).sqrt() / 2.0;
+
+            // 旋转建筑的对角线计算补偿值
+            let max_latitude_error = PI / ((rows.last().unwrap().n - 1) as f64);
+            let y_fixed = (vector_theta + max_latitude_error).min(PI / 2.0).sin() * vector_length
+                + SIZE_A / 2.0;
+
+            let y = rows.last().unwrap().y + y_fixed;
+            let n = (calculate_circumference(y + SIZE_B / 2.0) / SIZE_A).floor() as u64;
+
+            Row { y: y, n: n }
         } else {
             // 如果这一行放得下
             row_try_offset
         };
+
+        if row_next.y > EQUATORIAL_CIRCUMFERENCE / 4.0 {
+            break;
+        }
 
         rows.push(row_next);
     }
@@ -115,7 +131,7 @@ fn main() -> Result<(), DspbptkError<'static>> {
         ..Default::default()
     };
 
-    println!("{:#?}", content_data);
+    // println!("{:#?}", content_data);
 
     if let BlueprintKind::Txt(blueprint) =
         dspbptk::io::process_back_end(&header_data, &content_data, &zopfli_options, &FileType::Txt)?
