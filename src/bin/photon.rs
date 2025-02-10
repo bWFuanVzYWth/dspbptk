@@ -60,8 +60,10 @@ fn calculate_rows() -> Vec<Row> {
             let vector_theta = SIZE_A.atan2(SIZE_B);
             let vector_length = (SIZE_A * SIZE_A + SIZE_B * SIZE_B).sqrt() / 2.0;
 
+            // FIXME 这个补偿有点太多了，不知道怎么算
             // 旋转建筑的对角线计算补偿值
             let max_latitude_error = PI / ((rows.last().unwrap().n - 1) as f64);
+            // let max_latitude_error = PI / ((rows.last().unwrap().n * 2) as f64);
             let y_fixed = (vector_theta + max_latitude_error).min(PI / 2.0).sin() * vector_length
                 + SIZE_A / 2.0;
 
