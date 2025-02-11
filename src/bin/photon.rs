@@ -17,6 +17,10 @@ use nalgebra::{Quaternion, Vector3};
 
 use std::f64::consts::PI;
 
+const ERROR: f64 = 0.0;
+const GRID_A: f64 = 7.30726 + ERROR;
+const GRID_B: f64 = 4.19828 + ERROR;
+
 fn new_ray_receiver(index: i32, local_offset: [f32; 3]) -> BuildingData {
     BuildingData {
         index: index,
@@ -31,29 +35,30 @@ fn new_ray_receiver(index: i32, local_offset: [f32; 3]) -> BuildingData {
     }
 }
 
-const ERROR: f64 = 0.0;
-const GRID_A: f64 = 7.30726 + ERROR;
-const GRID_B: f64 = 4.19828 + ERROR;
-
-// #[derive(Debug)]
-// struct Row {
-//     pub y: f64, // 这一行建筑坐标的y
-//     pub n: u64, // 这一行建筑的数量
-// }
+fn first_row() -> Row {
+    Row {
+        t: Item::射线接收站,
+        y: GRID_A / 2.0,
+        n: (EQUATORIAL_CIRCUMFERENCE_GRID / GRID_A).floor() as u64,
+    }
+}
 
 fn calculate_circumference(y: f64) -> f64 {
     (y * ((PI / 2.0) / (EQUATORIAL_CIRCUMFERENCE_GRID / 4.0))).cos() * EQUATORIAL_CIRCUMFERENCE_GRID
 }
 
 fn calculate_rows() -> Vec<Row> {
+    let half_arc_a = arc_from_grid(GRID_A / 2.0);
+    let half_arc_b = arc_from_grid(GRID_B / 2.0);
+
+    // 求出建筑放在赤道上时的底角坐标
+    let position_down_1eft = Vector3::new(-half_arc_b.tan(), 1.0, -half_arc_a.tan()).normalize();
+    let position_down_right = Vector3::new(half_arc_b.tan(), 1.0, -half_arc_a.tan()).normalize();
+
     let mut rows = Vec::new();
 
     // 生成贴着赤道的一圈
-    let row_0 = Row {
-        t: Item::射线接收站,
-        y: GRID_A / 2.0,
-        n: (EQUATORIAL_CIRCUMFERENCE_GRID / GRID_A).floor() as u64,
-    };
+    let row_0 = first_row();
     rows.push(row_0);
 
     loop {
@@ -68,14 +73,6 @@ fn calculate_rows() -> Vec<Row> {
             < row_try_offset.n as f64 * GRID_A
         {
             // 如果这一行太挤了
-            let half_arc_a = arc_from_grid(GRID_A / 2.0);
-            let half_meter_a = half_arc_a.tan();
-            let half_arc_b = arc_from_grid(GRID_B / 2.0);
-            let half_meter_b = half_arc_b.tan();
-
-            // 求出建筑放在赤道上时的底角坐标
-            let position_down_1eft = Vector3::new(-half_meter_b, 1.0, -half_meter_a).normalize();
-            let position_down_right = Vector3::new(half_meter_b, 1.0, -half_meter_a).normalize();
 
             // 把建筑旋转到目标纬度
             // 求旋转角
