@@ -51,9 +51,16 @@ fn main() -> Result<(), DspbptkError<'static>> {
         })
         .collect(); // (4.19828, 4.19829)
 
-    // FIXME 修复建筑index
     // 拼接所有建筑
-    let buildings = vec![base, test_axis, test_corner].concat();
+    let buildings: Vec<_> = vec![base, test_axis, test_corner]
+        .concat()
+        .into_iter()
+        .enumerate()
+        .map(|(i, building)| BuildingData {
+            index: i as i32,
+            ..building
+        })
+        .collect();
 
     let content_data = ContentData {
         buildings_length: buildings.len() as i32,

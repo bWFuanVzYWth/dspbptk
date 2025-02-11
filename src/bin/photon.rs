@@ -5,7 +5,7 @@ use dspbptk::{
     },
     edit::{
         tesselation::Row,
-        unit_conversion::{arc_from_grid, grid_from_arc, EQUATORIAL_CIRCUMFERENCE_GRID},
+        unit_conversion::{arc_from_grid, grid_from_arc},
     },
     error::DspbptkError,
     io::{BlueprintKind, FileType},
@@ -49,7 +49,6 @@ fn calculate_y(this_y: f64) -> Option<f64> {
 
     let norm_sq = half_arc_b_tan_pow2 + half_arc_a_tan_pow2 + 1.0;
     let scale = (1.0 - (half_arc_b_tan_pow2 / norm_sq)).sqrt();
-    let half_arc_a_cos = HALF_ARC_A.cos();
     let theta_down = ((half_arc_a_tan / norm_sq.sqrt()).sin() / scale).asin();
 
     let z_max_of_this_row = (HALF_ARC_A + this_y).sin();
@@ -62,14 +61,7 @@ fn calculate_y(this_y: f64) -> Option<f64> {
         return None;
     }
 
-    let theta = HALF_ARC_A + theta_up + theta_down;
-    let (theta_sin, theta_cos) = theta.sin_cos();
-    let v_1 = theta_sin / half_arc_a_cos;
-    let v_2 = theta_cos / half_arc_a_cos;
-
-    let res = -0.5 * (ARC_A - 2.0 * (v_1 / (v_2.powi(2) + v_1.powi(2)).sqrt()).asin());
-
-    Some(res)
+    Some(theta_up + theta_down)
 }
 
 fn calculate_rows() -> Vec<Row> {
@@ -142,12 +134,11 @@ fn convert_rows(rows: Vec<Row>) -> Vec<BuildingData> {
     let all_buildings_in_rows: Vec<_> = rows.iter().map(|row| convert_row(row)).collect();
     let all_buildings: Vec<_> = all_buildings_in_rows
         .concat()
-        .iter()
+        .into_iter()
         .enumerate()
-        .map(|(i, building)| {
-            let mut building_fixed = building.clone();
-            building_fixed.index = i as i32;
-            building_fixed
+        .map(|(i, building)| BuildingData {
+            index: i as i32,
+            ..building
         })
         .collect();
     all_buildings
