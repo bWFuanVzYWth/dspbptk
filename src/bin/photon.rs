@@ -35,49 +35,47 @@ fn new_ray_receiver(index: i32, local_offset: [f32; 3]) -> BuildingData {
     }
 }
 
-fn first_row() -> Row {
-    Row {
-        t: Item::射线接收站,
-        y: GRID_A / 2.0,
-        n: (EQUATORIAL_CIRCUMFERENCE_GRID / GRID_A).floor() as u64,
-    }
-}
-
 fn calculate_circumference(y: f64) -> f64 {
     (y * ((PI / 2.0) / (EQUATORIAL_CIRCUMFERENCE_GRID / 4.0))).cos() * EQUATORIAL_CIRCUMFERENCE_GRID
 }
 
 fn calculate_rows() -> Vec<Row> {
-    let half_arc_a = arc_from_grid(GRID_A / 2.0);
-    let half_arc_b = arc_from_grid(GRID_B / 2.0);
+    const ARC_A: f64 = arc_from_grid(GRID_A);
+    const ARC_B: f64 = arc_from_grid(GRID_B);
+    const HALF_ARC_A: f64 = arc_from_grid(GRID_A / 2.0);
+    const HALF_ARC_B: f64 = arc_from_grid(GRID_B / 2.0);
 
     // 求出建筑放在赤道上时的底角坐标
-    let position_down_1eft = Vector3::new(-half_arc_b.tan(), 1.0, -half_arc_a.tan()).normalize();
-    let position_down_right = Vector3::new(half_arc_b.tan(), 1.0, -half_arc_a.tan()).normalize();
+    let position_down_1eft = Vector3::new(-HALF_ARC_B.tan(), 1.0, -HALF_ARC_A.tan()).normalize();
+    let position_down_right = Vector3::new(HALF_ARC_B.tan(), 1.0, -HALF_ARC_A.tan()).normalize();
 
     let mut rows = Vec::new();
 
     // 生成贴着赤道的一圈
-    let row_0 = first_row();
+    let row_0 = Row {
+        t: Item::射线接收站,
+        y: HALF_ARC_A,
+        n: ((2.0 * PI) / ARC_A).floor() as u64,
+    };
     rows.push(row_0);
 
     loop {
         // 尝试在数量不变的情况下偏移一整行
         let row_try_offset = Row {
             t: Item::射线接收站,
-            y: rows.last().unwrap().y + GRID_A,
+            y: rows.last().unwrap().y + ARC_A,
             n: rows.last().unwrap().n,
         };
 
-        let row_next = if calculate_circumference(row_try_offset.y + GRID_B / 2.0)
-            < row_try_offset.n as f64 * GRID_A
+        let row_next = if (row_try_offset.y + ARC_B / 2.0).cos()
+            < row_try_offset.n as f64 * ARC_A
         {
             // 如果这一行太挤了
 
             // 把建筑旋转到目标纬度
             // 求旋转角
             let k = (1.0 - position_down_right.x * position_down_right.x).sqrt();
-            let theta_up_tmp = arc_from_grid(rows.last().unwrap().y + GRID_A / 2.0).sin() / k;
+            let theta_up_tmp = (rows.last().unwrap().y + HALF_ARC_A).sin() / k;
             if theta_up_tmp >= 1.0 {
                 break;
             }
@@ -100,8 +98,8 @@ fn calculate_rows() -> Vec<Row> {
 
             // 求出建筑底边中心的y
             let tmp = (position_down_1eft_rotated + position_down_right_rotated).normalize();
-            let y_fixed = grid_from_arc(tmp.z.asin()) + GRID_A / 2.0 + 0.001; // 下一排建筑的中心y
-            let n = (calculate_circumference(y_fixed + GRID_B / 2.0) / GRID_A).floor() as u64;
+            let y_fixed = tmp.z.asin() + HALF_ARC_A; // 下一排建筑的中心y
+            let n = ((y_fixed + HALF_ARC_B).cos() * ((2.0 * PI) / ARC_A)).floor() as u64;
 
             let row = Row {
                 t: Item::射线接收站,
@@ -111,7 +109,7 @@ fn calculate_rows() -> Vec<Row> {
             row
         } else {
             // 如果这一行放得下
-            if row_try_offset.y > EQUATORIAL_CIRCUMFERENCE_GRID / 4.0 {
+            if row_try_offset.y > (2.0 * PI) {
                 break;
             }
             row_try_offset
@@ -130,7 +128,7 @@ fn convert_row(row: &Row) -> Vec<BuildingData> {
                 i as i32,
                 [
                     (1000.0 / (row.n as f64) * (i as f64 + 0.5)) as f32,
-                    row.y as f32,
+                    grid_from_arc(row.y) as f32,
                     0.0,
                 ],
             )
