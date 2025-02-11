@@ -1,3 +1,5 @@
+use lazy_static::lazy_static;
+
 use dspbptk::{
     blueprint::{
         content::{building::BuildingData, ContentData},
@@ -41,18 +43,18 @@ fn calculate_y(this_y: f64) -> Option<f64> {
     const HALF_ARC_A: f64 = ARC_A / 2.0;
     const HALF_ARC_B: f64 = ARC_B / 2.0;
 
-    let half_arc_b_tan = HALF_ARC_B.tan();
-    let half_arc_a_tan = HALF_ARC_A.tan();
-
-    let half_arc_b_tan_pow2 = half_arc_b_tan.powi(2);
-    let half_arc_a_tan_pow2 = half_arc_a_tan.powi(2);
-
-    let norm_sq = half_arc_b_tan_pow2 + half_arc_a_tan_pow2 + 1.0;
-    let scale = (1.0 - (half_arc_b_tan_pow2 / norm_sq)).sqrt();
-    let theta_down = ((half_arc_a_tan / norm_sq.sqrt()).sin() / scale).asin();
+    lazy_static! {
+        static ref half_arc_b_tan: f64 = HALF_ARC_B.tan();
+        static ref half_arc_a_tan: f64 = HALF_ARC_A.tan();
+        static ref half_arc_b_tan_pow2: f64 = half_arc_b_tan.powi(2);
+        static ref half_arc_a_tan_pow2: f64 = half_arc_a_tan.powi(2);
+        static ref norm_sq: f64 = *half_arc_b_tan_pow2 + *half_arc_a_tan_pow2 + 1.0;
+        static ref scale: f64 = (1.0 - (*half_arc_b_tan_pow2 / *norm_sq)).sqrt();
+        static ref theta_down: f64 = ((*half_arc_a_tan / norm_sq.sqrt()).sin() / *scale).asin();
+    };
 
     let z_max_of_this_row = (HALF_ARC_A + this_y).sin();
-    let theta_up_sin = z_max_of_this_row / scale;
+    let theta_up_sin = z_max_of_this_row / *scale;
     if theta_up_sin >= 1.0 {
         return None;
     }
@@ -61,7 +63,7 @@ fn calculate_y(this_y: f64) -> Option<f64> {
         return None;
     }
 
-    Some(theta_up + theta_down)
+    Some(theta_up + *theta_down)
 }
 
 fn calculate_rows() -> Vec<Row> {
