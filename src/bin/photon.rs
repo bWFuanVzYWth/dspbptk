@@ -4,7 +4,6 @@ use dspbptk::{
         header::HeaderData,
     },
     edit::{
-        compute_3d_rotation_vector,
         tesselation::Row,
         unit_conversion::{arc_from_grid, grid_from_arc, EQUATORIAL_CIRCUMFERENCE_GRID},
     },
@@ -13,11 +12,9 @@ use dspbptk::{
     item::Item,
 };
 
-use nalgebra::{Quaternion, Vector3};
-
 use std::f64::consts::PI;
 
-const ERROR: f64 = 0.0;
+const ERROR: f64 = 0.0001;
 const GRID_A: f64 = 7.30726 + ERROR;
 const GRID_B: f64 = 4.19828 + ERROR;
 
@@ -35,8 +32,44 @@ fn new_ray_receiver(index: i32, local_offset: [f32; 3]) -> BuildingData {
     }
 }
 
-fn calculate_circumference(y: f64) -> f64 {
-    (y * ((PI / 2.0) / (EQUATORIAL_CIRCUMFERENCE_GRID / 4.0))).cos() * EQUATORIAL_CIRCUMFERENCE_GRID
+fn calculate_y(this_y: f64) -> Option<f64> {
+    // 这段代码由我推导出初始的函数后，交给 Mathematica 进行代数化简，再翻译成rust代码
+    // 为什么长成这样我也没完全弄明白，但是它算的很快，所以**不要动它**
+
+    const ARC_A: f64 = arc_from_grid(GRID_A);
+    const ARC_B: f64 = arc_from_grid(GRID_B);
+    const HALF_ARC_A: f64 = ARC_A / 2.0;
+    const HALF_ARC_B: f64 = ARC_B / 2.0;
+
+    let half_arc_b_tan = HALF_ARC_B.tan();
+    let half_arc_a_tan = HALF_ARC_A.tan();
+
+    let half_arc_b_tan_pow2 = half_arc_b_tan.powi(2);
+    let half_arc_a_tan_pow2 = half_arc_a_tan.powi(2);
+
+    let norm_sq = half_arc_b_tan_pow2 + half_arc_a_tan_pow2 + 1.0;
+    let scale = (1.0 - (half_arc_b_tan_pow2 / norm_sq)).sqrt();
+    let half_arc_a_cos = HALF_ARC_A.cos();
+    let theta_down = ((half_arc_a_tan / norm_sq.sqrt()).sin() / scale).asin();
+
+    let z_max_of_this_row = (HALF_ARC_A + this_y).sin();
+    let theta_up_sin = z_max_of_this_row / scale;
+    if theta_up_sin >= 1.0 {
+        return None;
+    }
+    let theta_up = theta_up_sin.asin();
+    if theta_up >= PI / 2.0 {
+        return None;
+    }
+
+    let theta = HALF_ARC_A + theta_up + theta_down;
+    let (theta_sin, theta_cos) = theta.sin_cos();
+    let v_1 = theta_sin / half_arc_a_cos;
+    let v_2 = theta_cos / half_arc_a_cos;
+
+    let res = -0.5 * (ARC_A - 2.0 * (v_1 / (v_2.powi(2) + v_1.powi(2)).sqrt()).asin());
+
+    Some(res)
 }
 
 fn calculate_rows() -> Vec<Row> {
@@ -44,10 +77,6 @@ fn calculate_rows() -> Vec<Row> {
     const ARC_B: f64 = arc_from_grid(GRID_B);
     const HALF_ARC_A: f64 = arc_from_grid(GRID_A / 2.0);
     const HALF_ARC_B: f64 = arc_from_grid(GRID_B / 2.0);
-
-    // 求出建筑放在赤道上时的底角坐标
-    let position_down_1eft = Vector3::new(-HALF_ARC_B.tan(), 1.0, -HALF_ARC_A.tan()).normalize();
-    let position_down_right = Vector3::new(HALF_ARC_B.tan(), 1.0, -HALF_ARC_A.tan()).normalize();
 
     let mut rows = Vec::new();
 
@@ -60,55 +89,27 @@ fn calculate_rows() -> Vec<Row> {
     rows.push(row_0);
 
     loop {
-        // 尝试在数量不变的情况下偏移一整行
+        // 尝试直接偏移一行
         let row_try_offset = Row {
             t: Item::射线接收站,
             y: rows.last().unwrap().y + ARC_A,
             n: rows.last().unwrap().n,
         };
 
-        let row_next = if (row_try_offset.y + ARC_B / 2.0).cos()
-            < row_try_offset.n as f64 * ARC_A
-        {
-            // 如果这一行太挤了
-
-            // 把建筑旋转到目标纬度
-            // 求旋转角
-            let k = (1.0 - position_down_right.x * position_down_right.x).sqrt();
-            let theta_up_tmp = (rows.last().unwrap().y + HALF_ARC_A).sin() / k;
-            if theta_up_tmp >= 1.0 {
-                break;
-            }
-            let theta_up = theta_up_tmp.asin();
-            let theta_down = ((-(position_down_1eft.z)).sin() / k).asin();
-            let theta = theta_up + theta_down;
-
-            let half_theta = theta / 2.0;
-            let q = Quaternion::new(half_theta.cos(), half_theta.sin(), 0.0, 0.0);
-            let inv_q = q.conjugate();
-
-            if theta > PI / 2.0 {
-                break;
+        let row_next = if (row_try_offset.y + ARC_B / 2.0).cos() < row_try_offset.n as f64 * ARC_A {
+            // 如果直接偏移太挤了
+            let y_fixed = match calculate_y(rows.last().unwrap().y) {
+                Some(num) => num,
+                None => break,
             };
-
-            let position_down_1eft_rotated =
-                compute_3d_rotation_vector(&(position_down_1eft), (q, inv_q));
-            let position_down_right_rotated =
-                compute_3d_rotation_vector(&(position_down_right), (q, inv_q));
-
-            // 求出建筑底边中心的y
-            let tmp = (position_down_1eft_rotated + position_down_right_rotated).normalize();
-            let y_fixed = tmp.z.asin() + HALF_ARC_A; // 下一排建筑的中心y
             let n = ((y_fixed + HALF_ARC_B).cos() * ((2.0 * PI) / ARC_A)).floor() as u64;
-
-            let row = Row {
+            Row {
                 t: Item::射线接收站,
                 y: y_fixed,
                 n: n,
-            };
-            row
+            }
         } else {
-            // 如果这一行放得下
+            // 如果直接偏移放得下
             if row_try_offset.y > (2.0 * PI) {
                 break;
             }
@@ -157,7 +158,6 @@ fn main() -> Result<(), DspbptkError<'static>> {
     let zopfli_options = zopfli::Options::default();
 
     // 先计算布局
-    // 记录每一行的中心坐标和锅盖数量
     let rows = calculate_rows();
 
     let buildings = convert_rows(rows);
@@ -167,8 +167,6 @@ fn main() -> Result<(), DspbptkError<'static>> {
         buildings: buildings,
         ..Default::default()
     };
-
-    // println!("{:#?}", content_data);
 
     if let BlueprintKind::Txt(blueprint) =
         dspbptk::io::process_back_end(&header_data, &content_data, &zopfli_options, &FileType::Txt)?
