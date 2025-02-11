@@ -5,13 +5,14 @@ use dspbptk::{
     },
     error::DspbptkError,
     io::{BlueprintKind, FileType},
+    item::Item,
 };
 
 fn new_ray_receiver(index: i32, local_offset: [f32; 3]) -> BuildingData {
     BuildingData {
         index: index,
-        item_id: 2208,
-        model_index: 73,
+        item_id: Item::射线接收站 as i16,
+        model_index: Item::射线接收站.model()[0],
         local_offset_x: local_offset[0],
         local_offset_y: local_offset[1],
         local_offset_z: local_offset[2],
