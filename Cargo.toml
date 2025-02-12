@@ -37,3 +37,9 @@ env_logger = "0.11.6"
 nalgebra = "0.33.2"
 # error
 thiserror = "2.0.11"
+# DspbptkBuildingData.uuid
+uuid = { version = "1.13.1", features = [
+    "v4",
+    "fast-rng",
+    "macro-diagnostics",
+] }

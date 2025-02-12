@@ -33,33 +33,6 @@ pub fn sort_buildings(buildings: &mut Vec<building::BuildingData>) {
     });
 }
 
-// pub fn fix_buildings_index(buildings: &mut Vec<building::BuildingData>) {
-//     use std::collections::HashMap;
-
-//     let mut index_lut = HashMap::with_capacity(buildings.len());
-//     buildings.iter().enumerate().for_each(|(index, building)| {
-//         index_lut.insert(building.index, index as i32);
-//     });
-//     for building in buildings {
-//         // 这里panic是安全的，因为理论上所有的building.index都应该在index_lut里
-//         building.index = *index_lut
-//             .get(&building.index)
-//             .expect("Fatal error: unknown building index");
-
-//         if let Some(idx) = index_lut.get(&building.temp_output_obj_idx) {
-//             building.temp_output_obj_idx = *idx;
-//         } else {
-//             building.temp_output_obj_idx = building::INDEX_NULL;
-//         }
-
-//         if let Some(idx) = index_lut.get(&building.temp_input_obj_idx) {
-//             building.temp_input_obj_idx = *idx;
-//         } else {
-//             building.temp_input_obj_idx = building::INDEX_NULL;
-//         }
-//     }
-// }
-
 pub fn fix_buildings_index(buildings: Vec<building::BuildingData>) -> Vec<building::BuildingData> {
     use std::collections::HashMap;
 
@@ -88,6 +61,44 @@ pub fn fix_buildings_index(buildings: Vec<building::BuildingData>) -> Vec<buildi
                     *idx
                 } else {
                     building::INDEX_NULL
+                },
+
+                ..building
+            }
+        })
+        .collect()
+}
+
+pub fn fix_dspbptk_buildings_index(
+    buildings: Vec<building::DspbptkBuildingData>,
+) -> Vec<building::DspbptkBuildingData> {
+    use std::collections::HashMap;
+
+    let mut uuid_lut = HashMap::with_capacity(buildings.len());
+    buildings.iter().enumerate().for_each(|(uuid, building)| {
+        uuid_lut.insert(building.uuid, Some(uuid as u128));
+    });
+
+    buildings
+        .into_iter()
+        .map(|building| {
+            building::DspbptkBuildingData {
+                // 这里panic是安全的，因为理论上所有的building.index都应该在index_lut里
+                uuid: *uuid_lut
+                    .get(&building.uuid)
+                    .expect("Fatal error: unknown dspbptk building uuid"),
+
+                temp_output_obj_idx: if let Some(uuid) = uuid_lut.get(&building.temp_output_obj_idx)
+                {
+                    *uuid
+                } else {
+                    None
+                },
+
+                temp_input_obj_idx: if let Some(uuid) = uuid_lut.get(&building.temp_input_obj_idx) {
+                    *uuid
+                } else {
+                    None
                 },
 
                 ..building

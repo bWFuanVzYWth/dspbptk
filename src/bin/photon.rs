@@ -1,13 +1,17 @@
 use lazy_static::lazy_static;
 use log::info;
+use uuid::Uuid;
 
 use dspbptk::{
     blueprint::{
-        content::{building::BuildingData, ContentData},
+        content::{
+            building::DspbptkBuildingData,
+            ContentData,
+        },
         header::HeaderData,
     },
     edit::{
-        fix_buildings_index,
+        fix_dspbptk_buildings_index,
         tesselation::Row,
         unit_conversion::{arc_from_grid, grid_from_arc},
     },
@@ -32,28 +36,23 @@ const ARC_B: f64 = arc_from_grid(GRID_B);
 const HALF_ARC_A: f64 = arc_from_grid(HALF_GRID_A);
 const HALF_ARC_B: f64 = arc_from_grid(HALF_GRID_B);
 
-fn new_receiver(index: i32, local_offset: [f32; 3]) -> BuildingData {
-    BuildingData {
-        index: index,
+fn new_receiver(local_offset: [f64; 3]) -> DspbptkBuildingData {
+    DspbptkBuildingData {
+        uuid: Some(Uuid::new_v4().to_u128_le()),
         item_id: Item::射线接收站 as i16,
         model_index: Item::射线接收站.model()[0],
-        local_offset_x: local_offset[0],
-        local_offset_y: local_offset[1],
-        local_offset_z: local_offset[2],
+        local_offset: local_offset,
         parameters: vec![1208],
-        parameters_length: 1,
         ..Default::default()
     }
 }
 
-fn new_belt(index: i32, local_offset: [f32; 3]) -> BuildingData {
-    BuildingData {
-        index: index,
+fn new_belt(local_offset: [f64; 3]) -> DspbptkBuildingData {
+    DspbptkBuildingData {
+        uuid: Some(Uuid::new_v4().to_u128_le()),
         item_id: Item::极速传送带 as i16,
         model_index: Item::极速传送带.model()[0],
-        local_offset_x: local_offset[0],
-        local_offset_y: local_offset[1],
-        local_offset_z: local_offset[2],
+        local_offset: local_offset,
         ..Default::default()
     }
 }
@@ -129,23 +128,20 @@ fn calculate_rows() -> Vec<Row> {
     rows
 }
 
-fn convert_row_to_receivers(row: &Row) -> Vec<BuildingData> {
+fn convert_row_to_receivers(row: &Row) -> Vec<DspbptkBuildingData> {
     let row_buildings: Vec<_> = (0..row.n)
         .map(|i| {
-            new_receiver(
-                i as i32,
-                [
-                    (1000.0 / (row.n as f64) * (i as f64 + 0.5)) as f32,
-                    grid_from_arc(row.y) as f32,
-                    0.0,
-                ],
-            )
+            new_receiver([
+                (1000.0 / (row.n as f64) * (i as f64 + 0.5)),
+                grid_from_arc(row.y),
+                0.0,
+            ])
         })
         .collect();
     row_buildings
 }
 
-fn convert_row_to_belts(row: &Row) -> Vec<BuildingData> {
+fn convert_row_to_belts(row: &Row) -> Vec<DspbptkBuildingData> {
     const BELT_GRID: f64 = 1.83202;
     const BELT_ARC: f64 = arc_from_grid(BELT_GRID);
 
@@ -154,23 +150,22 @@ fn convert_row_to_belts(row: &Row) -> Vec<BuildingData> {
     let belts_count = (y.cos() * (2.0 * PI / BELT_ARC)).ceil() as u64;
     let row_buildings: Vec<_> = (0..belts_count)
         .map(|i| {
-            new_belt(
-                i as i32,
-                [
-                    (1000.0 / (belts_count as f64) * (i as f64)) as f32,
-                    grid_from_arc(y) as f32,
-                    0.0,
-                ],
-            )
+            new_belt([
+                (1000.0 / (belts_count as f64) * (i as f64)),
+                grid_from_arc(y),
+                0.0,
+            ])
         })
         .collect();
 
-    //
+    // 依次连接传送带
+    // TODO
+    // let row_buildings = row_buildings.into_iter().
 
     row_buildings
 }
 
-fn convert_row_to_buildings(rows: Vec<Row>) -> Vec<BuildingData> {
+fn convert_row_to_buildings(rows: Vec<Row>) -> Vec<DspbptkBuildingData> {
     // 生成所有锅盖
     let receivers_in_rows: Vec<_> = rows
         .iter()
@@ -192,7 +187,7 @@ fn convert_row_to_buildings(rows: Vec<Row>) -> Vec<BuildingData> {
     let all_buildings_in_rows = vec![receivers_in_rows, belts_in_rows].concat();
 
     let all_buildings: Vec<_> = all_buildings_in_rows.concat();
-    let all_buildings = fix_buildings_index(all_buildings);
+    let all_buildings = fix_dspbptk_buildings_index(all_buildings);
 
     all_buildings
 }
@@ -211,7 +206,10 @@ fn main() -> Result<(), DspbptkError<'static>> {
 
     let content_data = ContentData {
         buildings_length: buildings.len() as i32,
-        buildings: buildings,
+        buildings: buildings
+            .iter()
+            .map(|dspbptk_building| dspbptk_building.to_building_data())
+            .collect(),
         ..Default::default()
     };
 
