@@ -1,5 +1,5 @@
-pub mod unit_conversion;
 pub mod tesselation;
+pub mod unit_conversion;
 
 use std::f64::consts::PI;
 
@@ -33,31 +33,67 @@ pub fn sort_buildings(buildings: &mut Vec<building::BuildingData>) {
     });
 }
 
-pub fn fix_buildings_index(buildings: &mut Vec<building::BuildingData>) {
+// pub fn fix_buildings_index(buildings: &mut Vec<building::BuildingData>) {
+//     use std::collections::HashMap;
+
+//     let mut index_lut = HashMap::with_capacity(buildings.len());
+//     buildings.iter().enumerate().for_each(|(index, building)| {
+//         index_lut.insert(building.index, index as i32);
+//     });
+//     for building in buildings {
+//         // 这里panic是安全的，因为理论上所有的building.index都应该在index_lut里
+//         building.index = *index_lut
+//             .get(&building.index)
+//             .expect("Fatal error: unknown building index");
+
+//         if let Some(idx) = index_lut.get(&building.temp_output_obj_idx) {
+//             building.temp_output_obj_idx = *idx;
+//         } else {
+//             building.temp_output_obj_idx = building::INDEX_NULL;
+//         }
+
+//         if let Some(idx) = index_lut.get(&building.temp_input_obj_idx) {
+//             building.temp_input_obj_idx = *idx;
+//         } else {
+//             building.temp_input_obj_idx = building::INDEX_NULL;
+//         }
+//     }
+// }
+
+pub fn fix_buildings_index(buildings: Vec<building::BuildingData>) -> Vec<building::BuildingData> {
     use std::collections::HashMap;
 
     let mut index_lut = HashMap::with_capacity(buildings.len());
     buildings.iter().enumerate().for_each(|(index, building)| {
         index_lut.insert(building.index, index as i32);
     });
-    for building in buildings {
-        // 这里panic是安全的，因为理论上所有的building.index都应该在index_lut里
-        building.index = *index_lut
-            .get(&building.index)
-            .expect("Fatal error: unknown building index");
 
-        if let Some(idx) = index_lut.get(&building.temp_output_obj_idx) {
-            building.temp_output_obj_idx = *idx;
-        } else {
-            building.temp_output_obj_idx = building::INDEX_NULL;
-        }
+    buildings
+        .into_iter()
+        .map(|building| {
+            building::BuildingData {
+                // 这里panic是安全的，因为理论上所有的building.index都应该在index_lut里
+                index: *index_lut
+                    .get(&building.index)
+                    .expect("Fatal error: unknown building index"),
 
-        if let Some(idx) = index_lut.get(&building.temp_input_obj_idx) {
-            building.temp_input_obj_idx = *idx;
-        } else {
-            building.temp_input_obj_idx = building::INDEX_NULL;
-        }
-    }
+                temp_output_obj_idx: if let Some(idx) = index_lut.get(&building.temp_output_obj_idx)
+                {
+                    *idx
+                } else {
+                    building::INDEX_NULL
+                },
+
+                temp_input_obj_idx: if let Some(idx) = index_lut.get(&building.temp_input_obj_idx) {
+                    *idx
+                } else {
+                    building::INDEX_NULL
+                },
+
+                ..building
+            }
+        })
+        .collect()
 }
 
 fn calculate_quaternion_between_vectors(
