@@ -4,10 +4,7 @@ use uuid::Uuid;
 
 use dspbptk::{
     blueprint::{
-        content::{
-            building::DspbptkBuildingData,
-            ContentData,
-        },
+        content::{building::DspbptkBuildingData, ContentData},
         header::HeaderData,
     },
     edit::{
@@ -83,6 +80,27 @@ fn calculate_y(this_y: f64) -> Option<f64> {
     Some(theta_up + *theta_down)
 }
 
+fn connect_belts(belts: Vec<DspbptkBuildingData>) -> Vec<DspbptkBuildingData> {
+    let next_uuids = belts
+        .iter()
+        .skip(1)
+        .map(|belt| belt.uuid)
+        .collect::<Vec<_>>();
+
+    belts
+        .into_iter()
+        .enumerate()
+        .map(|(i, belt)| DspbptkBuildingData {
+            temp_output_obj_idx: match next_uuids.get(i) {
+                Some(next_uuid) => *next_uuid,
+                None => None,
+            },
+            output_to_slot: 1,
+            ..belt
+        })
+        .collect()
+}
+
 fn calculate_rows() -> Vec<Row> {
     let mut rows = Vec::new();
 
@@ -129,7 +147,7 @@ fn calculate_rows() -> Vec<Row> {
 }
 
 fn convert_row_to_receivers(row: &Row) -> Vec<DspbptkBuildingData> {
-    let row_buildings: Vec<_> = (0..row.n)
+    let row_buildings = (0..row.n)
         .map(|i| {
             new_receiver([
                 (1000.0 / (row.n as f64) * (i as f64 + 0.5)),
@@ -137,47 +155,53 @@ fn convert_row_to_receivers(row: &Row) -> Vec<DspbptkBuildingData> {
                 0.0,
             ])
         })
-        .collect();
+        .collect::<Vec<_>>();
     row_buildings
 }
 
 fn convert_row_to_belts(row: &Row) -> Vec<DspbptkBuildingData> {
-    const BELT_GRID: f64 = 1.83202;
+    const BELT_GRID: f64 = 1.83;
     const BELT_ARC: f64 = arc_from_grid(BELT_GRID);
 
     // 生成传送带点位
     let y = row.y - HALF_ARC_A;
-    let belts_count = (y.cos() * (2.0 * PI / BELT_ARC)).ceil() as u64;
-    let row_buildings: Vec<_> = (0..belts_count)
+    let x_from = HALF_ARC_A / y.cos();
+    let x_to = (2.0 * PI) - HALF_ARC_A / y.cos();
+    let x_arc = x_to - x_from;
+
+    let belts_count = (y.cos() * (x_arc / BELT_ARC)).ceil() as u64;
+    let row_buildings = (0..=belts_count)
         .map(|i| {
             new_belt([
-                (1000.0 / (belts_count as f64) * (i as f64)),
+                grid_from_arc(x_arc / (belts_count as f64) * (i as f64) + x_from),
                 grid_from_arc(y),
                 0.0,
             ])
         })
-        .collect();
-
-    // 依次连接传送带
-    // TODO
-    // let row_buildings = row_buildings.into_iter().
+        .collect::<Vec<_>>();
 
     row_buildings
 }
 
 fn convert_row_to_buildings(rows: Vec<Row>) -> Vec<DspbptkBuildingData> {
     // 生成所有锅盖
-    let receivers_in_rows: Vec<_> = rows
+    let receivers_in_rows = rows
         .iter()
         .map(|row| convert_row_to_receivers(row))
-        .collect();
+        .collect::<Vec<_>>();
     info!(
         "receiver count = {}",
         receivers_in_rows.iter().map(|row| row.len()).sum::<usize>()
     );
 
     // 生成传送带
-    let belts_in_rows: Vec<_> = rows.iter().map(|row| convert_row_to_belts(row)).collect();
+    let belts_in_rows = rows
+        .iter()
+        .map(|row| {
+            let row_of_belt = convert_row_to_belts(row);
+            connect_belts(row_of_belt)
+        })
+        .collect::<Vec<_>>();
     info!(
         "belt count = {}",
         belts_in_rows.iter().map(|row| row.len()).sum::<usize>()
@@ -186,7 +210,7 @@ fn convert_row_to_buildings(rows: Vec<Row>) -> Vec<DspbptkBuildingData> {
     // 整合所有种类的建筑
     let all_buildings_in_rows = vec![receivers_in_rows, belts_in_rows].concat();
 
-    let all_buildings: Vec<_> = all_buildings_in_rows.concat();
+    let all_buildings = all_buildings_in_rows.concat();
     let all_buildings = fix_dspbptk_buildings_index(all_buildings);
 
     all_buildings
