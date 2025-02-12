@@ -1,5 +1,6 @@
 use lazy_static::lazy_static;
 use log::info;
+use nalgebra::Quaternion;
 use uuid::Uuid;
 
 use dspbptk::{
@@ -8,7 +9,8 @@ use dspbptk::{
         header::HeaderData,
     },
     edit::{
-        fix_dspbptk_buildings_index,
+        compute_3d_rotation_vector, direction_to_local_offset, fix_dspbptk_buildings_index,
+        local_offset_to_direction,
         tesselation::Row,
         unit_conversion::{arc_from_grid, grid_from_arc},
     },
@@ -80,7 +82,14 @@ fn calculate_y(this_y: f64) -> Option<f64> {
     Some(theta_up + *theta_down)
 }
 
-fn connect_belts(belts: Vec<DspbptkBuildingData>) -> Vec<DspbptkBuildingData> {
+/// 依次连接vec中的传送带，注意这个函数并不检查建筑是否为传送带  
+/// 仅修改前belts.len()-1个建筑数据，belts.last()不做任何处理处理  
+/// 本质是修改建筑的 temp_output_obj_idx 和 output_to_slot, input_to_slot  
+pub fn connect_belts(
+    belts: Vec<DspbptkBuildingData>,
+    output_to: Option<u128>,
+    slot: i8,
+) -> Vec<DspbptkBuildingData> {
     let next_uuids = belts
         .iter()
         .skip(1)
@@ -91,14 +100,64 @@ fn connect_belts(belts: Vec<DspbptkBuildingData>) -> Vec<DspbptkBuildingData> {
         .into_iter()
         .enumerate()
         .map(|(i, belt)| DspbptkBuildingData {
-            temp_output_obj_idx: match next_uuids.get(i) {
-                Some(next_uuid) => *next_uuid,
-                None => None,
-            },
-            output_to_slot: 1,
+            temp_output_obj_idx: *next_uuids.get(i).unwrap_or(&output_to),
+            output_to_slot: slot,
+            input_to_slot: slot,
             ..belt
         })
         .collect()
+}
+
+/// 沿测地线连接两个传送带节点
+pub fn create_belts_path(
+    from: DspbptkBuildingData,
+    to: &DspbptkBuildingData,
+    slot: i8,
+) -> Vec<DspbptkBuildingData> {
+    const BELT_GRID: f64 = 1.83;
+    const BELT_ARC: f64 = arc_from_grid(BELT_GRID);
+
+    let from_z = from.local_offset[2];
+    let to_z = to.local_offset[2];
+
+    let from_direction = local_offset_to_direction(from.local_offset).normalize();
+    let to_direction = local_offset_to_direction(to.local_offset).normalize();
+
+    let cos_theta = from_direction.dot(&to_direction);
+
+    // 如果两传送带在球面上相对，此时存在无数条测地线，应拒绝生成并让用户检查
+    assert!(cos_theta > -1.0);
+
+    let axis = from_direction.cross(&to_direction).normalize();
+
+    // TODO 优化性能
+    // 用四元数球面插值
+    let arc_between = cos_theta.acos();
+    let belts_count = (arc_between / BELT_ARC).ceil() as i64; // 加上了from，没算to
+    let belts = (0..=belts_count)
+        .map(|i| {
+            if i == 0 {
+                from.clone()
+            } else if i == belts_count {
+                to.clone()
+            } else {
+                let k = (i as f64) / (belts_count as f64);
+                let half_arc_lerp = arc_between * 0.5 * k;
+                let q = Quaternion::new(
+                    half_arc_lerp.cos(),
+                    axis.x * half_arc_lerp.sin(),
+                    axis.y * half_arc_lerp.sin(),
+                    axis.z * half_arc_lerp.sin(),
+                );
+                let inv_q = q.conjugate();
+                let belt_direction = compute_3d_rotation_vector(&from_direction, (q, inv_q));
+                let belt_z = from_z * (1.0 - k) + to_z * k;
+                new_belt(direction_to_local_offset(&belt_direction, belt_z))
+            }
+        })
+        .collect::<Vec<_>>();
+
+    connect_belts(belts, to.uuid, slot)
 }
 
 fn calculate_rows() -> Vec<Row> {
@@ -146,8 +205,8 @@ fn calculate_rows() -> Vec<Row> {
     rows
 }
 
-fn convert_row_to_receivers(row: &Row) -> Vec<DspbptkBuildingData> {
-    let row_buildings = (0..row.n)
+fn row_to_receivers(row: &Row) -> Vec<DspbptkBuildingData> {
+    (0..row.n)
         .map(|i| {
             new_receiver([
                 (1000.0 / (row.n as f64) * (i as f64 + 0.5)),
@@ -155,11 +214,10 @@ fn convert_row_to_receivers(row: &Row) -> Vec<DspbptkBuildingData> {
                 0.0,
             ])
         })
-        .collect::<Vec<_>>();
-    row_buildings
+        .collect::<Vec<_>>()
 }
 
-fn convert_row_to_belts(row: &Row) -> Vec<DspbptkBuildingData> {
+fn row_to_belts(row: &Row) -> Vec<DspbptkBuildingData> {
     const BELT_GRID: f64 = 1.83;
     const BELT_ARC: f64 = arc_from_grid(BELT_GRID);
 
@@ -168,9 +226,9 @@ fn convert_row_to_belts(row: &Row) -> Vec<DspbptkBuildingData> {
     let x_from = HALF_ARC_A / y.cos();
     let x_to = (2.0 * PI) - HALF_ARC_A / y.cos();
     let x_arc = x_to - x_from;
-
     let belts_count = (y.cos() * (x_arc / BELT_ARC)).ceil() as u64;
-    let row_buildings = (0..=belts_count)
+
+    (0..=belts_count)
         .map(|i| {
             new_belt([
                 grid_from_arc(x_arc / (belts_count as f64) * (i as f64) + x_from),
@@ -178,28 +236,22 @@ fn convert_row_to_belts(row: &Row) -> Vec<DspbptkBuildingData> {
                 0.0,
             ])
         })
-        .collect::<Vec<_>>();
-
-    row_buildings
+        .collect::<Vec<_>>()
 }
 
-fn convert_row_to_buildings(rows: Vec<Row>) -> Vec<DspbptkBuildingData> {
-    // 生成所有锅盖
-    let receivers_in_rows = rows
-        .iter()
-        .map(|row| convert_row_to_receivers(row))
-        .collect::<Vec<_>>();
-    info!(
-        "receiver count = {}",
-        receivers_in_rows.iter().map(|row| row.len()).sum::<usize>()
-    );
+pub fn distance_sq(a: &DspbptkBuildingData, b: &DspbptkBuildingData) -> f64 {
+    (a.local_offset[0] - b.local_offset[0]).powi(2)
+        + (a.local_offset[1] - b.local_offset[1]).powi(2)
+        + (a.local_offset[2] - b.local_offset[2]).powi(2)
+}
 
+fn rows_to_buildings(rows: Vec<Row>) -> Vec<DspbptkBuildingData> {
     // 生成传送带
     let belts_in_rows = rows
         .iter()
         .map(|row| {
-            let row_of_belt = convert_row_to_belts(row);
-            connect_belts(row_of_belt)
+            let row_of_belt = row_to_belts(row);
+            connect_belts(row_of_belt, None, 1)
         })
         .collect::<Vec<_>>();
     info!(
@@ -207,8 +259,74 @@ fn convert_row_to_buildings(rows: Vec<Row>) -> Vec<DspbptkBuildingData> {
         belts_in_rows.iter().map(|row| row.len()).sum::<usize>()
     );
 
+    // 生成所有锅盖
+    let receivers_in_rows = rows
+        .iter()
+        .map(|row| row_to_receivers(row))
+        .collect::<Vec<_>>();
+    info!(
+        "receiver count = {}",
+        receivers_in_rows.iter().map(|row| row.len()).sum::<usize>()
+    );
+
+    // 生成锅盖的输入输出传送带
+    let receivers_io = receivers_in_rows
+        .iter()
+        .enumerate()
+        .map(|(rows_index, row_of_receivers)| {
+            row_of_receivers
+                .iter()
+                .map(|receiver| {
+                    // 根据奇偶排进行不同的处理
+                    if rows_index % 2 == 0 {
+                        // 向低纬度输出光子
+                        // FIXME slot游戏不认
+                        // TODO 自动维护传送带的slot
+                        const ARC_OFFSET: f64 = arc_from_grid(1.1209);
+                        let photon_belt = new_belt([
+                            receiver.local_offset[0],
+                            receiver.local_offset[1],
+                            receiver.local_offset[2],
+                        ]);
+                        let photon_belt = DspbptkBuildingData {
+                            temp_input_obj_idx: receiver.uuid,
+                            input_from_slot: 1,
+                            ..photon_belt
+                        };
+
+                        let photon_belt_out = new_belt([
+                            receiver.local_offset[0],
+                            receiver.local_offset[1] - grid_from_arc(ARC_OFFSET * 2.0),
+                            receiver.local_offset[2],
+                        ]);
+
+                        // 找到最近的传送带
+                        let belts = &belts_in_rows[rows_index];
+                        let nearest = belts
+                            .iter()
+                            .min_by(|a, b| {
+                                distance_sq(a, &photon_belt)
+                                    .partial_cmp(&distance_sq(b, &photon_belt))
+                                    .unwrap_or(std::cmp::Ordering::Equal)
+                            })
+                            .unwrap();
+
+                        let photon_belts = vec![photon_belt, photon_belt_out];
+                        connect_belts(photon_belts, nearest.uuid, 1)
+
+                        // TODO 从高纬度取透镜
+                    } else {
+                        // TODO 从低纬度取透镜，向高纬度输出光子
+                        Vec::new()
+                    }
+                })
+                .collect::<Vec<_>>()
+                .concat()
+        })
+        .collect::<Vec<_>>();
+
     // 整合所有种类的建筑
-    let all_buildings_in_rows = vec![receivers_in_rows, belts_in_rows].concat();
+    let all_buildings_in_rows = vec![receivers_in_rows, belts_in_rows, receivers_io].concat();
 
     let all_buildings = all_buildings_in_rows.concat();
     let all_buildings = fix_dspbptk_buildings_index(all_buildings);
@@ -226,7 +344,7 @@ fn main() -> Result<(), DspbptkError<'static>> {
     // 先计算布局
     let rows = calculate_rows();
 
-    let buildings = convert_row_to_buildings(rows);
+    let buildings = rows_to_buildings(rows);
 
     let content_data = ContentData {
         buildings_length: buildings.len() as i32,

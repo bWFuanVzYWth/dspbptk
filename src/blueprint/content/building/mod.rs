@@ -149,6 +149,7 @@ impl DspbptkBuildingData {
             input_from_slot: self.input_from_slot,
             output_from_slot: self.output_from_slot,
             input_to_slot: self.input_to_slot,
+            
             output_offset: self.output_offset,
             input_offset: self.input_offset,
             recipe_id: self.recipe_id,
