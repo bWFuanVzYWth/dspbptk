@@ -276,6 +276,67 @@ fn photon_belts(
     connect_belts(photon_belts, receiver_uuid, 1, nearest.uuid, output_to_slot)
 }
 
+fn receiver_output(
+    rows_index: usize,
+    rows_index_max: usize,
+    row_of_receivers: &Vec<DspbptkBuildingData>,
+    belts_in_rows: &Vec<Vec<DspbptkBuildingData>>,
+) -> Vec<DspbptkBuildingData> {
+    row_of_receivers
+        .iter()
+        .map(|receiver| {
+            if rows_index == rows_index_max {
+                Vec::new()
+            } else {
+                let (y_scale, main_belts, output_to_slot) = if rows_index % 2 == 0 {
+                    (-1.0, &belts_in_rows[rows_index], 2)
+                } else {
+                    (1.0, &belts_in_rows[rows_index + 1], 3)
+                };
+
+                let photon_belt_1 = new_belt([
+                    receiver.local_offset[0],
+                    receiver.local_offset[1] + y_scale * HALF_GRID_A * (1.0 / 3.0),
+                    receiver.local_offset[2],
+                ]);
+
+                let photon_belt_2 = new_belt([
+                    receiver.local_offset[0],
+                    receiver.local_offset[1] + y_scale * HALF_GRID_A * (2.0 / 3.0),
+                    receiver.local_offset[2],
+                ]);
+
+                photon_belts(
+                    main_belts,
+                    photon_belt_1,
+                    photon_belt_2,
+                    receiver.uuid,
+                    output_to_slot,
+                )
+            }
+        })
+        .collect::<Vec<_>>()
+        .concat()
+}
+
+fn receiver_outputs(
+    receivers_in_rows: &Vec<Vec<DspbptkBuildingData>>,
+    belts_in_rows: &Vec<Vec<DspbptkBuildingData>>,
+) -> Vec<Vec<DspbptkBuildingData>> {
+    receivers_in_rows
+        .iter()
+        .enumerate()
+        .map(|(rows_index, row_of_receivers)| {
+            receiver_output(
+                rows_index,
+                receivers_in_rows.len() - 1,
+                row_of_receivers,
+                belts_in_rows,
+            )
+        })
+        .collect::<Vec<_>>()
+}
+
 fn rows_to_buildings(rows: Vec<Row>) -> Vec<DspbptkBuildingData> {
     // 生成传送带
     let belts_in_rows = rows
@@ -301,73 +362,10 @@ fn rows_to_buildings(rows: Vec<Row>) -> Vec<DspbptkBuildingData> {
     );
 
     // 生成锅盖的输入输出传送带
-    let receivers_io = receivers_in_rows
-        .iter()
-        .enumerate()
-        .map(|(rows_index, row_of_receivers)| {
-            row_of_receivers
-                .iter()
-                .map(|receiver| {
-                    if rows_index == receivers_in_rows.len() - 1 {
-                        Vec::new()
-                    } else {
-                        // 偶数排锅输出到主干道slot2，奇数排锅输出到主干道slot3
-                        if rows_index % 2 == 0 {
-                            // 向低纬度输出光子
-                            let photon_belt_1 = new_belt([
-                                receiver.local_offset[0],
-                                receiver.local_offset[1] - HALF_GRID_A * (1.0 / 3.0),
-                                receiver.local_offset[2],
-                            ]);
-
-                            let photon_belt_2 = new_belt([
-                                receiver.local_offset[0],
-                                receiver.local_offset[1] - HALF_GRID_A * (2.0 / 3.0),
-                                receiver.local_offset[2],
-                            ]);
-
-                            photon_belts(
-                                &belts_in_rows[rows_index],
-                                photon_belt_1,
-                                photon_belt_2,
-                                receiver.uuid,
-                                2,
-                            )
-
-                            // TODO 从高纬度取透镜
-                        } else {
-                            // 向高纬度输出光子
-                            let photon_belt_1 = new_belt([
-                                receiver.local_offset[0],
-                                receiver.local_offset[1] + HALF_GRID_A * (1.0 / 3.0),
-                                receiver.local_offset[2],
-                            ]);
-
-                            let photon_belt_2 = new_belt([
-                                receiver.local_offset[0],
-                                receiver.local_offset[1] + HALF_GRID_A * (2.0 / 3.0),
-                                receiver.local_offset[2],
-                            ]);
-
-                            photon_belts(
-                                &belts_in_rows[rows_index + 1],
-                                photon_belt_1,
-                                photon_belt_2,
-                                receiver.uuid,
-                                3,
-                            )
-
-                            // TODO 从低纬度取透镜
-                        }
-                    }
-                })
-                .collect::<Vec<_>>()
-                .concat()
-        })
-        .collect::<Vec<_>>();
+    let receiver_outputs = receiver_outputs(&receivers_in_rows, &belts_in_rows);
 
     // 整合所有种类的建筑
-    let all_buildings_in_rows = vec![receivers_in_rows, belts_in_rows, receivers_io].concat();
+    let all_buildings_in_rows = vec![receivers_in_rows, belts_in_rows, receiver_outputs].concat();
 
     let all_buildings = all_buildings_in_rows.concat();
     let all_buildings = fix_dspbptk_buildings_index(all_buildings);
