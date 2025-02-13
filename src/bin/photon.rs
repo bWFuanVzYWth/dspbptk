@@ -82,28 +82,39 @@ fn calculate_y(this_y: f64) -> Option<f64> {
     Some(theta_up + *theta_down)
 }
 
-/// 依次连接vec中的传送带，注意这个函数并不检查建筑是否为传送带  
-/// 仅修改前belts.len()-1个建筑数据，belts.last()不做任何处理处理  
-/// 本质是修改建筑的 temp_output_obj_idx 和 output_to_slot, input_to_slot  
+/// 把vec中的传送带节点连接成一条整体，注意这个函数并不检查建筑是否为传送带  
 pub fn connect_belts(
     belts: Vec<DspbptkBuildingData>,
-    output_to: Option<u128>,
-    slot: i8,
+    temp_input_obj_idx: Option<u128>,
+    input_from_slot: i8,
+    temp_output_obj_idx: Option<u128>,
+    output_to_slot: i8,
 ) -> Vec<DspbptkBuildingData> {
-    let next_uuids = belts
+    let nexts = belts
         .iter()
-        .skip(1)
-        .map(|belt| belt.uuid)
+        .enumerate()
+        .map(|(i, belt)| match belts.get(i + 1) {
+            Some(belt) => (belt.uuid, 1),
+            None => (temp_output_obj_idx, output_to_slot),
+        })
         .collect::<Vec<_>>();
 
     belts
         .into_iter()
         .enumerate()
-        .map(|(i, belt)| DspbptkBuildingData {
-            temp_output_obj_idx: *next_uuids.get(i).unwrap_or(&output_to),
-            output_to_slot: slot,
-            input_to_slot: slot,
-            ..belt
+        .map(|(i, belt)| match i {
+            0 => DspbptkBuildingData {
+                temp_input_obj_idx: temp_input_obj_idx,
+                input_from_slot: input_from_slot,
+                temp_output_obj_idx: nexts[i].0,
+                output_to_slot: nexts[i].1,
+                ..belt
+            },
+            _ => DspbptkBuildingData {
+                temp_output_obj_idx: nexts[i].0,
+                output_to_slot: nexts[i].1,
+                ..belt
+            },
         })
         .collect()
 }
@@ -112,7 +123,6 @@ pub fn connect_belts(
 pub fn create_belts_path(
     from: DspbptkBuildingData,
     to: &DspbptkBuildingData,
-    slot: i8,
 ) -> Vec<DspbptkBuildingData> {
     const BELT_GRID: f64 = 1.83;
     const BELT_ARC: f64 = arc_from_grid(BELT_GRID);
@@ -157,7 +167,7 @@ pub fn create_belts_path(
         })
         .collect::<Vec<_>>();
 
-    connect_belts(belts, to.uuid, slot)
+    connect_belts(belts, None, 0, None, 0)
 }
 
 fn calculate_rows() -> Vec<Row> {
@@ -251,7 +261,7 @@ fn rows_to_buildings(rows: Vec<Row>) -> Vec<DspbptkBuildingData> {
         .iter()
         .map(|row| {
             let row_of_belt = row_to_belts(row);
-            connect_belts(row_of_belt, None, 1)
+            connect_belts(row_of_belt, None, 0, None, 0)
         })
         .collect::<Vec<_>>();
     info!(
@@ -277,15 +287,14 @@ fn rows_to_buildings(rows: Vec<Row>) -> Vec<DspbptkBuildingData> {
             row_of_receivers
                 .iter()
                 .map(|receiver| {
-                    // 根据奇偶排进行不同的处理
+                    // 根据奇偶排进行不同的处理，偶数排光子统一输入到slot2,奇数slot3
                     if rows_index % 2 == 0 {
                         // 向低纬度输出光子
                         // FIXME slot游戏不认
                         // TODO 自动维护传送带的slot
-                        const ARC_OFFSET: f64 = arc_from_grid(1.1209);
                         let photon_belt = new_belt([
                             receiver.local_offset[0],
-                            receiver.local_offset[1],
+                            receiver.local_offset[1] - HALF_GRID_A * (1.0 / 3.0),
                             receiver.local_offset[2],
                         ]);
                         let photon_belt = DspbptkBuildingData {
@@ -296,7 +305,7 @@ fn rows_to_buildings(rows: Vec<Row>) -> Vec<DspbptkBuildingData> {
 
                         let photon_belt_out = new_belt([
                             receiver.local_offset[0],
-                            receiver.local_offset[1] - grid_from_arc(ARC_OFFSET * 2.0),
+                            receiver.local_offset[1] - HALF_GRID_A * (2.0 / 3.0),
                             receiver.local_offset[2],
                         ]);
 
@@ -312,7 +321,7 @@ fn rows_to_buildings(rows: Vec<Row>) -> Vec<DspbptkBuildingData> {
                             .unwrap();
 
                         let photon_belts = vec![photon_belt, photon_belt_out];
-                        connect_belts(photon_belts, nearest.uuid, 1)
+                        connect_belts(photon_belts, receiver.uuid, 1, nearest.uuid, 2)
 
                         // TODO 从高纬度取透镜
                     } else {

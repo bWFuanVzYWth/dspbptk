@@ -144,7 +144,7 @@ impl DspbptkBuildingData {
             item_id: self.item_id,
             model_index: self.model_index,
             temp_output_obj_idx: index_from_uuid(self.temp_output_obj_idx),
-            temp_input_obj_idx: index_from_uuid(self.temp_output_obj_idx),
+            temp_input_obj_idx: index_from_uuid(self.temp_input_obj_idx),
             output_to_slot: self.output_to_slot,
             input_from_slot: self.input_from_slot,
             output_from_slot: self.output_from_slot,
