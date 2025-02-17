@@ -1,7 +1,7 @@
-use lazy_static::lazy_static;
-use std::collections::HashMap;
+// use lazy_static::lazy_static;
+// use std::collections::HashMap;
 
-const K: &[u32; 64] = &[
+const K: [u32; 64] = [
     0xd76aa478, 0xe8c7b756, 0x242070db, 0xc1bdceee, 0xf57c0faf, 0x4787c62a, 0xa8304613, 0xfd469501,
     0x698098d8, 0x8b44f7af, 0xffff5bb1, 0x895cd7be, 0x6b901122, 0xfd987193, 0xa679438e, 0x49b40821,
     0xf61e2562, 0xc040b340, 0x265e5a51, 0xe9b6c7aa, 0xd62f105d, 0x02441453, 0xd8a1e681, 0xe7d3fbc8,
@@ -12,30 +12,58 @@ const K: &[u32; 64] = &[
     0x6fa87e4f, 0xfe2ce6e0, 0xa3014314, 0x4e0811a1, 0xf7537e82, 0xbd3af235, 0x2ad7d2bb, 0xeb86d391,
 ];
 
-lazy_static! {
-    static ref K_MD5F: HashMap<usize, u32> = HashMap::from([
-        (1, 0xe8d7b756),
-        (6, 0xa8304623),
-        (12, 0x6b9f1122),
-        (15, 0x39b40821),
-        (19, 0xc9b6c7aa),
-        (21, 0x02443453),
-        (24, 0x21f1cde6),
-        (27, 0x475a14ed),
-    ]);
-    static ref K_MD5FC: HashMap<usize, u32> = HashMap::from([
-        (1, 0xe8d7b756),
-        (3, 0xc1bdceef),
-        (6, 0xa8304623),
-        (12, 0x6b9f1122),
-        (15, 0x39b40821),
-        (19, 0xc9b6c7aa),
-        (21, 0x02443453),
-        (24, 0x23f1cde6),
-        (27, 0x475a14ed),
-        (34, 0x6d9d6121),
-    ]);
-}
+// lazy_static! {
+//     static ref K_MD5F: HashMap<usize, u32> = HashMap::from([
+//         (1, 0xe8d7b756),
+//         (6, 0xa8304623),
+//         (12, 0x6b9f1122),
+//         (15, 0x39b40821),
+//         (19, 0xc9b6c7aa),
+//         (21, 0x02443453),
+//         (24, 0x21f1cde6),
+//         (27, 0x475a14ed),
+//     ]);
+//     static ref K_MD5FC: HashMap<usize, u32> = HashMap::from([
+//         (1, 0xe8d7b756),
+//         (3, 0xc1bdceef),
+//         (6, 0xa8304623),
+//         (12, 0x6b9f1122),
+//         (15, 0x39b40821),
+//         (19, 0xc9b6c7aa),
+//         (21, 0x02443453),
+//         (24, 0x23f1cde6),
+//         (27, 0x475a14ed),
+//         (34, 0x6d9d6121),
+//     ]);
+// }
+
+const K_MD5F: [u32; 64] = {
+    let mut arr = K;
+    arr[1] = 0xe8d7b756;
+    arr[6] = 0xa8304623;
+    arr[12] = 0x6b9f1122;
+    arr[15] = 0x39b40821;
+    arr[19] = 0xc9b6c7aa;
+    arr[21] = 0x02443453;
+    arr[24] = 0x21f1cde6;
+    arr[27] = 0x475a14ed;
+    arr
+};
+
+const K_MD5FC: [u32; 64] = {
+    let mut arr = K;
+    arr[1] = 0xe8d7b756;
+    arr[3] = 0xc1bdceef;
+    arr[6] = 0xa8304623;
+    arr[12] = 0x6b9f1122;
+    arr[15] = 0x39b40821;
+    arr[19] = 0xc9b6c7aa;
+    arr[21] = 0x02443453;
+    arr[24] = 0x23f1cde6;
+    arr[27] = 0x475a14ed;
+    arr[34] = 0x6d9d6121;
+    arr
+};
 
 const S: &[usize; 64] = &[
     7, 12, 17, 22, 7, 12, 17, 22, 7, 12, 17, 22, 7, 12, 17, 22, 5, 9, 14, 20, 5, 9, 14, 20, 5, 9,
@@ -83,12 +111,19 @@ impl MD5 {
     }
 
     fn k(&self, i: usize) -> u32 {
-        let u = if self.algo == Algo::MD5F && K_MD5F.contains_key(&i) {
-            *K_MD5F.get(&i).unwrap(/* impossible */)
-        } else if self.algo == Algo::MD5FC && K_MD5FC.contains_key(&i) {
-            *K_MD5FC.get(&i).unwrap(/* impossible */)
-        } else {
-            K[i]
+        // let u = if self.algo == Algo::MD5F {
+        //     // *K_MD5F.get(&i).unwrap(/* impossible */)
+        //     K_MD5F[i]
+        // } else if self.algo == Algo::MD5FC {
+        //     // *K_MD5FC.get(&i).unwrap(/* impossible */)
+        //     K_MD5FC[i]
+        // } else {
+        //     K[i]
+        // };
+        let u = match self.algo {
+            Algo::MD5F => K_MD5F[i],
+            Algo::MD5FC => K_MD5FC[i],
+            Algo::MD5 => K[i],
         };
         u32::from_le(u)
     }

@@ -133,7 +133,7 @@ fn calculate_quaternion_between_vectors(
         return handle_colinear_case(from);
     }
 
-    let axis = cross.normalize();
+    let axis = cross / sin_theta; // cross.normalize()
     let theta = cos_theta.acos();
     let (sin_half, cos_half) = (theta / 2.0).sin_cos();
 

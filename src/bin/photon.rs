@@ -35,27 +35,6 @@ const ARC_B: f64 = arc_from_grid(GRID_B);
 const HALF_ARC_A: f64 = arc_from_grid(HALF_GRID_A);
 const HALF_ARC_B: f64 = arc_from_grid(HALF_GRID_B);
 
-fn new_receiver(local_offset: [f64; 3]) -> DspbptkBuildingData {
-    DspbptkBuildingData {
-        uuid: Some(Uuid::new_v4().to_u128_le()),
-        item_id: Item::射线接收站 as i16,
-        model_index: Item::射线接收站.model()[0],
-        local_offset: local_offset,
-        parameters: vec![1208],
-        ..Default::default()
-    }
-}
-
-fn new_belt(local_offset: [f64; 3]) -> DspbptkBuildingData {
-    DspbptkBuildingData {
-        uuid: Some(Uuid::new_v4().to_u128_le()),
-        item_id: Item::极速传送带 as i16,
-        model_index: Item::极速传送带.model()[0],
-        local_offset: local_offset,
-        ..Default::default()
-    }
-}
-
 fn calculate_y(this_y: f64) -> Option<f64> {
     // 这段代码由我推导出初始的函数后，交给 Mathematica 进行代数化简，再翻译成rust代码
     // 为什么长成这样我也没完全弄明白，但是它算的很快，所以**不要动它**
@@ -163,7 +142,13 @@ pub fn create_belts_path(
                 let inv_q = q.conjugate();
                 let belt_direction = compute_3d_rotation_vector(&from_direction, (q, inv_q));
                 let belt_z = from_z * (1.0 - k) + to_z * k;
-                new_belt(direction_to_local_offset(&belt_direction, belt_z))
+                DspbptkBuildingData {
+                    uuid: Some(Uuid::new_v4().to_u128_le()),
+                    item_id: Item::极速传送带 as i16,
+                    model_index: Item::极速传送带.model()[0],
+                    local_offset: direction_to_local_offset(&belt_direction, belt_z),
+                    ..Default::default()
+                }
             }
         })
         .collect::<Vec<_>>();
@@ -219,12 +204,17 @@ fn calculate_rows() -> Vec<Row> {
 
 fn row_to_receivers(row: &Row) -> Vec<DspbptkBuildingData> {
     (0..row.n)
-        .map(|i| {
-            new_receiver([
+        .map(|i| DspbptkBuildingData {
+            uuid: Some(Uuid::new_v4().to_u128_le()),
+            item_id: Item::射线接收站 as i16,
+            model_index: Item::射线接收站.model()[0],
+            local_offset: [
                 (1000.0 / (row.n as f64) * (i as f64 + 0.5)),
                 grid_from_arc(row.y),
                 0.0,
-            ])
+            ],
+            parameters: vec![1208],
+            ..Default::default()
         })
         .collect::<Vec<_>>()
 }
@@ -242,12 +232,16 @@ fn row_to_belts(row: &Row) -> Vec<DspbptkBuildingData> {
     let belts_count = (y.cos() * (x_arc / BELT_ARC)).ceil() as u64;
 
     (0..=belts_count)
-        .map(|i| {
-            new_belt([
+        .map(|i| DspbptkBuildingData {
+            uuid: Some(Uuid::new_v4().to_u128_le()),
+            item_id: Item::极速传送带 as i16,
+            model_index: Item::极速传送带.model()[0],
+            local_offset: [
                 grid_from_arc(x_arc / (belts_count as f64) * (i as f64) + x_from),
                 grid_from_arc(y),
                 0.0,
-            ])
+            ],
+            ..Default::default()
         })
         .collect::<Vec<_>>()
 }
@@ -296,17 +290,29 @@ fn receiver_output(
                     (1.0, &belts_in_rows[rows_index + 1], 3)
                 };
 
-                let photon_belt_1 = new_belt([
-                    receiver.local_offset[0],
-                    receiver.local_offset[1] + y_scale * HALF_GRID_A * (1.0 / 3.0),
-                    receiver.local_offset[2],
-                ]);
+                let photon_belt_1 = DspbptkBuildingData {
+                    uuid: Some(Uuid::new_v4().to_u128_le()),
+                    item_id: Item::极速传送带 as i16,
+                    model_index: Item::极速传送带.model()[0],
+                    local_offset: [
+                        receiver.local_offset[0],
+                        receiver.local_offset[1] + y_scale * HALF_GRID_A * (1.0 / 3.0),
+                        receiver.local_offset[2],
+                    ],
+                    ..Default::default()
+                };
 
-                let photon_belt_2 = new_belt([
-                    receiver.local_offset[0],
-                    receiver.local_offset[1] + y_scale * HALF_GRID_A * (2.0 / 3.0),
-                    receiver.local_offset[2],
-                ]);
+                let photon_belt_2 = DspbptkBuildingData {
+                    uuid: Some(Uuid::new_v4().to_u128_le()),
+                    item_id: Item::极速传送带 as i16,
+                    model_index: Item::极速传送带.model()[0],
+                    local_offset: [
+                        receiver.local_offset[0],
+                        receiver.local_offset[1] + y_scale * HALF_GRID_A * (2.0 / 3.0),
+                        receiver.local_offset[2],
+                    ],
+                    ..Default::default()
+                };
 
                 photon_belts(
                     main_belts,
