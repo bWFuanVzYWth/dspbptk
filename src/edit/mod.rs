@@ -1,5 +1,6 @@
 pub mod tesselation;
 pub mod unit_conversion;
+pub mod belt;
 
 use std::f64::consts::PI;
 
