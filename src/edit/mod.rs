@@ -1,6 +1,6 @@
+pub mod belt;
 pub mod tesselation;
 pub mod unit_conversion;
-pub mod belt;
 
 use std::f64::consts::PI;
 
@@ -37,10 +37,11 @@ pub fn sort_buildings(buildings: &mut Vec<building::BuildingData>) {
 pub fn fix_buildings_index(buildings: Vec<building::BuildingData>) -> Vec<building::BuildingData> {
     use std::collections::HashMap;
 
-    let mut index_lut = HashMap::with_capacity(buildings.len());
-    buildings.iter().enumerate().for_each(|(index, building)| {
-        index_lut.insert(building.index, index as i32);
-    });
+    let index_lut: HashMap<_, _> = buildings
+        .iter()
+        .enumerate()
+        .map(|(index, building)| (building.index, index as i32))
+        .collect();
 
     buildings
         .into_iter()
@@ -50,20 +51,14 @@ pub fn fix_buildings_index(buildings: Vec<building::BuildingData>) -> Vec<buildi
                 index: *index_lut
                     .get(&building.index)
                     .expect("Fatal error: unknown building index"),
-
-                temp_output_obj_idx: if let Some(idx) = index_lut.get(&building.temp_output_obj_idx)
-                {
-                    *idx
-                } else {
-                    building::INDEX_NULL
-                },
-
-                temp_input_obj_idx: if let Some(idx) = index_lut.get(&building.temp_input_obj_idx) {
-                    *idx
-                } else {
-                    building::INDEX_NULL
-                },
-
+                temp_output_obj_idx: index_lut
+                    .get(&building.temp_output_obj_idx)
+                    .copied()
+                    .unwrap_or(building::INDEX_NULL),
+                temp_input_obj_idx: index_lut
+                    .get(&building.temp_input_obj_idx)
+                    .copied()
+                    .unwrap_or(building::INDEX_NULL),
                 ..building
             }
         })
@@ -75,10 +70,11 @@ pub fn fix_dspbptk_buildings_index(
 ) -> Vec<building::DspbptkBuildingData> {
     use std::collections::HashMap;
 
-    let mut uuid_lut = HashMap::with_capacity(buildings.len());
-    buildings.iter().enumerate().for_each(|(uuid, building)| {
-        uuid_lut.insert(building.uuid, Some(uuid as u128));
-    });
+    let uuid_lut: HashMap<_, _> = buildings
+        .iter()
+        .enumerate()
+        .map(|(uuid, building)| (building.uuid, Some(uuid as u128)))
+        .collect();
 
     buildings
         .into_iter()
@@ -88,20 +84,14 @@ pub fn fix_dspbptk_buildings_index(
                 uuid: *uuid_lut
                     .get(&building.uuid)
                     .expect("Fatal error: unknown dspbptk building uuid"),
-
-                temp_output_obj_idx: if let Some(uuid) = uuid_lut.get(&building.temp_output_obj_idx)
-                {
-                    *uuid
-                } else {
-                    None
-                },
-
-                temp_input_obj_idx: if let Some(uuid) = uuid_lut.get(&building.temp_input_obj_idx) {
-                    *uuid
-                } else {
-                    None
-                },
-
+                temp_output_obj_idx: uuid_lut
+                    .get(&building.temp_output_obj_idx)
+                    .copied()
+                    .unwrap_or(None),
+                temp_input_obj_idx: uuid_lut
+                    .get(&building.temp_input_obj_idx)
+                    .copied()
+                    .unwrap_or(None),
                 ..building
             }
         })
