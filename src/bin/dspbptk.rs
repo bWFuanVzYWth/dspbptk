@@ -57,9 +57,8 @@ fn process_middle_layer(
 ) -> (HeaderData, ContentData) {
     use dspbptk::edit::{fix_buildings_index, sort_buildings};
 
-    // 这里应该是唯一一处非必要的深拷贝，但这是符合直觉的，可以极大优化用户的使用体验
-    let header_data_out = header_data_in.clone();
-    let mut content_data_out = content_data_in.clone();
+    let header_data_out = header_data_in;
+    let mut content_data_out = content_data_in;
 
     if should_sort_buildings {
         sort_buildings(&mut content_data_out.buildings);
