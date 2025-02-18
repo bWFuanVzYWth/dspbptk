@@ -10,7 +10,7 @@ use dspbptk::{
     edit::{
         belt::connect_belts,
         fix_dspbptk_buildings_index,
-        tesselation::Row,
+        tesselation::{calculate_next_y, Row},
         unit_conversion::{arc_from_grid, grid_from_arc},
     },
     error::DspbptkError,
@@ -34,30 +34,14 @@ const ARC_B: f64 = arc_from_grid(GRID_B);
 const HALF_ARC_A: f64 = arc_from_grid(HALF_GRID_A);
 const HALF_ARC_B: f64 = arc_from_grid(HALF_GRID_B);
 
-fn calculate_y(this_y: f64) -> Option<f64> {
-    // 这段代码由我推导出初始的函数后，交给 Mathematica 进行代数化简，再翻译成rust代码
-    // 为什么长成这样我也没完全弄明白，但是它算的很快，所以**不要动它**
-    lazy_static! {
-        static ref half_arc_b_tan: f64 = HALF_ARC_B.tan();
-        static ref half_arc_a_tan: f64 = HALF_ARC_A.tan();
-        static ref half_arc_b_tan_pow2: f64 = half_arc_b_tan.powi(2);
-        static ref half_arc_a_tan_pow2: f64 = half_arc_a_tan.powi(2);
-        static ref norm_sq: f64 = *half_arc_b_tan_pow2 + *half_arc_a_tan_pow2 + 1.0;
-        static ref scale: f64 = (1.0 - (*half_arc_b_tan_pow2 / *norm_sq)).sqrt();
-        static ref theta_down: f64 = ((*half_arc_a_tan / norm_sq.sqrt()).sin() / *scale).asin();
-    };
-
-    let z_max_of_this_row = (HALF_ARC_A + this_y).sin();
-    let theta_up_sin = z_max_of_this_row / *scale;
-    if theta_up_sin >= 1.0 {
-        return None;
-    }
-    let theta_up = theta_up_sin.asin();
-    if theta_up >= PI / 2.0 {
-        return None;
-    }
-
-    Some(theta_up + *theta_down)
+lazy_static! {
+    static ref half_arc_b_tan: f64 = HALF_ARC_B.tan();
+    static ref half_arc_a_tan: f64 = HALF_ARC_A.tan();
+    static ref half_arc_b_tan_pow2: f64 = half_arc_b_tan.powi(2);
+    static ref half_arc_a_tan_pow2: f64 = half_arc_a_tan.powi(2);
+    static ref norm_sq: f64 = *half_arc_b_tan_pow2 + *half_arc_a_tan_pow2 + 1.0;
+    static ref scale: f64 = (1.0 - (*half_arc_b_tan_pow2 / *norm_sq)).sqrt();
+    static ref theta_down: f64 = ((*half_arc_a_tan / norm_sq.sqrt()).sin() / *scale).asin();
 }
 
 fn calculate_rows() -> Vec<Row> {
@@ -81,10 +65,11 @@ fn calculate_rows() -> Vec<Row> {
 
         let row_next = if (row_try_offset.y + ARC_B / 2.0).cos() < row_try_offset.n as f64 * ARC_A {
             // 如果直接偏移太挤了
-            let y_fixed = match calculate_y(rows.last().unwrap().y) {
-                Some(num) => num,
-                None => break,
-            };
+            let y_fixed =
+                match calculate_next_y(rows.last().unwrap().y + HALF_ARC_A, *scale, *theta_down) {
+                    Some(num) => num,
+                    None => break,
+                };
             let n = ((y_fixed + HALF_ARC_B).cos() * ((2.0 * PI) / ARC_A)).floor() as u64;
             Row {
                 t: Item::射线接收站,
