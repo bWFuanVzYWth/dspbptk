@@ -1,7 +1,7 @@
 [package]
 name = "dspbptk"
 author = "bWFuanVzYWth"
-version = "0.1.0"                                      # TODO 这个版本不会自动更新
+version = "0.1.0"
 edition = "2021"
 description = "Dyson Sphere Program Blueprint Toolkit"
 
@@ -12,7 +12,7 @@ path = "src/lib.rs"
 [dependencies]
 # Multi-threaded
 rayon = "1.10.0"
-# FIXME 更新到nom 8.0
+# TODO 更新到nom 8.0
 # Parser
 nom = "7.1.3"
 # decode/encode base64
@@ -45,4 +45,9 @@ uuid = { version = "1.13.1", features = [
     "macro-diagnostics",
 ] }
 
-# FIXME 编译参数
+[build]
+rustflags = ["-C", "target-cpu=native"]
+
+[profile.release]
+codegen-units = 1
+lto = "fat"

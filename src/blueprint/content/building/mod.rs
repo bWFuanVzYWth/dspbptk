@@ -240,5 +240,5 @@ pub fn serialization(bin: &mut Vec<u8>, data: &BuildingData) {
 
 #[cfg(test)]
 mod test {
-    // TODO 测试用例：检查每一种不同建筑
+    // TODO test 检查每一种不同建筑
 }

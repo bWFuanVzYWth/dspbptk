@@ -107,7 +107,6 @@ fn calculate_quaternion_between_vectors(
     assert!(abs_diff_eq!(to.norm_squared(), 1.0, epsilon = 1e-6));
 
     let cos_theta = from.dot(to).clamp(-1.0, 1.0);
-    let cos_theta = cos_theta.clamp(-1.0, 1.0);
 
     if cos_theta >= 1.0 - f64::EPSILON {
         return (
@@ -120,7 +119,7 @@ fn calculate_quaternion_between_vectors(
     let sin_theta = cross.norm();
 
     // 处理接近共线的情况
-    if sin_theta < 1e-6 {
+    if sin_theta < f64::EPSILON {
         return handle_colinear_case(from);
     }
 
