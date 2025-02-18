@@ -48,9 +48,13 @@ pub fn connect_belts(
         .collect()
 }
 
+// FIXME 这个函数一堆问题
+// 1. 不能正确处理初始传送带已经有数据的情况，也不能正确处理输出槽位
+// 2. 用四元数插值(Slerp)优化性能
+// 3. 干掉两个.clone()
 /// 沿测地线连接两个传送带节点
 pub fn create_belts_path(
-    from: DspbptkBuildingData, // FIXME 并不能正确处理初始传送带已经有数据的情况
+    from: DspbptkBuildingData, 
     to: &DspbptkBuildingData,
 ) -> Vec<DspbptkBuildingData> {
     const BELT_GRID: f64 = 1.83;
@@ -69,14 +73,13 @@ pub fn create_belts_path(
 
     let axis = from_direction.cross(&to_direction).normalize();
 
-    // TODO 用四元数插值(Slerp)优化性能
     // 用四元数球面插值
     let arc_between = cos_theta.acos();
     let belts_count = (arc_between / BELT_ARC).ceil() as i64; // 加上了from，没算to
     let belts = (0..=belts_count)
         .map(|i| {
             if i == 0 {
-                from.clone() // TODO 这两个clone什么东西
+                from.clone()
             } else if i == belts_count {
                 to.clone()
             } else {
@@ -102,6 +105,5 @@ pub fn create_belts_path(
         })
         .collect::<Vec<_>>();
 
-    // TODO 根据手性自动判断输入槽位
     connect_belts(belts, None, 0, None, 0)
 }

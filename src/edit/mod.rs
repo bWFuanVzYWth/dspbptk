@@ -9,6 +9,7 @@ use log::warn;
 use nalgebra::{geometry::Quaternion, Vector3};
 
 use crate::blueprint::content::building;
+use crate::error::DspbptkEditWarn::*;
 
 pub const EARTH_R: f64 = 200.0;
 pub const HALF_EQUATORIAL_GRID: f64 = 500.0;
@@ -162,7 +163,6 @@ pub fn compute_3d_rotation_vector(
     Vector3::new(to_quat.i, to_quat.j, to_quat.k)
 }
 
-// FIXME 把warn改结构化
 // 将局部偏移转换为方向向量
 pub fn local_offset_to_direction(local_offset: [f64; 3]) -> Vector3<f64> {
     const ANGLE_SCALE: f64 = PI / HALF_EQUATORIAL_GRID;
@@ -172,13 +172,11 @@ pub fn local_offset_to_direction(local_offset: [f64; 3]) -> Vector3<f64> {
         || local_offset[1] > 250.0
         || local_offset[1] < -250.0
     {
-        warn!(
-            "Non-standard local_offset: ({}, {})",
-            local_offset[0], local_offset[1]
-        );
+        warn!("{:?}", NonStandardLocalOffset(local_offset));
     }
-    let theta_x = (local_offset[0] as f64) * ANGLE_SCALE;
-    let theta_y = (local_offset[1] as f64) * ANGLE_SCALE;
+
+    let theta_x = (local_offset[0]) * ANGLE_SCALE;
+    let theta_y = (local_offset[1]) * ANGLE_SCALE;
 
     let z = theta_y.sin();
     let radius = (1.0 - z * z).sqrt();
@@ -188,15 +186,11 @@ pub fn local_offset_to_direction(local_offset: [f64; 3]) -> Vector3<f64> {
     Vector3::new(radius * cos_theta_x, radius * sin_theta_x, z).normalize()
 }
 
-// FIXME 把warn改结构化
 // 将方向向量转换为局部偏移
 pub fn direction_to_local_offset(direction: &Vector3<f64>, z: f64) -> [f64; 3] {
     const ANGLE_SCALE: f64 = HALF_EQUATORIAL_GRID / PI;
 
-    if direction.norm_squared() == 0.0 {
-        warn!("Zero direction!");
-        return [0.0, 0.0, 0.0];
-    }
+    // FIXME assert direction.length() == 1.0
 
     let theta_x = direction.y.atan2(direction.x);
     let x = theta_x * ANGLE_SCALE;
@@ -218,10 +212,6 @@ pub fn direction_to_local_offset(direction: &Vector3<f64>, z: f64) -> [f64; 3] {
 
     let x = fix_value(x, direction.x, 500.0, -500.0);
     let y = fix_value(y, direction.z, 250.0, -250.0);
-
-    if !x.is_finite() || !y.is_finite() {
-        warn!("Lost precision: x = {:?}, y = {:?}", x, y);
-    }
 
     [x, y, z]
 }

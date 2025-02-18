@@ -2,12 +2,12 @@ use thiserror::Error;
 
 #[derive(Error, Debug)]
 pub enum DspbptkError<'a> {
-    #[error("Can not read file: {path:?}, because {source}")]
+    #[error("can not read file: {path:?}, because {source}")]
     CanNotReadFile {
         path: &'a std::path::PathBuf,
         source: std::io::Error,
     },
-    #[error("Can not write file: {path:?}, because {source}")]
+    #[error("can not write file: {path:?}, because {source}")]
     CanNotWriteFile {
         path: &'a std::path::PathBuf,
         source: std::io::Error,
@@ -42,6 +42,13 @@ pub enum DspbptkWarn {
     UnknownAfterHeader,
     #[error("unexpected MD5F: expected = {0:?}, actual = {1:?}")]
     UnexpectedMD5F(String, String),
+}
+
+#[derive(Error, Debug, PartialEq, Clone)]
+pub enum DspbptkEditWarn {
+    #[error("non-standard local_offset: {0:?}")]
+    NonStandardLocalOffset([f64;3])
+    
 }
 
 #[derive(Error, Debug)]
