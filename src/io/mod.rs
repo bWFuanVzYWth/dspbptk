@@ -3,7 +3,7 @@ use std::path::PathBuf;
 use crate::{
     blueprint::{
         self,
-        content::{self, bin_from_data, string_from_data, ContentData},
+        content::{self, string_from_data, ContentData},
         header::{self, HeaderData},
     },
     error::{
@@ -107,7 +107,7 @@ pub fn process_front_end<'a>(
             let (blueprint_data, warns_blueprint) = blueprint::parse(&blueprint_string)?;
             content::bin_from_string(blueprint_content_bin, &blueprint_data.content)?;
             let (content_data, warns_content) =
-                content::data_from_bin(blueprint_content_bin.as_slice())?;
+                ContentData::from_bin(blueprint_content_bin.as_slice())?;
             let (header_data, warns_header) = header::parse(&blueprint_data.header)?;
             Ok((
                 header_data,
@@ -121,7 +121,7 @@ pub fn process_front_end<'a>(
             ))
         }
         BlueprintKind::Content(content_bin) => {
-            let (content_data, warns_content) = blueprint::content::data_from_bin(&content_bin)?;
+            let (content_data, warns_content) = ContentData::from_bin(&content_bin)?;
             const HEADER: &str = "BLUEPRINT:0,0,0,0,0,0,0,0,0,0.0.0.0,,";
             let (header_data, warns_header) = blueprint::header::parse(HEADER)?;
             Ok((
@@ -148,7 +148,7 @@ pub fn process_back_end<'a>(
                 &content_string,
             )))
         }
-        FileType::Content => Ok(BlueprintKind::Content(bin_from_data(content_data))),
+        FileType::Content => Ok(BlueprintKind::Content(content_data.to_bin())),
         _ => Err(UnknownFileType),
     }
 }

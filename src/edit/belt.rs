@@ -76,7 +76,7 @@ pub fn create_belts_path(
     let belts = (0..=belts_count)
         .map(|i| {
             if i == 0 {
-                from.clone()
+                from.clone() // TODO 这两个clone什么东西
             } else if i == belts_count {
                 to.clone()
             } else {

@@ -25,6 +25,42 @@ pub struct ContentData {
     pub unknown: Vec<u8>,
 }
 
+impl ContentData {
+    pub fn from_bin(bin: &[u8]) -> Result<(Self, Vec<DspbptkWarn>), DspbptkError> {
+        use nom::Finish;
+        let (unknown, content) = deserialization_non_finish(bin)
+            .finish()
+            .map_err(BrokenContent)?;
+        let unknown_length = content.unknown.len();
+        let warns = match unknown_length {
+            10.. => vec![LotUnknownAfterContent(unknown_length)],
+            1..=9 => vec![FewUnknownAfterContent(unknown.to_vec())],
+            _ => Vec::new(),
+        };
+        Ok((content, warns))
+    }
+
+    pub fn to_bin(&self) -> Vec<u8> {
+        let mut bin = Vec::new();
+        bin.extend_from_slice(&self.patch.to_le_bytes());
+        bin.extend_from_slice(&self.cursor_offset_x.to_le_bytes());
+        bin.extend_from_slice(&self.cursor_offset_y.to_le_bytes());
+        bin.extend_from_slice(&self.cursor_target_area.to_le_bytes());
+        bin.extend_from_slice(&self.drag_box_size_x.to_le_bytes());
+        bin.extend_from_slice(&self.drag_box_size_y.to_le_bytes());
+        bin.extend_from_slice(&self.primary_area_idx.to_le_bytes());
+        bin.extend_from_slice(&self.areas_length.to_le_bytes());
+        self.areas
+            .iter()
+            .for_each(|area_data| area::serialization(&mut bin, area_data));
+        bin.extend_from_slice(&self.buildings_length.to_le_bytes());
+        self.buildings
+            .iter()
+            .for_each(|building_data| building::serialization(&mut bin, building_data));
+        bin
+    }
+}
+
 impl Default for ContentData {
     fn default() -> Self {
         Self {
@@ -79,41 +115,7 @@ fn deserialization_non_finish(bin: &[u8]) -> IResult<&[u8], ContentData> {
     ))
 }
 
-pub fn data_from_bin(bin: &[u8]) -> Result<(ContentData, Vec<DspbptkWarn>), DspbptkError> {
-    use nom::Finish;
-    let (unknown, content) = deserialization_non_finish(bin)
-        .finish()
-        .map_err(BrokenContent)?;
-    let unknown_length = content.unknown.len();
-    let warns = match unknown_length {
-        10.. => vec![LotUnknownAfterContent(unknown_length)],
-        1..=9 => vec![FewUnknownAfterContent(unknown.to_vec())],
-        _ => Vec::new(),
-    };
-    Ok((content, warns))
-}
-
-pub fn bin_from_data(data: &ContentData) -> Vec<u8> {
-    let mut bin = Vec::new();
-    bin.extend_from_slice(&data.patch.to_le_bytes());
-    bin.extend_from_slice(&data.cursor_offset_x.to_le_bytes());
-    bin.extend_from_slice(&data.cursor_offset_y.to_le_bytes());
-    bin.extend_from_slice(&data.cursor_target_area.to_le_bytes());
-    bin.extend_from_slice(&data.drag_box_size_x.to_le_bytes());
-    bin.extend_from_slice(&data.drag_box_size_y.to_le_bytes());
-    bin.extend_from_slice(&data.primary_area_idx.to_le_bytes());
-    bin.extend_from_slice(&data.areas_length.to_le_bytes());
-    data.areas
-        .iter()
-        .for_each(|area_data| area::serialization(&mut bin, area_data));
-    bin.extend_from_slice(&data.buildings_length.to_le_bytes());
-    data.buildings
-        .iter()
-        .for_each(|building_data| building::serialization(&mut bin, building_data));
-    bin
-}
-
-pub fn gzip_from_string(string: &str) -> Result<Vec<u8>, DspbptkError> {
+fn gzip_from_string(string: &str) -> Result<Vec<u8>, DspbptkError> {
     use base64::prelude::*;
     match BASE64_STANDARD.decode(string) {
         Ok(bin) => Ok(bin),
@@ -121,12 +123,12 @@ pub fn gzip_from_string(string: &str) -> Result<Vec<u8>, DspbptkError> {
     }
 }
 
-pub fn string_from_gzip(gzip: &[u8]) -> String {
+fn string_from_gzip(gzip: &[u8]) -> String {
     use base64::prelude::*;
     BASE64_STANDARD.encode(gzip)
 }
 
-pub fn bin_from_gzip<'a>(bin: &mut Vec<u8>, gzip: Vec<u8>) -> Result<(), DspbptkError<'a>> {
+fn bin_from_gzip<'a>(bin: &mut Vec<u8>, gzip: Vec<u8>) -> Result<(), DspbptkError<'a>> {
     use flate2::read::GzDecoder;
     use std::io::Read;
     let mut decoder = GzDecoder::new(&gzip[..]);
@@ -134,7 +136,7 @@ pub fn bin_from_gzip<'a>(bin: &mut Vec<u8>, gzip: Vec<u8>) -> Result<(), Dspbptk
     Ok(())
 }
 
-pub fn compress_gzip_zopfli<'a>(
+fn compress_gzip_zopfli<'a>(
     bin: &[u8],
     zopfli_options: &zopfli::Options,
 ) -> Result<Vec<u8>, DspbptkError<'a>> {
@@ -144,7 +146,7 @@ pub fn compress_gzip_zopfli<'a>(
     Ok(gzip)
 }
 
-pub fn gzip_from_bin<'a>(
+fn gzip_from_bin<'a>(
     bin: &[u8],
     zopfli_options: &zopfli::Options,
 ) -> Result<Vec<u8>, DspbptkError<'a>> {
@@ -164,7 +166,7 @@ pub fn string_from_data<'a>(
     data: &ContentData,
     zopfli_options: &zopfli::Options,
 ) -> Result<String, DspbptkError<'a>> {
-    let bin = bin_from_data(data);
+    let bin = data.to_bin();
     let gzip = gzip_from_bin(&bin, zopfli_options)?;
     Ok(string_from_gzip(&gzip))
 }
