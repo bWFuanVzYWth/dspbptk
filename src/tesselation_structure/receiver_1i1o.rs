@@ -3,7 +3,7 @@ use uuid::Uuid;
 
 use crate::{
     blueprint::content::building::DspbptkBuildingData,
-    edit::{direction_to_local_offset, unit_conversion::arc_from_grid},
+    edit::{belt::connect_belts, direction_to_local_offset, unit_conversion::arc_from_grid},
     item::Item,
 };
 
@@ -18,13 +18,23 @@ const ARC_B: f64 = arc_from_grid(GRID_B);
 const HALF_ARC_A: f64 = arc_from_grid(HALF_GRID_A);
 const HALF_ARC_B: f64 = arc_from_grid(HALF_GRID_B);
 
-pub fn new(direction: Vector3<f64>, upside_down: bool) -> Vec<DspbptkBuildingData> {
-    // TODO 从bin/photons把生成代码扣过来
-    let y_scale = if upside_down { 1.0 } else { -1.0 };
+pub fn new(
+    direction: Vector3<f64>,
+    upside_down: bool,
+    temp_input_obj_idx: Option<u128>,
+    input_from_slot: i8,
+    temp_output_obj_idx: Option<u128>,
+    output_to_slot: i8,
+) -> Vec<DspbptkBuildingData> {
+    let (y_scale, sorter_yaw) = if upside_down {
+        (-1.0, 180.0)
+    } else {
+        (1.0, 0.0)
+    };
 
     let local_offset = direction_to_local_offset(&direction, 0.0);
 
-    // 锅
+    // 光子锅
     let receiver = DspbptkBuildingData {
         uuid: Some(Uuid::new_v4().to_u128_le()),
         item_id: Item::射线接收站 as i16,
@@ -34,23 +44,7 @@ pub fn new(direction: Vector3<f64>, upside_down: bool) -> Vec<DspbptkBuildingDat
         ..Default::default()
     };
 
-    let sorter_lens_input = DspbptkBuildingData {
-        uuid: Some(Uuid::new_v4().to_u128_le()),
-        item_id: Item::分拣器 as i16,
-        model_index: Item::分拣器.model()[0],
-        yaw: sorter_yaw,
-        yaw2: sorter_yaw,
-        local_offset: lens_sorter_local_offset,
-        local_offset_2: lens_belt_from_sorter.local_offset,
-        temp_input_obj_idx: nearest_main_belt_node.uuid,
-        temp_output_obj_idx: lens_belt_from_sorter.uuid,
-        output_to_slot: -1,
-        input_from_slot: -1,
-        output_from_slot: 0,
-        input_to_slot: 1,
-        ..Default::default()
-    };
-
+    // 透镜带
     let belt_lens_from_sorter = DspbptkBuildingData {
         uuid: Some(Uuid::new_v4().to_u128_le()),
         item_id: Item::极速传送带 as i16,
@@ -75,6 +69,31 @@ pub fn new(direction: Vector3<f64>, upside_down: bool) -> Vec<DspbptkBuildingDat
         ..Default::default()
     };
 
+    // 分流透镜的黄爪
+    let sorter_lens_input = DspbptkBuildingData {
+        uuid: Some(Uuid::new_v4().to_u128_le()),
+        item_id: Item::分拣器 as i16,
+        model_index: Item::分拣器.model()[0],
+        yaw: sorter_yaw,
+        yaw2: sorter_yaw,
+        local_offset: [
+            receiver.local_offset[0],
+            receiver.local_offset[1] + y_scale * (HALF_GRID_A - 0.25),
+            receiver.local_offset[2],
+        ],
+        local_offset_2: belt_lens_from_sorter.local_offset,
+        temp_input_obj_idx: temp_input_obj_idx,
+        temp_output_obj_idx: belt_lens_from_sorter.uuid,
+        output_to_slot: -1,
+        input_from_slot: input_from_slot,
+        input_to_slot: 1,
+        ..Default::default()
+    };
+
+    let belts_lens = vec![belt_lens_from_sorter, belt_lens_into_receiver];
+    let belts_lens = connect_belts(belts_lens, None, 0, receiver.uuid, 0);
+
+    // 光子带
     let belt_photons_from_receiver = DspbptkBuildingData {
         uuid: Some(Uuid::new_v4().to_u128_le()),
         item_id: Item::极速传送带 as i16,
@@ -98,4 +117,17 @@ pub fn new(direction: Vector3<f64>, upside_down: bool) -> Vec<DspbptkBuildingDat
         ],
         ..Default::default()
     };
+
+    let belts_photons = vec![belt_photons_from_receiver, belt_photons_output];
+    let belts_photons = connect_belts(
+        belts_photons,
+        receiver.uuid,
+        1,
+        temp_output_obj_idx,
+        output_to_slot,
+    );
+
+    let other_buildings = vec![receiver, sorter_lens_input];
+
+    vec![other_buildings, belts_lens, belts_photons].concat()
 }
