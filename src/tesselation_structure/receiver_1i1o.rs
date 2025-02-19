@@ -121,7 +121,7 @@ pub fn new(
         belts_photons,
         receiver.uuid,
         1,
-        output_obj.temp_output_obj_idx,
+        output_obj.uuid,
         output_to_slot,
     );
 

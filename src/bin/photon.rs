@@ -149,14 +149,6 @@ fn row_to_receivers(
                 output_to_slot,
             );
 
-            // DspbptkBuildingData {
-            //     uuid: Some(Uuid::new_v4().to_u128_le()),
-            //     item_id: Item::射线接收站 as i16,
-            //     model_index: Item::射线接收站.model()[0],
-            //     local_offset: local_offset,
-            //     parameters: vec![1208],
-            //     ..Default::default()
-            // }
             cell
         })
         .collect::<Vec<_>>()
