@@ -1,5 +1,4 @@
 use lazy_static::lazy_static;
-use log::info;
 use uuid::Uuid;
 
 use dspbptk::{
@@ -11,7 +10,6 @@ use dspbptk::{
     io::{BlueprintKind, FileType},
     item::Item,
     tesselation_structure::receiver_1i1o,
-    // tesselation_structure::*,
     toolkit::{
         belt::connect_belts,
         fix_dspbptk_buildings_index, local_offset_to_direction,
@@ -22,13 +20,12 @@ use dspbptk::{
 
 use std::f64::consts::PI;
 
-// FIXME 使用密铺模块中的数据，而不是把相同的数据抄两遍
 // 当error=0时，期望输出2920锅；然后在锅不减少的情况下试出最大的error(0.00019, 0.00020)
 // 考虑行星尺寸与IEEE754标准，至少要让ERROR > 2^-15 (约0.00003)
 const ERROR: f64 = 0.00019;
 // 锅的尺寸数据由src/bin/test_ray_receiver_size测出
-const GRID_A: f64 = 7.30726 + ERROR;
-const GRID_B: f64 = 4.19828 + ERROR;
+const GRID_A: f64 = receiver_1i1o::GRID_A + ERROR;
+const GRID_B: f64 = receiver_1i1o::GRID_B + ERROR;
 const HALF_GRID_A: f64 = GRID_A / 2.0;
 const HALF_GRID_B: f64 = GRID_B / 2.0;
 
@@ -47,7 +44,7 @@ lazy_static! {
     static ref theta_down: f64 = ((*half_arc_a_tan / norm_sq.sqrt()).sin() / *scale).asin();
 }
 
-fn calculate_rows() -> Vec<Row> {
+fn calculate_layout() -> Vec<Row> {
     let mut rows = Vec::new();
 
     // 生成贴着赤道的一圈
@@ -93,7 +90,26 @@ fn calculate_rows() -> Vec<Row> {
     rows
 }
 
-fn row_to_receivers(
+fn find_nearest(
+    buildings: &Vec<DspbptkBuildingData>,
+    reference_local_offset: [f64; 3],
+) -> &DspbptkBuildingData {
+    buildings
+        .iter()
+        .max_by(|a, b| {
+            let ref_direction = local_offset_to_direction(reference_local_offset);
+            let a_direction = local_offset_to_direction(a.local_offset);
+            let b_direction = local_offset_to_direction(b.local_offset);
+            let cos_arc_a = ref_direction.dot(&a_direction);
+            let cos_arc_b = ref_direction.dot(&b_direction);
+            cos_arc_a
+                .partial_cmp(&cos_arc_b)
+                .unwrap_or(std::cmp::Ordering::Equal)
+        })
+        .expect("can not find nearest buildings")
+}
+
+fn receivers_with_io(
     row: &Row,
     lens_belts: &Vec<DspbptkBuildingData>,
     photons_belts: &Vec<DspbptkBuildingData>,
@@ -106,57 +122,28 @@ fn row_to_receivers(
                 0.0,
             ];
 
-            let receiver_direction = local_offset_to_direction(local_offset);
-
-            let nearest_lens_belt = lens_belts
-                .iter()
-                .max_by(|a, b| {
-                    let a_direction = local_offset_to_direction(a.local_offset);
-                    let b_direction = local_offset_to_direction(b.local_offset);
-                    let cos_arc_a = receiver_direction.dot(&a_direction);
-                    let cos_arc_b = receiver_direction.dot(&b_direction);
-                    cos_arc_a
-                        .partial_cmp(&cos_arc_b)
-                        .unwrap_or(std::cmp::Ordering::Equal)
-                })
-                .expect("can not find nearest_lens_belt");
-
-            let nearest_photons_belt = photons_belts
-                .iter()
-                .max_by(|a, b| {
-                    let a_direction = local_offset_to_direction(a.local_offset);
-                    let b_direction = local_offset_to_direction(b.local_offset);
-                    let cos_arc_a = receiver_direction.dot(&a_direction);
-                    let cos_arc_b = receiver_direction.dot(&b_direction);
-                    cos_arc_a
-                        .partial_cmp(&cos_arc_b)
-                        .unwrap_or(std::cmp::Ordering::Equal)
-                })
-                .expect("can not find nearest_photons_belt");
-
-            let output_to_slot = if lens_belts[0].local_offset[1] > photons_belts[0].local_offset[1]
-            {
+            let output_to_slot = if local_offset[1] > photons_belts[0].local_offset[1] {
                 2
             } else {
                 3
             };
 
-            let cell = receiver_1i1o::new(
-                local_offset,
-                &nearest_lens_belt,
-                -1,
-                &nearest_photons_belt,
-                output_to_slot,
-            );
+            let nearest_lens_belt = find_nearest(lens_belts, local_offset);
+            let nearest_photons_belt = find_nearest(photons_belts, local_offset);
 
-            cell
+            receiver_1i1o::new(
+                local_offset,
+                nearest_lens_belt,
+                -1,
+                nearest_photons_belt,
+                output_to_slot,
+            )
         })
         .collect::<Vec<_>>()
         .concat()
 }
 
-// FIXME 命名不妥
-fn row_to_belts(row: &Row) -> Vec<DspbptkBuildingData> {
+fn main_belts(row: &Row) -> Vec<DspbptkBuildingData> {
     const BELT_GRID: f64 = 1.83;
     const BELT_ARC: f64 = arc_from_grid(BELT_GRID);
 
@@ -183,12 +170,12 @@ fn row_to_belts(row: &Row) -> Vec<DspbptkBuildingData> {
         .collect::<Vec<_>>()
 }
 
-fn rows_to_buildings(rows: Vec<Row>) -> Vec<DspbptkBuildingData> {
-    // 生成传送带
+fn layout_to_buildings(rows: Vec<Row>) -> Vec<DspbptkBuildingData> {
+    // 生成主干传送带
     let belts_in_rows = rows
         .iter()
         .map(|row| {
-            let row_of_belt = row_to_belts(row);
+            let row_of_belt = main_belts(row);
             connect_belts(row_of_belt, None, 0, None, 0)
         })
         .collect::<Vec<_>>();
@@ -204,7 +191,7 @@ fn rows_to_buildings(rows: Vec<Row>) -> Vec<DspbptkBuildingData> {
             } else {
                 (&belts_in_rows[i], &belts_in_rows[i + 1])
             };
-            row_to_receivers(row, lens_belts, photons_belts)
+            receivers_with_io(row, lens_belts, photons_belts)
         })
         .collect::<Vec<_>>();
 
@@ -225,9 +212,10 @@ fn main() -> Result<(), DspbptkError<'static>> {
     let zopfli_options = zopfli::Options::default();
 
     // 先计算布局
-    let rows = calculate_rows();
+    let rows = calculate_layout();
 
-    let buildings = rows_to_buildings(rows);
+    // 再转换为建筑列表
+    let buildings = layout_to_buildings(rows);
 
     let content_data = ContentData {
         buildings_length: buildings.len() as i32,
