@@ -4,12 +4,9 @@ pub mod unit_conversion;
 
 use std::f64::consts::PI;
 
-use approx::abs_diff_eq;
-use log::warn;
-use nalgebra::{geometry::Quaternion, Vector3};
+use nalgebra::Vector3;
 
 use crate::blueprint::content::building;
-use crate::error::DspbptkEditWarn::*;
 
 pub const EARTH_R: f64 = 200.0;
 pub const HALF_EQUATORIAL_GRID: f64 = 500.0;
@@ -99,70 +96,6 @@ pub fn fix_dspbptk_buildings_index(
         .collect()
 }
 
-fn calculate_quaternion_between_vectors(
-    from: &Vector3<f64>,
-    to: &Vector3<f64>,
-) -> (Quaternion<f64>, Quaternion<f64>) {
-    // FIXME 这里不一定要检查？
-    assert!(abs_diff_eq!(from.norm_squared(), 1.0, epsilon = 1e-6));
-    assert!(abs_diff_eq!(to.norm_squared(), 1.0, epsilon = 1e-6));
-
-    let cos_theta = from.dot(to).clamp(-1.0, 1.0);
-
-    if cos_theta >= 1.0 - f64::EPSILON {
-        return (
-            Quaternion::new(1.0, 0.0, 0.0, 0.0),
-            Quaternion::new(1.0, 0.0, 0.0, 0.0),
-        );
-    }
-
-    let cross = from.cross(to);
-    let sin_theta = cross.norm();
-
-    // 处理接近共线的情况
-    if sin_theta < f64::EPSILON {
-        return handle_colinear_case(from);
-    }
-
-    let axis = cross / sin_theta; // cross.normalize()
-    let theta = cos_theta.acos();
-    let (sin_half, cos_half) = (theta / 2.0).sin_cos();
-
-    let quaternion = Quaternion::new(
-        cos_half,
-        axis.x * sin_half,
-        axis.y * sin_half,
-        axis.z * sin_half,
-    );
-
-    (quaternion, quaternion.conjugate())
-}
-
-// 处理接近共线的情况，选择与 from 正交的轴
-fn handle_colinear_case(v: &Vector3<f64>) -> (Quaternion<f64>, Quaternion<f64>) {
-    let axis = select_orthogonal_axis(v);
-    let quaternion = Quaternion::new(0.0, axis.x, axis.y, axis.z).normalize();
-    (quaternion, quaternion.conjugate())
-}
-
-// 选择与给定向量正交的单位向量
-fn select_orthogonal_axis(v: &Vector3<f64>) -> Vector3<f64> {
-    if v.x.abs() < 1e-6 {
-        return Vector3::new(1.0, 0.0, 0.0).normalize();
-    }
-    Vector3::new(-v.y - v.z, v.x + v.z, v.x + v.y).normalize()
-}
-
-// 使用给定的四元数旋转一个向量
-pub fn compute_3d_rotation_vector(
-    from: &Vector3<f64>,
-    (quaternion, inverse_quaternion): (Quaternion<f64>, Quaternion<f64>),
-) -> Vector3<f64> {
-    let from_quat = Quaternion::new(0.0, from.x, from.y, from.z);
-    let to_quat = quaternion * from_quat * inverse_quaternion;
-    Vector3::new(to_quat.i, to_quat.j, to_quat.k)
-}
-
 // 将局部偏移转换为方向向量
 pub fn local_offset_to_direction(local_offset: [f64; 3]) -> Vector3<f64> {
     const ANGLE_SCALE: f64 = PI / HALF_EQUATORIAL_GRID;
@@ -181,8 +114,6 @@ pub fn local_offset_to_direction(local_offset: [f64; 3]) -> Vector3<f64> {
 // 将方向向量转换为局部偏移
 pub fn direction_to_local_offset(direction: &Vector3<f64>, z: f64) -> [f64; 3] {
     const ANGLE_SCALE: f64 = HALF_EQUATORIAL_GRID / PI;
-
-    // FIXME assert direction.length() == 1.0
 
     let theta_x = direction.y.atan2(direction.x);
     let x = theta_x * ANGLE_SCALE;
