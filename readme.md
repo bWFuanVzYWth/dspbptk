@@ -1,3 +1,4 @@
+<!-- TODO 更新readme，简介已经过时 -->
 # dspbptk
 
 ## 简介 · About
@@ -62,3 +63,4 @@ Drag the file/directory onto the `dspbptk.exe` (automatically identify file type
 ## 参考 Acknowledgements
 
 * MD5f: https://github.com/Wesmania/dspbp
+
