@@ -3,8 +3,8 @@ use uuid::Uuid;
 
 use crate::{
     blueprint::content::building::DspbptkBuildingData,
-    toolkit::{belt::connect_belts, direction_to_local_offset, unit_conversion::arc_from_grid},
     item::Item,
+    toolkit::{belt::connect_belts, direction_to_local_offset, unit_conversion::arc_from_grid},
 };
 
 // 模块尺寸即锅的尺寸，数据由src/bin/test_ray_receiver_size测出
@@ -19,7 +19,7 @@ pub const HALF_ARC_A: f64 = arc_from_grid(HALF_GRID_A);
 pub const HALF_ARC_B: f64 = arc_from_grid(HALF_GRID_B);
 
 pub fn new(
-    direction: Vector3<f64>,
+    local_offset: [f64; 3],
     input_obj: &DspbptkBuildingData,
     input_from_slot: i8,
     output_obj: &DspbptkBuildingData,
@@ -27,12 +27,12 @@ pub fn new(
 ) -> Vec<DspbptkBuildingData> {
     // TODO 根据输入输出建筑自动判断方向
     let (y_scale, sorter_yaw) = if input_obj.local_offset[1] > output_obj.local_offset[1] {
-        (1.0, 0.0)
+        (1.0, 180.0)
     } else {
-        (-1.0, 180.0)
+        (-1.0, 0.0)
     };
 
-    let local_offset = direction_to_local_offset(&direction, 0.0);
+    // let local_offset = direction_to_local_offset(&direction, 0.0);
 
     // 光子锅
     let receiver = DspbptkBuildingData {
@@ -51,7 +51,7 @@ pub fn new(
         model_index: Item::极速传送带.model()[0],
         local_offset: [
             receiver.local_offset[0],
-            receiver.local_offset[1] + HALF_GRID_A * (2.0 / 3.0),
+            receiver.local_offset[1] + y_scale * (HALF_GRID_A * (2.0 / 3.0)),
             receiver.local_offset[2],
         ],
         ..Default::default()
@@ -63,7 +63,7 @@ pub fn new(
         model_index: Item::极速传送带.model()[0],
         local_offset: [
             receiver.local_offset[0],
-            receiver.local_offset[1] + HALF_GRID_A * (1.0 / 3.0),
+            receiver.local_offset[1] + y_scale * (HALF_GRID_A * (1.0 / 3.0)),
             receiver.local_offset[2],
         ],
         ..Default::default()
@@ -78,7 +78,7 @@ pub fn new(
         yaw2: sorter_yaw,
         local_offset: [
             receiver.local_offset[0],
-            receiver.local_offset[1] + (HALF_GRID_A - 0.25),
+            receiver.local_offset[1] + y_scale * (HALF_GRID_A - 0.25),
             receiver.local_offset[2],
         ],
         local_offset_2: belt_lens_from_sorter.local_offset,
@@ -100,7 +100,7 @@ pub fn new(
         model_index: Item::极速传送带.model()[0],
         local_offset: [
             receiver.local_offset[0],
-            receiver.local_offset[1] - HALF_GRID_A * (1.0 / 3.0),
+            receiver.local_offset[1] - y_scale * (HALF_GRID_A * (1.0 / 3.0)),
             receiver.local_offset[2],
         ],
         ..Default::default()
@@ -112,7 +112,7 @@ pub fn new(
         model_index: Item::极速传送带.model()[0],
         local_offset: [
             receiver.local_offset[0],
-            receiver.local_offset[1] - HALF_GRID_A * (2.0 / 3.0),
+            receiver.local_offset[1] - y_scale * (HALF_GRID_A * (2.0 / 3.0)),
             receiver.local_offset[2],
         ],
         ..Default::default()

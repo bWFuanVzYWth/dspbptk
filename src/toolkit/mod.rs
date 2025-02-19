@@ -167,14 +167,6 @@ pub fn compute_3d_rotation_vector(
 pub fn local_offset_to_direction(local_offset: [f64; 3]) -> Vector3<f64> {
     const ANGLE_SCALE: f64 = PI / HALF_EQUATORIAL_GRID;
 
-    if local_offset[0] > 500.0
-        || local_offset[0] < -500.0
-        || local_offset[1] > 250.0
-        || local_offset[1] < -250.0
-    {
-        warn!("{:?}", NonStandardLocalOffset(local_offset));
-    }
-
     let theta_x = (local_offset[0]) * ANGLE_SCALE;
     let theta_y = (local_offset[1]) * ANGLE_SCALE;
 
