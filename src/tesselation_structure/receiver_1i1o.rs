@@ -32,8 +32,6 @@ pub fn new(
         (-1.0, 0.0)
     };
 
-    // let local_offset = direction_to_local_offset(&direction, 0.0);
-
     // 光子锅
     let receiver = DspbptkBuildingData {
         uuid: Some(Uuid::new_v4().to_u128_le()),
@@ -82,7 +80,7 @@ pub fn new(
             receiver.local_offset[2],
         ],
         local_offset_2: belt_lens_from_sorter.local_offset,
-        temp_input_obj_idx: input_obj.temp_input_obj_idx,
+        temp_input_obj_idx: input_obj.uuid,
         temp_output_obj_idx: belt_lens_from_sorter.uuid,
         output_to_slot: -1,
         input_from_slot: input_from_slot,
