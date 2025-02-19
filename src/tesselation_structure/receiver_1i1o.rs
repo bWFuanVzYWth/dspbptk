@@ -3,33 +3,33 @@ use uuid::Uuid;
 
 use crate::{
     blueprint::content::building::DspbptkBuildingData,
-    edit::{belt::connect_belts, direction_to_local_offset, unit_conversion::arc_from_grid},
+    toolkit::{belt::connect_belts, direction_to_local_offset, unit_conversion::arc_from_grid},
     item::Item,
 };
 
-// 锅的尺寸数据由src/bin/test_ray_receiver_size测出
-const GRID_A: f64 = 7.30726;
-const GRID_B: f64 = 4.19828;
-const HALF_GRID_A: f64 = GRID_A / 2.0;
-const HALF_GRID_B: f64 = GRID_B / 2.0;
+// 模块尺寸即锅的尺寸，数据由src/bin/test_ray_receiver_size测出
+pub const GRID_A: f64 = 7.30726;
+pub const GRID_B: f64 = 4.19828;
+pub const HALF_GRID_A: f64 = GRID_A / 2.0;
+pub const HALF_GRID_B: f64 = GRID_B / 2.0;
 
-const ARC_A: f64 = arc_from_grid(GRID_A);
-const ARC_B: f64 = arc_from_grid(GRID_B);
-const HALF_ARC_A: f64 = arc_from_grid(HALF_GRID_A);
-const HALF_ARC_B: f64 = arc_from_grid(HALF_GRID_B);
+pub const ARC_A: f64 = arc_from_grid(GRID_A);
+pub const ARC_B: f64 = arc_from_grid(GRID_B);
+pub const HALF_ARC_A: f64 = arc_from_grid(HALF_GRID_A);
+pub const HALF_ARC_B: f64 = arc_from_grid(HALF_GRID_B);
 
 pub fn new(
     direction: Vector3<f64>,
-    upside_down: bool,
-    temp_input_obj_idx: Option<u128>,
+    input_obj: &DspbptkBuildingData,
     input_from_slot: i8,
-    temp_output_obj_idx: Option<u128>,
+    output_obj: &DspbptkBuildingData,
     output_to_slot: i8,
 ) -> Vec<DspbptkBuildingData> {
-    let (y_scale, sorter_yaw) = if upside_down {
-        (-1.0, 180.0)
-    } else {
+    // TODO 根据输入输出建筑自动判断方向
+    let (y_scale, sorter_yaw) = if input_obj.local_offset[1] > output_obj.local_offset[1] {
         (1.0, 0.0)
+    } else {
+        (-1.0, 180.0)
     };
 
     let local_offset = direction_to_local_offset(&direction, 0.0);
@@ -78,11 +78,11 @@ pub fn new(
         yaw2: sorter_yaw,
         local_offset: [
             receiver.local_offset[0],
-            receiver.local_offset[1] + y_scale * (HALF_GRID_A - 0.25),
+            receiver.local_offset[1] + (HALF_GRID_A - 0.25),
             receiver.local_offset[2],
         ],
         local_offset_2: belt_lens_from_sorter.local_offset,
-        temp_input_obj_idx: temp_input_obj_idx,
+        temp_input_obj_idx: input_obj.temp_input_obj_idx,
         temp_output_obj_idx: belt_lens_from_sorter.uuid,
         output_to_slot: -1,
         input_from_slot: input_from_slot,
@@ -123,7 +123,7 @@ pub fn new(
         belts_photons,
         receiver.uuid,
         1,
-        temp_output_obj_idx,
+        output_obj.temp_output_obj_idx,
         output_to_slot,
     );
 

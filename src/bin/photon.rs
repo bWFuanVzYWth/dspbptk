@@ -7,19 +7,20 @@ use dspbptk::{
         content::{building::DspbptkBuildingData, ContentData},
         header::HeaderData,
     },
-    edit::{
+    error::DspbptkError,
+    io::{BlueprintKind, FileType},
+    item::Item,
+    toolkit::{
         belt::connect_belts,
         fix_dspbptk_buildings_index,
         tesselation::{calculate_next_y, Row},
         unit_conversion::{arc_from_grid, grid_from_arc},
     },
-    error::DspbptkError,
-    io::{BlueprintKind, FileType},
-    item::Item,
 };
 
 use std::f64::consts::PI;
 
+// FIXME 使用密铺模块中的数据，而不是把相同的数据抄两遍
 // 当error=0时，期望输出2920锅；然后在锅不减少的情况下试出最大的error(0.00019, 0.00020)
 // 考虑行星尺寸与IEEE754标准，至少要让ERROR > 2^-15 (约0.00003)
 const ERROR: f64 = 0.00019;
@@ -92,21 +93,28 @@ fn calculate_rows() -> Vec<Row> {
 
 fn row_to_receivers(row: &Row) -> Vec<DspbptkBuildingData> {
     (0..row.n)
-        .map(|i| DspbptkBuildingData {
-            uuid: Some(Uuid::new_v4().to_u128_le()),
-            item_id: Item::射线接收站 as i16,
-            model_index: Item::射线接收站.model()[0],
-            local_offset: [
+        .map(|i| {
+            let local_offset = [
                 (1000.0 / (row.n as f64) * (i as f64 + 0.5)),
                 grid_from_arc(row.y),
                 0.0,
-            ],
-            parameters: vec![1208],
-            ..Default::default()
+            ];
+
+            // TODO 接入射线接收器密铺模块
+
+            DspbptkBuildingData {
+                uuid: Some(Uuid::new_v4().to_u128_le()),
+                item_id: Item::射线接收站 as i16,
+                model_index: Item::射线接收站.model()[0],
+                local_offset: local_offset,
+                parameters: vec![1208],
+                ..Default::default()
+            }
         })
         .collect::<Vec<_>>()
 }
 
+// FIXME 命名不妥
 fn row_to_belts(row: &Row) -> Vec<DspbptkBuildingData> {
     const BELT_GRID: f64 = 1.83;
     const BELT_ARC: f64 = arc_from_grid(BELT_GRID);
@@ -140,188 +148,6 @@ pub fn distance_sq(a: &DspbptkBuildingData, b: &DspbptkBuildingData) -> f64 {
         + (a.local_offset[2] - b.local_offset[2]).powi(2)
 }
 
-fn photon_belts(
-    main_belts: &Vec<DspbptkBuildingData>,
-    photon_belt_1: DspbptkBuildingData,
-    photon_belt_2: DspbptkBuildingData,
-    receiver_uuid: Option<u128>,
-    output_to_slot: i8,
-) -> Vec<DspbptkBuildingData> {
-    let nearest = main_belts
-        .iter()
-        .min_by(|a, b| {
-            distance_sq(a, &photon_belt_1)
-                .partial_cmp(&distance_sq(b, &photon_belt_1))
-                .unwrap_or(std::cmp::Ordering::Equal)
-        })
-        .unwrap();
-
-    let photon_belts = vec![photon_belt_1, photon_belt_2];
-    connect_belts(photon_belts, receiver_uuid, 1, nearest.uuid, output_to_slot)
-}
-
-fn receiver_output(
-    rows_index: usize,
-    rows_index_max: usize,
-    row_of_receivers: &Vec<DspbptkBuildingData>,
-    belts_in_rows: &Vec<Vec<DspbptkBuildingData>>,
-) -> Vec<DspbptkBuildingData> {
-    row_of_receivers
-        .iter()
-        .map(|receiver| {
-            if rows_index == rows_index_max {
-                Vec::new()
-            } else {
-                let (y_scale, main_belts, output_to_slot) = if rows_index % 2 == 0 {
-                    (-1.0, &belts_in_rows[rows_index], 2)
-                } else {
-                    (1.0, &belts_in_rows[rows_index + 1], 3)
-                };
-
-                let photon_belt_1 = DspbptkBuildingData {
-                    uuid: Some(Uuid::new_v4().to_u128_le()),
-                    item_id: Item::极速传送带 as i16,
-                    model_index: Item::极速传送带.model()[0],
-                    local_offset: [
-                        receiver.local_offset[0],
-                        receiver.local_offset[1] + y_scale * HALF_GRID_A * (1.0 / 3.0),
-                        receiver.local_offset[2],
-                    ],
-                    ..Default::default()
-                };
-
-                let photon_belt_2 = DspbptkBuildingData {
-                    uuid: Some(Uuid::new_v4().to_u128_le()),
-                    item_id: Item::极速传送带 as i16,
-                    model_index: Item::极速传送带.model()[0],
-                    local_offset: [
-                        receiver.local_offset[0],
-                        receiver.local_offset[1] + y_scale * HALF_GRID_A * (2.0 / 3.0),
-                        receiver.local_offset[2],
-                    ],
-                    ..Default::default()
-                };
-
-                photon_belts(
-                    main_belts,
-                    photon_belt_1,
-                    photon_belt_2,
-                    receiver.uuid,
-                    output_to_slot,
-                )
-            }
-        })
-        .collect::<Vec<_>>()
-        .concat()
-}
-
-fn receiver_input(
-    rows_index: usize,
-    row_of_receivers: &Vec<DspbptkBuildingData>,
-    belts_in_rows: &Vec<Vec<DspbptkBuildingData>>,
-) -> Vec<DspbptkBuildingData> {
-    row_of_receivers
-        .iter()
-        .map(|receiver| {
-            let (y_scale, main_belts, sorter_yaw) = if rows_index % 2 == 0 {
-                (1.0, &belts_in_rows[rows_index + 1], 180.0)
-            } else {
-                (-1.0, &belts_in_rows[rows_index], 0.0)
-            };
-
-            let lens_belt_into_receiver = DspbptkBuildingData {
-                uuid: Some(Uuid::new_v4().to_u128_le()),
-                item_id: Item::极速传送带 as i16,
-                model_index: Item::极速传送带.model()[0],
-                local_offset: [
-                    receiver.local_offset[0],
-                    receiver.local_offset[1] + y_scale * HALF_GRID_A * (1.0 / 3.0),
-                    receiver.local_offset[2],
-                ],
-                ..Default::default()
-            };
-
-            let lens_belt_from_sorter = DspbptkBuildingData {
-                uuid: Some(Uuid::new_v4().to_u128_le()),
-                item_id: Item::极速传送带 as i16,
-                model_index: Item::极速传送带.model()[0],
-                local_offset: [
-                    receiver.local_offset[0],
-                    receiver.local_offset[1] + y_scale * HALF_GRID_A * (2.0 / 3.0),
-                    receiver.local_offset[2],
-                ],
-                ..Default::default()
-            };
-
-            let nearest_main_belt_node = main_belts
-                .iter()
-                .min_by(|a, b| {
-                    distance_sq(a, &lens_belt_from_sorter)
-                        .partial_cmp(&distance_sq(b, &lens_belt_from_sorter))
-                        .unwrap_or(std::cmp::Ordering::Equal)
-                })
-                .unwrap();
-
-            let lens_sorter_local_offset = [
-                receiver.local_offset[0],
-                receiver.local_offset[1] + y_scale * (HALF_GRID_A - 0.25),
-                receiver.local_offset[2],
-            ];
-
-            let lens_sorter = DspbptkBuildingData {
-                uuid: Some(Uuid::new_v4().to_u128_le()),
-                item_id: Item::分拣器 as i16,
-                model_index: Item::分拣器.model()[0],
-                yaw: sorter_yaw,
-                yaw2: sorter_yaw,
-                local_offset: lens_sorter_local_offset,
-                local_offset_2: lens_belt_from_sorter.local_offset,
-                temp_input_obj_idx: nearest_main_belt_node.uuid,
-                temp_output_obj_idx: lens_belt_from_sorter.uuid,
-                output_to_slot: -1,
-                input_from_slot: -1,
-                output_from_slot: 0,
-                input_to_slot: 1,
-                ..Default::default()
-            };
-
-            let mut receiver_input = connect_belts(
-                vec![lens_belt_from_sorter, lens_belt_into_receiver],
-                None,
-                0,
-                receiver.uuid,
-                0,
-            );
-
-            receiver_input.push(lens_sorter);
-            receiver_input
-        })
-        .collect::<Vec<_>>()
-        .concat()
-}
-
-fn receiver_io_belts(
-    receivers_in_rows: &Vec<Vec<DspbptkBuildingData>>,
-    belts_in_rows: &Vec<Vec<DspbptkBuildingData>>,
-) -> Vec<Vec<DspbptkBuildingData>> {
-    receivers_in_rows
-        .iter()
-        .enumerate()
-        .map(|(rows_index, row_of_receivers)| {
-            let receiver_output = receiver_output(
-                rows_index,
-                receivers_in_rows.len() - 1,
-                row_of_receivers,
-                belts_in_rows,
-            );
-
-            let receiver_input = receiver_input(rows_index, row_of_receivers, belts_in_rows);
-
-            vec![receiver_output, receiver_input].concat()
-        })
-        .collect::<Vec<_>>()
-}
-
 fn rows_to_buildings(rows: Vec<Row>) -> Vec<DspbptkBuildingData> {
     // 生成传送带
     let belts_in_rows = rows
@@ -331,26 +157,15 @@ fn rows_to_buildings(rows: Vec<Row>) -> Vec<DspbptkBuildingData> {
             connect_belts(row_of_belt, None, 0, None, 0)
         })
         .collect::<Vec<_>>();
-    info!(
-        "belt count = {}",
-        belts_in_rows.iter().map(|row| row.len()).sum::<usize>()
-    );
 
     // 生成所有锅盖
     let receivers_in_rows = rows
         .iter()
         .map(|row| row_to_receivers(row))
         .collect::<Vec<_>>();
-    info!(
-        "receiver count = {}",
-        receivers_in_rows.iter().map(|row| row.len()).sum::<usize>()
-    );
-
-    // 生成锅盖的输入输出传送带
-    let receiver_io_belts = receiver_io_belts(&receivers_in_rows, &belts_in_rows);
 
     // 整合所有种类的建筑
-    let all_buildings_in_rows = vec![receivers_in_rows, belts_in_rows, receiver_io_belts].concat();
+    let all_buildings_in_rows = vec![belts_in_rows].concat();
 
     let all_buildings = all_buildings_in_rows.concat();
     let all_buildings = fix_dspbptk_buildings_index(all_buildings);

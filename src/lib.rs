@@ -1,5 +1,5 @@
 pub mod blueprint;
-pub mod edit;
+pub mod toolkit;
 pub mod error;
 pub mod io;
 pub mod item;

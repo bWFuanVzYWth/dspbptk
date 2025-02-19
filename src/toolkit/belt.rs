@@ -3,7 +3,7 @@ use uuid::Uuid;
 
 use crate::{
     blueprint::content::building::DspbptkBuildingData,
-    edit::{
+    toolkit::{
         compute_3d_rotation_vector, direction_to_local_offset, local_offset_to_direction,
         unit_conversion::arc_from_grid,
     },

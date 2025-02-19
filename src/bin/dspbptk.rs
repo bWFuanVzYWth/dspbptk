@@ -55,7 +55,7 @@ fn process_middle_layer(
     content_data_in: ContentData,
     should_sort_buildings: bool,
 ) -> (HeaderData, ContentData) {
-    use dspbptk::edit::{fix_buildings_index, sort_buildings};
+    use dspbptk::toolkit::{fix_buildings_index, sort_buildings};
 
     let header_data_out = header_data_in;
     let mut content_data_out = content_data_in;

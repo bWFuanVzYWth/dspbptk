@@ -3,7 +3,7 @@ use dspbptk::{
         content::{building::DspbptkBuildingData, ContentData},
         header::HeaderData,
     },
-    edit::fix_dspbptk_buildings_index,
+    toolkit::fix_dspbptk_buildings_index,
     error::DspbptkError,
     io::{BlueprintKind, FileType},
     item::Item,
