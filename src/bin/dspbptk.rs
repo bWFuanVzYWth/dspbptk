@@ -233,7 +233,7 @@ struct Args {
     /// Input from file/dir. (*.txt *.content dir/)
     input: std::path::PathBuf,
 
-    /// Output to file/dir. (*.txt dir/)
+    /// Output to file/dir. (*.* dir/)
     #[clap(long, short)]
     output: Option<std::path::PathBuf>,
 

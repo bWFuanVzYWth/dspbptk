@@ -104,11 +104,16 @@ pub fn process_front_end<'a>(
 ) -> Result<(HeaderData, ContentData, Vec<DspbptkWarn>), DspbptkError<'a>> {
     match blueprint {
         BlueprintKind::Txt(blueprint_string) => {
+            // let start = std::time::Instant::now();
+
             let (blueprint_data, warns_blueprint) = blueprint::parse(&blueprint_string)?;
             content::bin_from_string(blueprint_content_bin, &blueprint_data.content)?;
             let (content_data, warns_content) =
                 ContentData::from_bin(blueprint_content_bin.as_slice())?;
             let (header_data, warns_header) = header::parse(&blueprint_data.header)?;
+
+            // log::info!("parse in {:?} sec.", start.elapsed());
+
             Ok((
                 header_data,
                 content_data,

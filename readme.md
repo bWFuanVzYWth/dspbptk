@@ -3,26 +3,24 @@
 
 ## 简介 · About
 
-安全、高效的蓝图解析库，用于游戏《戴森球计划》
+《戴森球计划》中的蓝图工具集
+
+* 内存安全的蓝图解析/编码库，可以在0.03s内解析一张18万建筑的全球白糖蓝图
+* 常用的蓝图处理相关工具集，如线性变换等
+* 常用的算法生成蓝图相关工具集，如偏移密铺等
 
 ---
 
-## 功能 · Function
+# dspbptk.exe
 
-1. 基于建筑排序和Zopfli算法无损压缩蓝图
-2. 在content和txt两种蓝图格式之间转换
-3. TODO 常用的蓝图编辑工具
+## 简介 · About
 
----
-
-1. Lossless compression of blueprints based on buildings sort and Zopfli algorithm
-2. Convert between content / blueprint
-3. TODO Useful toolkit for blueprint edit
+* 基于此框架开发的APP
 
 ## 注意 · Warning
 
-1. 如果不设置输出路径，默认将覆写原始蓝图
-2. 输出文件时不会对比输入文件的体积，即使新的蓝图比老的更大
+* 如果不设置输出路径，默认将覆写原始蓝图
+* 输出文件时不会对比输入文件的体积，即使新的蓝图比老的更大
 
 ## 使用方法 · Usage
 
@@ -36,13 +34,13 @@ Arguments:
 
 Options:
   -o, --output <OUTPUT>
-          Output to file/dir. (*.txt dir/)
-  -f, --filetype <FILETYPE>
+          Output to file/dir. (*.* dir/)
+  -t, --type-output <TYPE_OUTPUT>
           Output type: txt, content [default: txt]
-  -a, --actions [<ACTIONS>...]
-          Actions of edit blueprint
-  -s, --sort-buildings
-          Sort buildings for smaller blueprint
+  -r, --rounding-local-offset
+          Round local_offset to 1/300 may make blueprint smaller. Lossy
+      --no-sorting-buildings
+          Sorting buildings may make blueprint smaller. Lossless
       --iteration-count <ITERATION_COUNT>
           Compress arguments: zopfli iteration_count [default: 256]
       --iterations-without-improvement <ITERATIONS_WITHOUT_IMPROVEMENT>
