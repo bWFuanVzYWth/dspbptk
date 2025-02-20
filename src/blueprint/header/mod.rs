@@ -4,7 +4,7 @@ use nom::{
     Finish, IResult,
 };
 
-use crate::error::{DspbptkError, DspbptkError::*, DspbptkWarn, DspbptkWarn::*};
+use crate::error::{DspbptkError, DspbptkError::BrokenHeader, DspbptkWarn, DspbptkWarn::UnknownAfterHeader};
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct HeaderData {
@@ -31,10 +31,10 @@ impl Default for HeaderData {
             icons_3: "0".to_string(),
             icons_4: "0".to_string(),
             time: "0".to_string(),
-            game_version: "".to_string(),
-            short_desc: "".to_string(),
-            desc: "".to_string(),
-            unknown: "".to_string(),
+            game_version: String::new(),
+            short_desc: String::new(),
+            desc: String::new(),
+            unknown: String::new(),
         }
     }
 }

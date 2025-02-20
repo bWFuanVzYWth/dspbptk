@@ -21,10 +21,10 @@ pub fn sort_buildings(buildings: &mut [building::BuildingData]) {
             .then({
                 const KY: f64 = 256.0;
                 const KX: f64 = 1024.0;
-                let score_a = (a.local_offset_y as f64 * KY + a.local_offset_x as f64) * KX
-                    + a.local_offset_z as f64;
-                let score_b = (b.local_offset_y as f64 * KY + b.local_offset_x as f64) * KX
-                    + b.local_offset_z as f64;
+                let score_a = (f64::from(a.local_offset_y) * KY + f64::from(a.local_offset_x)) * KX
+                    + f64::from(a.local_offset_z);
+                let score_b = (f64::from(b.local_offset_y) * KY + f64::from(b.local_offset_x)) * KX
+                    + f64::from(b.local_offset_z);
                 score_a
                     .partial_cmp(&score_b)
                     .unwrap_or(std::cmp::Ordering::Equal)
@@ -38,7 +38,12 @@ pub fn fix_buildings_index(buildings: Vec<building::BuildingData>) -> Vec<buildi
     let index_lut: HashMap<_, _> = buildings
         .iter()
         .enumerate()
-        .map(|(index, building)| (building.index, index as i32))
+        .map(|(index, building)| {
+            (
+                building.index,
+                i32::try_from(index).expect("casting `usize` to `i32` truncate the value"),
+            )
+        })
         .collect();
 
     buildings
@@ -111,6 +116,18 @@ pub fn local_offset_to_direction(local_offset: [f64; 3]) -> Vector3<f64> {
     Vector3::new(radius * cos_theta_x, radius * sin_theta_x, z).normalize()
 }
 
+// 修复非有限值的情况
+fn fix_value(value: f64, component: f64, default_positive: f64, default_negative: f64) -> f64 {
+    if !value.is_finite() {
+        return if component >= 0.0 {
+            default_positive
+        } else {
+            default_negative
+        };
+    }
+    value
+}
+
 // 将方向向量转换为局部偏移
 pub fn direction_to_local_offset(direction: &Vector3<f64>, z: f64) -> [f64; 3] {
     const ANGLE_SCALE: f64 = HALF_EQUATORIAL_GRID / PI;
@@ -120,18 +137,6 @@ pub fn direction_to_local_offset(direction: &Vector3<f64>, z: f64) -> [f64; 3] {
 
     let theta_z = direction.z.asin();
     let y = theta_z * ANGLE_SCALE;
-
-    // 修复非有限值的情况
-    fn fix_value(value: f64, component: f64, default_positive: f64, default_negative: f64) -> f64 {
-        if !value.is_finite() {
-            return if component >= 0.0 {
-                default_positive
-            } else {
-                default_negative
-            };
-        }
-        value
-    }
 
     let x = fix_value(x, direction.x, 500.0, -500.0);
     let y = fix_value(y, direction.z, 250.0, -250.0);

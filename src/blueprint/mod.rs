@@ -2,7 +2,12 @@ pub mod content;
 pub mod header;
 pub mod md5;
 
-use crate::error::{DspbptkError, DspbptkError::*, DspbptkWarn, DspbptkWarn::*};
+use crate::error::{
+    DspbptkError,
+    DspbptkError::BrokenBlueprint,
+    DspbptkWarn,
+    DspbptkWarn::{FewUnknownAfterBlueprint, LotUnknownAfterBlueprint},
+};
 
 use nom::{
     bytes::complete::{tag, take, take_till},
@@ -59,7 +64,7 @@ pub fn parse(string: &str) -> Result<(BlueprintData, Vec<DspbptkWarn>), DspbptkE
 }
 
 pub fn serialization(header: &str, content: &str) -> String {
-    let mut header_content = format!("{}\"{}", header, content);
+    let mut header_content = format!("{header}\"{content}");
     let md5f = md5::compute_md5f_string(&header_content);
     header_content.push('"');
     header_content.push_str(&md5f);

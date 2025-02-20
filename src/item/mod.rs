@@ -176,7 +176,7 @@ pub enum Item {
 }
 
 impl Item {
-    pub fn model(self) -> Vec<i16> {
+     pub fn model(self) -> Vec<i16> {
         match self {
             Item::传送带 => vec![35],
             Item::高速传送带 => vec![36],
@@ -211,12 +211,10 @@ impl Item {
             Item::负熵熔炉 => vec![457],
             Item::原油萃取站 => vec![61],
             Item::原油精炼厂 => vec![63],
-            Item::化工厂 => vec![64],
+            Item::化工厂 | Item::量子化工厂 => vec![64],
             Item::分馏塔 => vec![119],
-            Item::量子化工厂 => vec![64],
             Item::太阳能板 => vec![55],
-            Item::蓄电器 => vec![46],
-            Item::蓄电器_满 => vec![46],
+            Item::蓄电器 | Item::蓄电器_满 => vec![46],
             Item::电磁轨道弹射器 => vec![72],
             Item::射线接收站 => vec![73],
             Item::垂直发射井 => vec![74],
@@ -227,8 +225,7 @@ impl Item {
             Item::行星内物流运输站 => vec![49],
             Item::星际物流运输站 => vec![50],
             Item::轨道采集器 => vec![117],
-            Item::矩阵研究站 => vec![70],
-            Item::自演化研究站 => vec![70],
+            Item::矩阵研究站 | Item::自演化研究站 => vec![70],
             Item::高斯机枪塔 => vec![374],
             Item::高频激光塔 => vec![373],
             Item::聚爆加农炮 => vec![375],

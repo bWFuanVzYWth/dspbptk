@@ -4,9 +4,9 @@ mod building_neg101;
 
 use nom::{branch::alt, IResult};
 
-use building_0::*;
-use building_neg100::*;
-use building_neg101::*;
+use building_0::deserialization_version_0;
+use building_neg100::deserialization_version_neg100;
+use building_neg101::{deserialization_version_neg101, serialization_version_neg101, NEG_101};
 
 pub const INDEX_NULL: i32 = -1;
 
@@ -80,7 +80,7 @@ fn uuid_from_index(index: i32) -> Option<u128> {
 
 fn index_from_uuid(uuid: Option<u128>) -> i32 {
     match uuid {
-        Some(num) => num as i32,
+        Some(num) => i32::try_from(num).expect("casting `u128` to `i32` truncate the uuid"),
         None => INDEX_NULL,
     }
 }
@@ -91,21 +91,21 @@ impl BuildingData {
             uuid: uuid_from_index(self.index),
             area_index: self.area_index,
             local_offset: [
-                self.local_offset_x as f64,
-                self.local_offset_y as f64,
-                self.local_offset_z as f64,
+                f64::from(self.local_offset_x),
+                f64::from(self.local_offset_y),
+                f64::from(self.local_offset_z),
             ],
-            yaw: self.yaw as f64,
-            tilt: self.tilt as f64,
-            pitch: self.pitch as f64,
+            yaw: f64::from(self.yaw),
+            tilt: f64::from(self.tilt),
+            pitch: f64::from(self.pitch),
             local_offset_2: [
-                self.local_offset_x2 as f64,
-                self.local_offset_y2 as f64,
-                self.local_offset_z2 as f64,
+                f64::from(self.local_offset_x2),
+                f64::from(self.local_offset_y2),
+                f64::from(self.local_offset_z2),
             ],
-            yaw2: self.yaw2 as f64,
-            tilt2: self.tilt2 as f64,
-            pitch2: self.pitch2 as f64,
+            yaw2: f64::from(self.yaw2),
+            tilt2: f64::from(self.tilt2),
+            pitch2: f64::from(self.pitch2),
             item_id: self.item_id,
             model_index: self.model_index,
             temp_output_obj_idx: uuid_from_index(self.temp_output_obj_idx),
@@ -153,7 +153,7 @@ impl DspbptkBuildingData {
             input_offset: self.input_offset,
             recipe_id: self.recipe_id,
             filter_id: self.filter_id,
-            parameters_length: self.parameters.len() as i16,
+            parameters_length: i16::try_from(self.parameters.len()).expect("casting `usize` to `i16` truncate the parameters_length"),
             parameters: self.parameters.clone(),
         }
     }
@@ -235,7 +235,7 @@ pub fn deserialization(bin: &[u8]) -> IResult<&[u8], BuildingData> {
 }
 
 pub fn serialization(bin: &mut Vec<u8>, data: &BuildingData) {
-    serialization_version_neg101(bin, data)
+    serialization_version_neg101(bin, data);
 }
 
 #[cfg(test)]

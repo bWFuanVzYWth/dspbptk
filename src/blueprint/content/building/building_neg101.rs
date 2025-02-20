@@ -14,6 +14,7 @@ const BELT_HIGH: i16 = 2009;
 const SORTER_LOW: i16 = 2011;
 const SORTER_HIGH: i16 = 2019;
 
+#[allow(clippy::similar_names, clippy::cast_sign_loss)]
 pub fn deserialization_version_neg101(bin: &[u8]) -> IResult<&[u8], BuildingData> {
     let unknown = bin;
 

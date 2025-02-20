@@ -9,6 +9,7 @@ use super::BuildingData;
 
 const NEG_100: i32 = -100; // 9C FF FF FF
 
+#[allow(clippy::similar_names, clippy::cast_sign_loss)]
 pub fn deserialization_version_neg100(bin: &[u8]) -> IResult<&[u8], BuildingData> {
     let unknown = bin;
 

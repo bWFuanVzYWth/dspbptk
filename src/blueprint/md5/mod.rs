@@ -1,43 +1,43 @@
 const K: [u32; 64] = [
-    0xd76aa478, 0xe8c7b756, 0x242070db, 0xc1bdceee, 0xf57c0faf, 0x4787c62a, 0xa8304613, 0xfd469501,
-    0x698098d8, 0x8b44f7af, 0xffff5bb1, 0x895cd7be, 0x6b901122, 0xfd987193, 0xa679438e, 0x49b40821,
-    0xf61e2562, 0xc040b340, 0x265e5a51, 0xe9b6c7aa, 0xd62f105d, 0x02441453, 0xd8a1e681, 0xe7d3fbc8,
-    0x21e1cde6, 0xc33707d6, 0xf4d50d87, 0x455a14ed, 0xa9e3e905, 0xfcefa3f8, 0x676f02d9, 0x8d2a4c8a,
-    0xfffa3942, 0x8771f681, 0x6d9d6122, 0xfde5380c, 0xa4beea44, 0x4bdecfa9, 0xf6bb4b60, 0xbebfbc70,
-    0x289b7ec6, 0xeaa127fa, 0xd4ef3085, 0x04881d05, 0xd9d4d039, 0xe6db99e5, 0x1fa27cf8, 0xc4ac5665,
-    0xf4292244, 0x432aff97, 0xab9423a7, 0xfc93a039, 0x655b59c3, 0x8f0ccc92, 0xffeff47d, 0x85845dd1,
-    0x6fa87e4f, 0xfe2ce6e0, 0xa3014314, 0x4e0811a1, 0xf7537e82, 0xbd3af235, 0x2ad7d2bb, 0xeb86d391,
+    0xd76a_a478, 0xe8c7_b756, 0x2420_70db, 0xc1bd_ceee, 0xf57c_0faf, 0x4787_c62a, 0xa830_4613, 0xfd46_9501,
+    0x6980_98d8, 0x8b44_f7af, 0xffff_5bb1, 0x895c_d7be, 0x6b90_1122, 0xfd98_7193, 0xa679_438e, 0x49b4_0821,
+    0xf61e_2562, 0xc040_b340, 0x265e_5a51, 0xe9b6_c7aa, 0xd62f_105d, 0x0244_1453, 0xd8a1_e681, 0xe7d3_fbc8,
+    0x21e1_cde6, 0xc337_07d6, 0xf4d5_0d87, 0x455a_14ed, 0xa9e3_e905, 0xfcef_a3f8, 0x676f_02d9, 0x8d2a_4c8a,
+    0xfffa_3942, 0x8771_f681, 0x6d9d_6122, 0xfde5_380c, 0xa4be_ea44, 0x4bde_cfa9, 0xf6bb_4b60, 0xbebf_bc70,
+    0x289b_7ec6, 0xeaa1_27fa, 0xd4ef_3085, 0x0488_1d05, 0xd9d4_d039, 0xe6db_99e5, 0x1fa2_7cf8, 0xc4ac_5665,
+    0xf429_2244, 0x432a_ff97, 0xab94_23a7, 0xfc93_a039, 0x655b_59c3, 0x8f0c_cc92, 0xffef_f47d, 0x8584_5dd1,
+    0x6fa8_7e4f, 0xfe2c_e6e0, 0xa301_4314, 0x4e08_11a1, 0xf753_7e82, 0xbd3a_f235, 0x2ad7_d2bb, 0xeb86_d391,
 ];
 
 const K_MD5F: [u32; 64] = {
     let mut arr = K;
-    arr[1] = 0xe8d7b756;
-    arr[6] = 0xa8304623;
-    arr[12] = 0x6b9f1122;
-    arr[15] = 0x39b40821;
-    arr[19] = 0xc9b6c7aa;
-    arr[21] = 0x02443453;
-    arr[24] = 0x21f1cde6;
-    arr[27] = 0x475a14ed;
+    arr[1] = 0xe8d7_b756;
+    arr[6] = 0xa830_4623;
+    arr[12] = 0x6b9f_1122;
+    arr[15] = 0x39b4_0821;
+    arr[19] = 0xc9b6_c7aa;
+    arr[21] = 0x0244_3453;
+    arr[24] = 0x21f1_cde6;
+    arr[27] = 0x475a_14ed;
     arr
 };
 
 const K_MD5FC: [u32; 64] = {
     let mut arr = K;
-    arr[1] = 0xe8d7b756;
-    arr[3] = 0xc1bdceef;
-    arr[6] = 0xa8304623;
-    arr[12] = 0x6b9f1122;
-    arr[15] = 0x39b40821;
-    arr[19] = 0xc9b6c7aa;
-    arr[21] = 0x02443453;
-    arr[24] = 0x23f1cde6;
-    arr[27] = 0x475a14ed;
-    arr[34] = 0x6d9d6121;
+    arr[1] = 0xe8d7_b756;
+    arr[3] = 0xc1bd_ceef;
+    arr[6] = 0xa830_4623;
+    arr[12] = 0x6b9f_1122;
+    arr[15] = 0x39b4_0821;
+    arr[19] = 0xc9b6_c7aa;
+    arr[21] = 0x0244_3453;
+    arr[24] = 0x23f1_cde6;
+    arr[27] = 0x475a_14ed;
+    arr[34] = 0x6d9d_6121;
     arr
 };
 
-const S: &[usize; 64] = &[
+const S: &[u32; 64] = &[
     7, 12, 17, 22, 7, 12, 17, 22, 7, 12, 17, 22, 7, 12, 17, 22, 5, 9, 14, 20, 5, 9, 14, 20, 5, 9,
     14, 20, 5, 9, 14, 20, 4, 11, 16, 23, 4, 11, 16, 23, 4, 11, 16, 23, 4, 11, 16, 23, 6, 10, 15,
     21, 6, 10, 15, 21, 6, 10, 15, 21, 6, 10, 15, 21,
@@ -91,6 +91,7 @@ impl MD5 {
         u32::from_le(u)
     }
 
+    #[allow(clippy::many_single_char_names)]
     fn update_block(&mut self, buf: &[u8]) {
         assert!(buf.len() == 64);
         let words: Vec<u32> = buf
@@ -126,7 +127,7 @@ impl MD5 {
             a = d;
             d = c;
             c = b;
-            b = b.wrapping_add(f.rotate_left(*si as u32));
+            b = b.wrapping_add(f.rotate_left(*si));
         });
 
         self.s[0] = self.s[0].wrapping_add(a);

@@ -7,7 +7,7 @@ use crate::{
         header::{self, HeaderData},
     },
     error::{
-        DspbptkError::{self, *},
+        DspbptkError::{self, CanNotReadFile, CanNotWriteFile, UnknownFileType},
         DspbptkWarn,
     },
 };
@@ -29,13 +29,9 @@ pub fn create_father_dir(path: &PathBuf) -> Result<(), DspbptkError> {
         Some(p) => p.to_path_buf(),
         None => PathBuf::from("."),
     };
-    std::fs::create_dir_all(&parent).map_err(|e| CanNotWriteFile {
-        path,
-        source: e,
-    })
+    std::fs::create_dir_all(&parent).map_err(|e| CanNotWriteFile { path, source: e })
 }
 
-// FIXME 改成&Path
 pub fn classify_file_type(entry: &Path) -> FileType {
     if let Some(extension) = entry.extension() {
         match extension.to_str() {
@@ -49,17 +45,11 @@ pub fn classify_file_type(entry: &Path) -> FileType {
 }
 
 fn read_content_file(path: &Path) -> Result<Vec<u8>, DspbptkError> {
-    std::fs::read(path).map_err(|e| CanNotReadFile {
-        path,
-        source: e,
-    })
+    std::fs::read(path).map_err(|e| CanNotReadFile { path, source: e })
 }
 
 fn read_blueprint_file(path: &Path) -> Result<String, DspbptkError> {
-    std::fs::read_to_string(path).map_err(|e| CanNotReadFile {
-        path,
-        source: e,
-    })
+    std::fs::read_to_string(path).map_err(|e| CanNotReadFile { path, source: e })
 }
 
 pub fn read_file(path: &Path) -> Result<BlueprintKind, DspbptkError> {
@@ -78,18 +68,12 @@ pub fn read_file(path: &Path) -> Result<BlueprintKind, DspbptkError> {
 
 fn write_blueprint_file(path: &PathBuf, blueprint: String) -> Result<(), DspbptkError> {
     create_father_dir(path)?;
-    std::fs::write(path, blueprint).map_err(|e| CanNotWriteFile {
-        path,
-        source: e,
-    })
+    std::fs::write(path, blueprint).map_err(|e| CanNotWriteFile { path, source: e })
 }
 
 fn write_content_file(path: &PathBuf, content: Vec<u8>) -> Result<(), DspbptkError> {
     create_father_dir(path)?;
-    std::fs::write(path, content).map_err(|e| CanNotWriteFile {
-        path,
-        source: e,
-    })
+    std::fs::write(path, content).map_err(|e| CanNotWriteFile { path, source: e })
 }
 
 pub fn write_file(path: &PathBuf, blueprint_kind: BlueprintKind) -> Result<(), DspbptkError> {
@@ -128,13 +112,8 @@ pub fn process_front_end<'a>(
         }
         BlueprintKind::Content(content_bin) => {
             let (content_data, warns_content) = ContentData::from_bin(content_bin)?;
-            const HEADER: &str = "BLUEPRINT:0,0,0,0,0,0,0,0,0,0.0.0.0,,";
-            let (header_data, warns_header) = blueprint::header::parse(HEADER)?;
-            Ok((
-                header_data,
-                content_data,
-                [warns_content.as_slice(), warns_header.as_slice()].concat(),
-            ))
+            let header_data = HeaderData::default();
+            Ok((header_data, content_data, warns_content))
         }
     }
 }

@@ -8,6 +8,7 @@ use super::BuildingData;
 
 const ZERO: i32 = 0; // 00 00 00 00
 
+#[allow(clippy::similar_names, clippy::cast_sign_loss)]
 pub fn deserialization_version_0(bin: &[u8]) -> IResult<&[u8], BuildingData> {
     let unknown = bin;
 
