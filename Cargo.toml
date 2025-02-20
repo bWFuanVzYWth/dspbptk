@@ -44,6 +44,9 @@ uuid = { version = "1.13.1", features = [
     "fast-rng",
     "macro-diagnostics",
 ] }
+# enum.iter()
+strum = "0.27.1"
+strum_macros = "0.27.1"
 
 
 # FIXME 蓝图生成太慢了，应该为不同应用分别指定参数

@@ -1,4 +1,6 @@
-#[derive(Debug)]
+use strum_macros::EnumIter;
+
+#[derive(Debug, EnumIter)]
 pub enum Item {
     地基 = 1131,
     传送带 = 2001,
