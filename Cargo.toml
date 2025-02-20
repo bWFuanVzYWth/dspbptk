@@ -29,7 +29,7 @@ approx = "0.5.1"
 # Recursive directory traversal
 walkdir = "2.5.0"
 # Command Line Argument Parser
-clap = { version = "4.5.28", features = ["derive"] }
+clap = { version = "4.5.30", features = ["derive"] }
 # log
 log = "0.4.25"
 # log >> stderr
@@ -39,7 +39,7 @@ nalgebra = "0.33.2"
 # error
 thiserror = "2.0.11"
 # DspbptkBuildingData.uuid
-uuid = { version = "1.13.1", features = [
+uuid = { version = "1.13.2", features = [
     "v4",
     "fast-rng",
     "macro-diagnostics",
