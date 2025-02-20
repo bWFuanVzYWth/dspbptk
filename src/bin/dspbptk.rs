@@ -53,14 +53,24 @@ fn generate_output_path(
 fn process_middle_layer(
     header_data_in: HeaderData,
     content_data_in: ContentData,
-    should_sort_buildings: bool,
+    sorting_buildings: bool,
+    rounding_local_offset: bool,
 ) -> (HeaderData, ContentData) {
     use dspbptk::toolkit::{fix_buildings_index, sort_buildings};
 
     let header_data_out = header_data_in;
     let mut content_data_out = content_data_in;
 
-    if should_sort_buildings {
+    if rounding_local_offset {
+        content_data_out.buildings.iter_mut().for_each(|building| {
+            const ROUND_SCALE: f32 = 300.0;
+            building.local_offset_x = (building.local_offset_x * ROUND_SCALE).round() / ROUND_SCALE;
+            building.local_offset_y = (building.local_offset_y * ROUND_SCALE).round() / ROUND_SCALE;
+            building.local_offset_z = (building.local_offset_z * ROUND_SCALE).round() / ROUND_SCALE;
+        })
+    }
+
+    if sorting_buildings {
         sort_buildings(&mut content_data_out.buildings);
         content_data_out.buildings = fix_buildings_index(content_data_out.buildings);
     }
@@ -74,7 +84,8 @@ fn process_one_file(
     path_out: &Path,
     zopfli_options: &zopfli::Options,
     output_type: &FileType,
-    sort_buildings: bool,
+    sorting_buildings: bool,
+    rounding_local_offset: bool,
 ) -> Option<()> {
     let blueprint_kind_in = match dspbptk::io::read_file(file_path_in) {
         Ok(result) => result,
@@ -100,8 +111,12 @@ fn process_one_file(
             }
         };
 
-    let (header_data_out, content_data_out) =
-        process_middle_layer(header_data_in, content_data_in, sort_buildings);
+    let (header_data_out, content_data_out) = process_middle_layer(
+        header_data_in,
+        content_data_in,
+        sorting_buildings,
+        rounding_local_offset,
+    );
     let blueprint_kind_out = match io::process_back_end(
         &header_data_out,
         &content_data_out,
@@ -133,7 +148,8 @@ fn process_all_files(
     path_out: &Path,
     zopfli_options: &zopfli::Options,
     output_type: &FileType,
-    sort_buildings: bool,
+    sorting_buildings: bool,
+    rounding_local_offset: bool,
 ) {
     let _result: Vec<Option<()>> = files
         .par_iter()
@@ -144,7 +160,8 @@ fn process_all_files(
                 path_out,
                 zopfli_options,
                 output_type,
-                sort_buildings,
+                sorting_buildings,
+                rounding_local_offset,
             )
         })
         .collect();
@@ -159,13 +176,14 @@ fn process_workflow(args: &Args) {
 
     let files = collect_files(path_in);
 
-    let output_type = match args.filetype.as_deref() {
+    let output_type = match args.type_output.as_deref() {
         Some("txt") => FileType::Txt,
         Some("content") => FileType::Content,
         _ => panic!("Unsupported file type"),
     };
 
-    let sort_buildings = args.sort_buildings;
+    let sorting_buildings = !args.no_sorting_buildings;
+    let rounding_local_offset = args.rounding_local_offset;
 
     process_all_files(
         files,
@@ -173,7 +191,8 @@ fn process_workflow(args: &Args) {
         path_out,
         &zopfli_options,
         &output_type,
-        sort_buildings,
+        sorting_buildings,
+        rounding_local_offset,
     );
 }
 
@@ -220,15 +239,15 @@ struct Args {
 
     /// Output type: txt, content.
     #[clap(long, short, default_value = "txt")]
-    filetype: Option<String>,
+    type_output: Option<String>,
 
-    /// Actions of edit blueprint.
-    #[clap(short, long, num_args = 0..)]
-    actions: Option<Vec<String>>,
+    /// Round local_offset to 1/300 may make blueprint smaller. Lossy.
+    #[clap(long, short)]
+    rounding_local_offset: bool,
 
-    /// Sort buildings for smaller blueprint.
-    #[clap(short, long, default_value = "true")]
-    sort_buildings: bool,
+    /// Sorting buildings may make blueprint smaller. Lossless.
+    #[clap(long)]
+    no_sorting_buildings: bool,
 
     /// Compress arguments: zopfli iteration_count.
     #[clap(long, default_value = "256")]
