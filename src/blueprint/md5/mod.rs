@@ -102,7 +102,7 @@ impl MD5 {
         let mut c = self.s[2];
         let mut d = self.s[3];
 
-        for i in 0..64 {
+        S.iter().enumerate().for_each(|(i, si)| {
             let mut f: u32;
             let g: usize;
             if i < 16 {
@@ -121,13 +121,14 @@ impl MD5 {
 
             f = f
                 .wrapping_add(a)
-                .wrapping_add(self.k(i as usize))
+                .wrapping_add(self.k(i))
                 .wrapping_add(words[g]);
             a = d;
             d = c;
             c = b;
-            b = b.wrapping_add(f.rotate_left(S[i as usize] as u32));
-        }
+            b = b.wrapping_add(f.rotate_left(*si as u32));
+        });
+
         self.s[0] = self.s[0].wrapping_add(a);
         self.s[1] = self.s[1].wrapping_add(b);
         self.s[2] = self.s[2].wrapping_add(c);
@@ -150,10 +151,10 @@ impl MD5 {
         }
 
         let mut out: MD5Hash = [0; 16];
-        (&mut out[0..4]).copy_from_slice(&self.s[0].to_le_bytes());
-        (&mut out[4..8]).copy_from_slice(&self.s[1].to_le_bytes());
-        (&mut out[8..12]).copy_from_slice(&self.s[2].to_le_bytes());
-        (&mut out[12..16]).copy_from_slice(&self.s[3].to_le_bytes());
+        out[0..4].copy_from_slice(&self.s[0].to_le_bytes());
+        out[4..8].copy_from_slice(&self.s[1].to_le_bytes());
+        out[8..12].copy_from_slice(&self.s[2].to_le_bytes());
+        out[12..16].copy_from_slice(&self.s[3].to_le_bytes());
         out
     }
 }

@@ -47,14 +47,14 @@ pub fn deserialization(bin: &[u8]) -> IResult<&[u8], AreaData> {
     Ok((
         unknown,
         AreaData {
-            index: index,
-            parent_index: parent_index,
-            tropic_anchor: tropic_anchor,
-            area_segments: area_segments,
-            anchor_local_offset_x: anchor_local_offset_x,
-            anchor_local_offset_y: anchor_local_offset_y,
-            width: width,
-            height: height,
+            index,
+            parent_index,
+            tropic_anchor,
+            area_segments,
+            anchor_local_offset_x,
+            anchor_local_offset_y,
+            width,
+            height,
         },
     ))
 }

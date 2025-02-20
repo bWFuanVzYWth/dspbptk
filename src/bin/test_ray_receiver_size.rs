@@ -15,7 +15,7 @@ fn new_receiver(local_offset: [f64; 3]) -> DspbptkBuildingData {
         uuid: Some(Uuid::new_v4().to_u128_le()),
         item_id: Item::射线接收站 as i16,
         model_index: Item::射线接收站.model()[0],
-        local_offset: local_offset,
+        local_offset,
         parameters: vec![1208],
         ..Default::default()
     }
@@ -41,7 +41,7 @@ fn main() -> Result<(), DspbptkError<'static>> {
         .collect(); // (4.19828, 4.19829)
 
     // 拼接所有建筑
-    let buildings = vec![base, test_axis, test_corner].concat();
+    let buildings = [base, test_axis, test_corner].concat();
     let buildings = fix_dspbptk_buildings_index(buildings);
 
     let content_data = ContentData {

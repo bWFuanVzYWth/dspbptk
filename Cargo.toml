@@ -1,9 +1,15 @@
+cargo-features = ["profile-rustflags"]
+
 [package]
 name = "dspbptk"
-author = "bWFuanVzYWth"
+authors = ["bWFuanVzYWth"]
 version = "0.1.0"
 edition = "2021"
+readme = "readme.md"
 description = "Dyson Sphere Program Blueprint Toolkit"
+repository = "https://github.com/bWFuanVzYWth/dspbptk"
+license = "MIT"
+default-run = "dspbptk"
 
 [lib]
 name = "dspbptk"
@@ -47,12 +53,10 @@ uuid = { version = "1.13.2", features = [
 # enum.iter()
 strum = "0.27.1"
 strum_macros = "0.27.1"
-
-
-# FIXME 蓝图生成太慢了，应该为不同应用分别指定参数
-[build]
-rustflags = ["-C", "target-cpu=native"]
+# alloc
+mimalloc = "0.1.43"
 
 [profile.release]
 codegen-units = 1
 lto = "fat"
+rustflags = ["-C", "target-cpu=native", "-C", "link-arg=-fuse-ld=lld", "-Z", "threads=8"]

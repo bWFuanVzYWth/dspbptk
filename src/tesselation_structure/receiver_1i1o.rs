@@ -28,7 +28,7 @@ pub fn new(
         uuid: Some(Uuid::new_v4().to_u128_le()),
         item_id: Item::射线接收站 as i16,
         model_index: Item::射线接收站.model()[0],
-        local_offset: local_offset,
+        local_offset,
         parameters: vec![1208],
         ..Default::default()
     };
@@ -74,7 +74,7 @@ pub fn new(
         temp_input_obj_idx: input_obj.uuid,
         temp_output_obj_idx: belt_lens_from_sorter.uuid,
         output_to_slot: -1,
-        input_from_slot: input_from_slot,
+        input_from_slot,
         input_to_slot: 1,
         ..Default::default()
     };
@@ -118,5 +118,5 @@ pub fn new(
 
     let other_buildings = vec![receiver, sorter_lens_input];
 
-    vec![other_buildings, belts_lens, belts_photons].concat()
+    [other_buildings, belts_lens, belts_photons].concat()
 }

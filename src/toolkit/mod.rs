@@ -11,7 +11,7 @@ use crate::blueprint::content::building;
 pub const EARTH_R: f64 = 200.0;
 pub const HALF_EQUATORIAL_GRID: f64 = 500.0;
 
-pub fn sort_buildings(buildings: &mut Vec<building::BuildingData>) {
+pub fn sort_buildings(buildings: &mut [building::BuildingData]) {
     buildings.sort_by(|a, b| {
         a.item_id
             .cmp(&b.item_id)

@@ -1,4 +1,5 @@
-use dspbptk;
+#[global_allocator]
+static GLOBAL: mimalloc::MiMalloc = mimalloc::MiMalloc;
 
 use std::path::{Path, PathBuf};
 
@@ -79,7 +80,7 @@ fn process_middle_layer(
 }
 
 fn process_one_file(
-    file_path_in: &PathBuf,
+    file_path_in: &Path,
     path_in: &Path,
     path_out: &Path,
     zopfli_options: &zopfli::Options,
@@ -120,8 +121,8 @@ fn process_one_file(
     let blueprint_kind_out = match io::process_back_end(
         &header_data_out,
         &content_data_out,
-        &zopfli_options,
-        &output_type,
+        zopfli_options,
+        output_type,
     ) {
         Ok(result) => result,
         Err(e) => {
@@ -135,7 +136,7 @@ fn process_one_file(
         Ok(_) => Some(()),
         Err(e) => {
             error!("\"{}\": {:?}", file_path_in.display(), e);
-            return None;
+            None
         }
     }
 
@@ -213,7 +214,7 @@ fn configure_zopfli_options(args: &Args) -> zopfli::Options {
             .expect("Fatal error: iteration_count must > 0"),
         iterations_without_improvement: std::num::NonZero::new(iterations_without_improvement)
             .expect("Fatal error: iterations_without_improvement must > 0"),
-        maximum_block_splits: maximum_block_splits,
+        maximum_block_splits,
     }
 }
 

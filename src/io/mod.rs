@@ -1,4 +1,4 @@
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 use crate::{
     blueprint::{
@@ -30,12 +30,13 @@ pub fn create_father_dir(path: &PathBuf) -> Result<(), DspbptkError> {
         None => PathBuf::from("."),
     };
     std::fs::create_dir_all(&parent).map_err(|e| CanNotWriteFile {
-        path: path,
+        path,
         source: e,
     })
 }
 
-pub fn classify_file_type(entry: &std::path::PathBuf) -> FileType {
+// FIXME 改成&Path
+pub fn classify_file_type(entry: &Path) -> FileType {
     if let Some(extension) = entry.extension() {
         match extension.to_str() {
             Some("txt") => FileType::Txt,
@@ -47,21 +48,21 @@ pub fn classify_file_type(entry: &std::path::PathBuf) -> FileType {
     }
 }
 
-fn read_content_file(path: &std::path::PathBuf) -> Result<Vec<u8>, DspbptkError> {
+fn read_content_file(path: &Path) -> Result<Vec<u8>, DspbptkError> {
     std::fs::read(path).map_err(|e| CanNotReadFile {
-        path: path,
+        path,
         source: e,
     })
 }
 
-fn read_blueprint_file(path: &std::path::PathBuf) -> Result<String, DspbptkError> {
+fn read_blueprint_file(path: &Path) -> Result<String, DspbptkError> {
     std::fs::read_to_string(path).map_err(|e| CanNotReadFile {
-        path: path,
+        path,
         source: e,
     })
 }
 
-pub fn read_file(path: &PathBuf) -> Result<BlueprintKind, DspbptkError> {
+pub fn read_file(path: &Path) -> Result<BlueprintKind, DspbptkError> {
     match classify_file_type(path) {
         FileType::Txt => {
             let blueprint_string = read_blueprint_file(path)?;
@@ -78,7 +79,7 @@ pub fn read_file(path: &PathBuf) -> Result<BlueprintKind, DspbptkError> {
 fn write_blueprint_file(path: &PathBuf, blueprint: String) -> Result<(), DspbptkError> {
     create_father_dir(path)?;
     std::fs::write(path, blueprint).map_err(|e| CanNotWriteFile {
-        path: path,
+        path,
         source: e,
     })
 }
@@ -86,7 +87,7 @@ fn write_blueprint_file(path: &PathBuf, blueprint: String) -> Result<(), Dspbptk
 fn write_content_file(path: &PathBuf, content: Vec<u8>) -> Result<(), DspbptkError> {
     create_father_dir(path)?;
     std::fs::write(path, content).map_err(|e| CanNotWriteFile {
-        path: path,
+        path,
         source: e,
     })
 }
@@ -104,15 +105,15 @@ pub fn process_front_end<'a>(
 ) -> Result<(HeaderData, ContentData, Vec<DspbptkWarn>), DspbptkError<'a>> {
     match blueprint {
         BlueprintKind::Txt(blueprint_string) => {
-            // let start = std::time::Instant::now();
+            let start = std::time::Instant::now();
 
-            let (blueprint_data, warns_blueprint) = blueprint::parse(&blueprint_string)?;
-            content::bin_from_string(blueprint_content_bin, &blueprint_data.content)?;
+            let (blueprint_data, warns_blueprint) = blueprint::parse(blueprint_string)?;
+            content::bin_from_string(blueprint_content_bin, blueprint_data.content)?;
             let (content_data, warns_content) =
                 ContentData::from_bin(blueprint_content_bin.as_slice())?;
-            let (header_data, warns_header) = header::parse(&blueprint_data.header)?;
+            let (header_data, warns_header) = header::parse(blueprint_data.header)?;
 
-            // log::info!("parse in {:?} sec.", start.elapsed());
+            log::info!("parse in {:?} sec.", start.elapsed());
 
             Ok((
                 header_data,
@@ -126,7 +127,7 @@ pub fn process_front_end<'a>(
             ))
         }
         BlueprintKind::Content(content_bin) => {
-            let (content_data, warns_content) = ContentData::from_bin(&content_bin)?;
+            let (content_data, warns_content) = ContentData::from_bin(content_bin)?;
             const HEADER: &str = "BLUEPRINT:0,0,0,0,0,0,0,0,0,0.0.0.0,,";
             let (header_data, warns_header) = blueprint::header::parse(HEADER)?;
             Ok((

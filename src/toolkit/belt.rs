@@ -22,8 +22,8 @@ pub fn connect_belts(
         .enumerate()
         .map(|(i, belt)| match i {
             0 => DspbptkBuildingData {
-                temp_input_obj_idx: temp_input_obj_idx,
-                input_from_slot: input_from_slot,
+                temp_input_obj_idx,
+                input_from_slot,
                 input_to_slot: 1,
                 temp_output_obj_idx: nexts[i].0,
                 output_to_slot: nexts[i].1,

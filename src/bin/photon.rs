@@ -74,7 +74,7 @@ fn calculate_layout() -> Vec<Row> {
             Row {
                 t: Item::射线接收站,
                 y: y_fixed,
-                n: n,
+                n,
             }
         } else {
             // 如果直接偏移放得下
@@ -91,7 +91,7 @@ fn calculate_layout() -> Vec<Row> {
 }
 
 fn find_nearest(
-    buildings: &Vec<DspbptkBuildingData>,
+    buildings: &[DspbptkBuildingData],
     reference_local_offset: [f64; 3],
 ) -> &DspbptkBuildingData {
     buildings
@@ -111,8 +111,8 @@ fn find_nearest(
 
 fn receivers_with_io(
     row: &Row,
-    lens_belts: &Vec<DspbptkBuildingData>,
-    photons_belts: &Vec<DspbptkBuildingData>,
+    lens_belts: &[DspbptkBuildingData],
+    photons_belts: &[DspbptkBuildingData],
 ) -> Vec<DspbptkBuildingData> {
     (0..row.n)
         .map(|i| {
@@ -196,12 +196,11 @@ fn layout_to_buildings(rows: Vec<Row>) -> Vec<DspbptkBuildingData> {
         .collect::<Vec<_>>();
 
     // 整合所有种类的建筑
-    let all_buildings_in_rows = vec![belts_in_rows, receivers_in_rows].concat();
+    let all_buildings_in_rows = [belts_in_rows, receivers_in_rows].concat();
 
     let all_buildings = all_buildings_in_rows.concat();
-    let all_buildings = fix_dspbptk_buildings_index(all_buildings);
 
-    all_buildings
+    fix_dspbptk_buildings_index(all_buildings)
 }
 
 fn main() -> Result<(), DspbptkError<'static>> {

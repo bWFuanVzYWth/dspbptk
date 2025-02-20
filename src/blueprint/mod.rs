@@ -39,10 +39,10 @@ fn parse_non_finish(string: &str) -> IResult<&str, BlueprintData> {
     Ok((
         unknown,
         BlueprintData {
-            header: header,
-            content: content,
-            md5f: md5f,
-            unknown: unknown,
+            header,
+            content,
+            md5f,
+            unknown,
         },
     ))
 }
@@ -61,7 +61,7 @@ pub fn parse(string: &str) -> Result<(BlueprintData, Vec<DspbptkWarn>), DspbptkE
 pub fn serialization(header: &str, content: &str) -> String {
     let mut header_content = format!("{}\"{}", header, content);
     let md5f = md5::compute_md5f_string(&header_content);
-    header_content.push_str("\"");
+    header_content.push('"');
     header_content.push_str(&md5f);
     header_content
 }
