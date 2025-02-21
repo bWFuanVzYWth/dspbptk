@@ -89,7 +89,6 @@ fn index_from_uuid<'a>(uuid: Option<u128>) -> Result<i32, DspbptkError<'a>> {
 }
 
 impl BuildingData {
-    #[must_use]
     pub fn to_dspbptk_building_data(&self) -> Result<DspbptkBuildingData, DspbptkError> {
         Ok(DspbptkBuildingData {
             uuid: uuid_from_index(self.index)?,
