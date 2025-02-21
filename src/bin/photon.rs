@@ -18,7 +18,7 @@ use dspbptk::{
     },
 };
 
-use std::f64::consts::{PI, TAU};
+use std::f64::consts::TAU;
 
 // 当error=0时，期望输出2920锅；然后在锅不减少的情况下试出最大的error(0.00019, 0.00020)
 // 考虑行星尺寸与IEEE754标准，至少要让ERROR > 2^-15 (约0.00003)
@@ -51,7 +51,7 @@ fn calculate_layout() -> Vec<Row> {
     let row_0 = Row {
         t: Item::射线接收站,
         y: HALF_ARC_A,
-        n: ((TAU) / ARC_A).floor() as u64,
+        n: (TAU / ARC_A).floor() as u64,
     };
     rows.push(row_0);
 
@@ -70,7 +70,7 @@ fn calculate_layout() -> Vec<Row> {
             else {
                 break;
             };
-            let n = ((y_fixed + HALF_ARC_B).cos() * ((TAU) / ARC_A)).floor() as u64;
+            let n = ((y_fixed + HALF_ARC_B).cos() * (TAU / ARC_A)).floor() as u64;
             Row {
                 t: Item::射线接收站,
                 y: y_fixed,
@@ -78,7 +78,7 @@ fn calculate_layout() -> Vec<Row> {
             }
         } else {
             // 如果直接偏移放得下
-            if row_try_offset.y > (TAU) {
+            if row_try_offset.y > TAU {
                 break;
             }
             row_try_offset
