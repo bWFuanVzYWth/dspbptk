@@ -8,6 +8,8 @@ use building_0::deserialization_version_0;
 use building_neg100::deserialization_version_neg100;
 use building_neg101::{deserialization_version_neg101, serialization_version_neg101};
 
+use crate::error::DspbptkError::{self, UnexpectParametersLength};
+
 pub const INDEX_NULL: i32 = -1;
 
 #[derive(Debug, Clone)]
@@ -69,12 +71,11 @@ pub struct DspbptkBuildingData {
     pub parameters: Vec<i32>,
 }
 
-// TODO 检查index范围是否合理，如果不合理警告
 fn uuid_from_index(index: i32) -> Option<u128> {
     if index == INDEX_NULL {
         None
     } else {
-        Some(index as u128)
+        Some(u128::try_from(index).unwrap())
     }
 }
 
@@ -124,8 +125,8 @@ impl BuildingData {
 }
 
 impl DspbptkBuildingData {
-    pub fn to_building_data(&self) -> BuildingData {
-        BuildingData {
+    pub fn to_building_data(&self) -> Result<BuildingData, DspbptkError> {
+        Ok(BuildingData {
             index: index_from_uuid(self.uuid),
             area_index: self.area_index,
             local_offset_x: self.local_offset[0] as f32,
@@ -152,9 +153,10 @@ impl DspbptkBuildingData {
             input_offset: self.input_offset,
             recipe_id: self.recipe_id,
             filter_id: self.filter_id,
-            parameters_length: i16::try_from(self.parameters.len()).expect("casting `usize` to `i16` truncate the parameters_length"),
+            parameters_length: i16::try_from(self.parameters.len())
+                .map_err(|e| UnexpectParametersLength(e))?,
             parameters: self.parameters.clone(),
-        }
+        })
     }
 }
 

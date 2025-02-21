@@ -6,7 +6,7 @@ use dspbptk::{
         content::{building::DspbptkBuildingData, ContentData},
         header::HeaderData,
     },
-    error::DspbptkError,
+    error::DspbptkError::{self, UnexpectBuildingsCount, UnexpectParametersLength},
     io::{BlueprintKind, FileType},
     item::Item,
     tesselation_structure::receiver_1i1o,
@@ -217,10 +217,10 @@ fn main() -> Result<(), DspbptkError<'static>> {
     let buildings = layout_to_buildings(rows);
 
     let content_data = ContentData {
-        buildings_length: buildings.len() as i32,
+        buildings_length: u32::try_from(buildings.len()).map_err(|e| UnexpectBuildingsCount(e))?,
         buildings: buildings
             .iter()
-            .map(|dspbptk_building| dspbptk_building.to_building_data())
+            .map(|dspbptk_building| dspbptk_building.to_building_data().unwrap())
             .collect(),
         ..Default::default()
     };

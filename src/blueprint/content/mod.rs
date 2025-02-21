@@ -10,7 +10,7 @@ use crate::error::{
 
 use nom::{
     multi::count,
-    number::complete::{le_i32, le_i8},
+    number::complete::{le_i32, le_u32, le_u8},
     IResult,
 };
 
@@ -23,9 +23,9 @@ pub struct ContentData {
     pub drag_box_size_x: i32,
     pub drag_box_size_y: i32,
     pub primary_area_idx: i32,
-    pub areas_length: i8,
+    pub areas_length: u8,
     pub areas: Vec<area::AreaData>,
-    pub buildings_length: i32,
+    pub buildings_length: u32,
     pub buildings: Vec<building::BuildingData>,
     pub unknown: Vec<u8>,
 }
@@ -95,11 +95,14 @@ fn deserialization_non_finish(bin: &[u8]) -> IResult<&[u8], ContentData> {
     let (unknown, drag_box_size_x) = le_i32(unknown)?;
     let (unknown, drag_box_size_y) = le_i32(unknown)?;
     let (unknown, primary_area_idx) = le_i32(unknown)?;
-    let (unknown, areas_length) = le_i8(unknown)?;
-    let (unknown, areas) = count(area::deserialization, areas_length as usize)(unknown)?;
-    let (unknown, buildings_length) = le_i32(unknown)?;
+    let (unknown, areas_length) = le_u8(unknown)?;
+    let (unknown, areas) = count(
+        area::deserialization,
+        usize::from(areas_length),
+    )(unknown)?;
+    let (unknown, buildings_length) = le_u32(unknown)?;
     let (unknown, buildings) =
-        count(building::deserialization, buildings_length as usize)(unknown)?;
+        count(building::deserialization, usize::try_from(buildings_length).unwrap())(unknown)?;
 
     Ok((
         unknown,

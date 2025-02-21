@@ -3,10 +3,10 @@ use dspbptk::{
         content::{building::DspbptkBuildingData, ContentData},
         header::HeaderData,
     },
-    toolkit::fix_dspbptk_buildings_index,
-    error::DspbptkError,
+    error::DspbptkError::{self, UnexpectParametersLength},
     io::{BlueprintKind, FileType},
     item::Item,
+    toolkit::fix_dspbptk_buildings_index,
 };
 use uuid::Uuid;
 
@@ -45,10 +45,10 @@ fn main() -> Result<(), DspbptkError<'static>> {
     let buildings = fix_dspbptk_buildings_index(buildings);
 
     let content_data = ContentData {
-        buildings_length: buildings.len() as i32,
+        buildings_length: buildings.len() as u32,
         buildings: buildings
             .iter()
-            .map(|dspbptk_building| dspbptk_building.to_building_data())
+            .map(|dspbptk_building| dspbptk_building.to_building_data().unwrap())
             .collect(),
         ..Default::default()
     };

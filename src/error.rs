@@ -26,6 +26,10 @@ pub enum DspbptkError<'a> {
     BrokenContent(nom::error::Error<&'a [u8]>),
     #[error("can not compress gzip: {0}")]
     CanNotCompressGzip(std::io::Error),
+    #[error("unexpect buildings count: {0}")]
+    UnexpectBuildingsCount(<u32 as TryFrom<usize>>::Error),
+    #[error("unexpect parameters length: {0}")]
+    UnexpectParametersLength(<u16 as TryFrom<usize>>::Error),
 }
 
 #[derive(Error, Debug, PartialEq, Clone)]
@@ -47,8 +51,7 @@ pub enum DspbptkWarn {
 #[derive(Error, Debug, PartialEq, Clone)]
 pub enum DspbptkEditWarn {
     #[error("non-standard local_offset: {0:?}")]
-    NonStandardLocalOffset([f64;3])
-    
+    NonStandardLocalOffset([f64; 3]),
 }
 
 #[derive(Error, Debug)]

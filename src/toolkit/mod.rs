@@ -37,33 +37,25 @@ pub fn fix_buildings_index(buildings: Vec<building::BuildingData>) -> Vec<buildi
 
     let index_lut: HashMap<_, _> = buildings
         .iter()
-        .enumerate()
-        .map(|(index, building)| {
-            (
-                building.index,
-                i32::try_from(index).unwrap(),
-            )
-        })
+        .zip(0..=i32::MAX)
+        .map(|(building, index)| (building.index, index))
         .collect();
 
     buildings
         .into_iter()
-        .map(|building| {
-            building::BuildingData {
-                // 这里panic是安全的，因为理论上所有的building.index都应该在index_lut里
-                index: *index_lut
-                    .get(&building.index)
-                    .expect("Fatal error: unknown building index"),
-                temp_output_obj_idx: index_lut
-                    .get(&building.temp_output_obj_idx)
-                    .copied()
-                    .unwrap_or(building::INDEX_NULL),
-                temp_input_obj_idx: index_lut
-                    .get(&building.temp_input_obj_idx)
-                    .copied()
-                    .unwrap_or(building::INDEX_NULL),
-                ..building
-            }
+        .map(|building| building::BuildingData {
+            index: *index_lut
+                .get(&building.index)
+                .unwrap_or(&building::INDEX_NULL),
+            temp_output_obj_idx: index_lut
+                .get(&building.temp_output_obj_idx)
+                .copied()
+                .unwrap_or(building::INDEX_NULL),
+            temp_input_obj_idx: index_lut
+                .get(&building.temp_input_obj_idx)
+                .copied()
+                .unwrap_or(building::INDEX_NULL),
+            ..building
         })
         .collect()
 }
@@ -81,21 +73,17 @@ pub fn fix_dspbptk_buildings_index(
 
     buildings
         .into_iter()
-        .map(|building| {
-            building::DspbptkBuildingData {
-                uuid: *uuid_lut
-                    .get(&building.uuid)
-                    .unwrap_or(&None),
-                temp_output_obj_idx: uuid_lut
-                    .get(&building.temp_output_obj_idx)
-                    .copied()
-                    .unwrap_or(None),
-                temp_input_obj_idx: uuid_lut
-                    .get(&building.temp_input_obj_idx)
-                    .copied()
-                    .unwrap_or(None),
-                ..building
-            }
+        .map(|building| building::DspbptkBuildingData {
+            uuid: *uuid_lut.get(&building.uuid).unwrap_or(&None),
+            temp_output_obj_idx: uuid_lut
+                .get(&building.temp_output_obj_idx)
+                .copied()
+                .unwrap_or(None),
+            temp_input_obj_idx: uuid_lut
+                .get(&building.temp_input_obj_idx)
+                .copied()
+                .unwrap_or(None),
+            ..building
         })
         .collect()
 }
