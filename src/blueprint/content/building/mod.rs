@@ -87,7 +87,8 @@ fn index_from_uuid(uuid: Option<u128>) -> i32 {
 }
 
 impl BuildingData {
-    #[must_use] pub fn to_dspbptk_building_data(&self) -> DspbptkBuildingData {
+    #[must_use]
+    pub fn to_dspbptk_building_data(&self) -> DspbptkBuildingData {
         DspbptkBuildingData {
             uuid: uuid_from_index(self.index),
             area_index: self.area_index,

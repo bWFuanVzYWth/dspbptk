@@ -63,7 +63,8 @@ pub fn parse(string: &str) -> Result<(BlueprintData, Vec<DspbptkWarn>), DspbptkE
     Ok((data, warns))
 }
 
-#[must_use] pub fn serialization(header: &str, content: &str) -> String {
+#[must_use]
+pub fn serialization(header: &str, content: &str) -> String {
     let mut header_content = format!("{header}\"{content}");
     let md5f = md5::compute_md5f_string(&header_content);
     header_content.push('"');

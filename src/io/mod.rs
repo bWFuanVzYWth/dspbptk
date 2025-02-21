@@ -32,7 +32,8 @@ pub fn create_father_dir(path: &PathBuf) -> Result<(), DspbptkError> {
     std::fs::create_dir_all(&parent).map_err(|e| CanNotWriteFile { path, source: e })
 }
 
-#[must_use] pub fn classify_file_type(entry: &Path) -> FileType {
+#[must_use]
+pub fn classify_file_type(entry: &Path) -> FileType {
     if let Some(extension) = entry.extension() {
         match extension.to_str() {
             Some("txt") => FileType::Txt,

@@ -176,7 +176,8 @@ pub enum Item {
 }
 
 impl Item {
-     #[must_use] pub fn model(self) -> Vec<i16> {
+    #[must_use]
+    pub fn model(self) -> Vec<i16> {
         match self {
             Item::传送带 => vec![35],
             Item::高速传送带 => vec![36],

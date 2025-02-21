@@ -4,7 +4,9 @@ use nom::{
     Finish, IResult,
 };
 
-use crate::error::{DspbptkError, DspbptkError::BrokenHeader, DspbptkWarn, DspbptkWarn::UnknownAfterHeader};
+use crate::error::{
+    DspbptkError, DspbptkError::BrokenHeader, DspbptkWarn, DspbptkWarn::UnknownAfterHeader,
+};
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct HeaderData {
@@ -95,7 +97,8 @@ pub fn parse(string: &str) -> Result<(HeaderData, Vec<DspbptkWarn>), DspbptkErro
     }
 }
 
-#[must_use] pub fn serialization(data: &HeaderData) -> String {
+#[must_use]
+pub fn serialization(data: &HeaderData) -> String {
     format!(
         "BLUEPRINT:0,{},{},{},{},{},{},0,{},{},{},{}",
         data.layout,

@@ -37,7 +37,13 @@ fn main() -> Result<(), DspbptkError<'static>> {
 
     // 测试角落碰撞
     let test_corner = (0..=9)
-        .map(|x| new_receiver([15.0 * f64::from(x) + 7.2, -(4.1982 + 0.00001 * f64::from(x)), 0.0]))
+        .map(|x| {
+            new_receiver([
+                15.0 * f64::from(x) + 7.2,
+                -(4.1982 + 0.00001 * f64::from(x)),
+                0.0,
+            ])
+        })
         .collect(); // (4.19828, 4.19829)
 
     // 拼接所有建筑

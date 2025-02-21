@@ -1,16 +1,15 @@
 use uuid::Uuid;
 
 use crate::{
-    blueprint::content::building::DspbptkBuildingData,
-    item::Item,
-    toolkit::belt::connect_belts,
+    blueprint::content::building::DspbptkBuildingData, item::Item, toolkit::belt::connect_belts,
 };
 
 // 模块尺寸即锅的尺寸，数据由src/bin/test_ray_receiver_size测出
 pub const GRID_A: f64 = 7.30726;
 pub const GRID_B: f64 = 4.19828;
 
- #[must_use] pub fn new(
+#[must_use]
+pub fn new(
     local_offset: [f64; 3],
     input_obj: &DspbptkBuildingData,
     input_from_slot: i8,
