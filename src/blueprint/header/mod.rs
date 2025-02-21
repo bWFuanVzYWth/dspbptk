@@ -95,7 +95,7 @@ pub fn parse(string: &str) -> Result<(HeaderData, Vec<DspbptkWarn>), DspbptkErro
     }
 }
 
-pub fn serialization(data: &HeaderData) -> String {
+#[must_use] pub fn serialization(data: &HeaderData) -> String {
     format!(
         "BLUEPRINT:0,{},{},{},{},{},{},0,{},{},{},{}",
         data.layout,
@@ -133,9 +133,9 @@ mod test {
                     icons_4: "4".to_string(),
                     time: "5".to_string(),
                     game_version: "6.7.8.9".to_string(),
-                    short_desc: "".to_string(),
-                    desc: "".to_string(),
-                    unknown: "".to_string(),
+                    short_desc: String::new(),
+                    desc: String::new(),
+                    unknown: String::new(),
                 },
                 Vec::new()
             ))

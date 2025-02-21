@@ -27,17 +27,17 @@ fn main() -> Result<(), DspbptkError<'static>> {
 
     // 基础行
     let base = (0..=9)
-        .map(|x| new_receiver([15.0 * x as f64, 0.0, 0.0]))
+        .map(|x| new_receiver([15.0 * f64::from(x), 0.0, 0.0]))
         .collect::<Vec<_>>();
 
     // 测试长轴碰撞
     let test_axis = (0..=9)
-        .map(|x| new_receiver([15.0 * x as f64, 7.3072 + 0.00001 * x as f64, 0.0]))
+        .map(|x| new_receiver([15.0 * f64::from(x), 7.3072 + 0.00001 * f64::from(x), 0.0]))
         .collect(); // (7.30725, 7.30726)
 
     // 测试角落碰撞
     let test_corner = (0..=9)
-        .map(|x| new_receiver([15.0 * x as f64 + 7.2, -(4.1982 + 0.00001 * x as f64), 0.0]))
+        .map(|x| new_receiver([15.0 * f64::from(x) + 7.2, -(4.1982 + 0.00001 * f64::from(x)), 0.0]))
         .collect(); // (4.19828, 4.19829)
 
     // 拼接所有建筑
@@ -53,12 +53,12 @@ fn main() -> Result<(), DspbptkError<'static>> {
         ..Default::default()
     };
 
-    println!("{:#?}", content_data);
+    println!("{content_data:#?}");
 
     if let BlueprintKind::Txt(blueprint) =
         dspbptk::io::process_back_end(&header_data, &content_data, &zopfli_options, &FileType::Txt)?
     {
-        print!("{}", blueprint);
+        print!("{blueprint}");
     }
 
     Ok(())

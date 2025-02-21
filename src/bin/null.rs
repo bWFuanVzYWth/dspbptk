@@ -13,7 +13,7 @@ fn main() -> Result<(), DspbptkError<'static>> {
     if let BlueprintKind::Txt(blueprint) =
         dspbptk::io::process_back_end(&header_data, &content_data, &zopfli_options, &FileType::Txt)?
     {
-        print!("{}", blueprint);
+        print!("{blueprint}");
     }
 
     Ok(())

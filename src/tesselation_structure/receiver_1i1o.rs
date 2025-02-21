@@ -10,7 +10,7 @@ use crate::{
 pub const GRID_A: f64 = 7.30726;
 pub const GRID_B: f64 = 4.19828;
 
- pub fn new(
+ #[must_use] pub fn new(
     local_offset: [f64; 3],
     input_obj: &DspbptkBuildingData,
     input_from_slot: i8,

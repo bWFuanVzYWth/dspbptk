@@ -32,7 +32,7 @@ pub fn sort_buildings(buildings: &mut [building::BuildingData]) {
     });
 }
 
-pub fn fix_buildings_index(buildings: Vec<building::BuildingData>) -> Vec<building::BuildingData> {
+#[must_use] pub fn fix_buildings_index(buildings: Vec<building::BuildingData>) -> Vec<building::BuildingData> {
     use std::collections::HashMap;
 
     let index_lut: HashMap<_, _> = buildings
@@ -60,7 +60,7 @@ pub fn fix_buildings_index(buildings: Vec<building::BuildingData>) -> Vec<buildi
         .collect()
 }
 
-pub fn fix_dspbptk_buildings_index(
+#[must_use] pub fn fix_dspbptk_buildings_index(
     buildings: Vec<building::DspbptkBuildingData>,
 ) -> Vec<building::DspbptkBuildingData> {
     use std::collections::HashMap;
@@ -89,7 +89,7 @@ pub fn fix_dspbptk_buildings_index(
 }
 
 // 将局部偏移转换为方向向量
-pub fn local_offset_to_direction(local_offset: [f64; 3]) -> Vector3<f64> {
+#[must_use] pub fn local_offset_to_direction(local_offset: [f64; 3]) -> Vector3<f64> {
     const ANGLE_SCALE: f64 = PI / HALF_EQUATORIAL_GRID;
 
     let theta_x = (local_offset[0]) * ANGLE_SCALE;
@@ -116,7 +116,7 @@ fn fix_value(value: f64, component: f64, default_positive: f64, default_negative
 }
 
 // 将方向向量转换为局部偏移
-pub fn direction_to_local_offset(direction: &Vector3<f64>, z: f64) -> [f64; 3] {
+#[must_use] pub fn direction_to_local_offset(direction: &Vector3<f64>, z: f64) -> [f64; 3] {
     const ANGLE_SCALE: f64 = HALF_EQUATORIAL_GRID / PI;
 
     let theta_x = direction.y.atan2(direction.x);

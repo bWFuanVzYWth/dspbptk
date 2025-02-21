@@ -14,7 +14,7 @@ use dspbptk::io::{self, FileType};
 
 fn collect_files(path_in: &Path) -> Vec<PathBuf> {
     let mut files = Vec::new();
-    for entry in WalkDir::new(path_in).into_iter().filter_map(|e| e.ok()) {
+    for entry in WalkDir::new(path_in).into_iter().filter_map(std::result::Result::ok) {
         let entry_path = entry.into_path();
         match dspbptk::io::classify_file_type(&entry_path) {
             FileType::Txt => files.push(entry_path),
@@ -68,7 +68,7 @@ fn process_middle_layer(
             building.local_offset_x = (building.local_offset_x * ROUND_SCALE).round() / ROUND_SCALE;
             building.local_offset_y = (building.local_offset_y * ROUND_SCALE).round() / ROUND_SCALE;
             building.local_offset_z = (building.local_offset_z * ROUND_SCALE).round() / ROUND_SCALE;
-        })
+        });
     }
 
     if sorting_buildings {
@@ -133,7 +133,7 @@ fn process_one_file(
 
     let file_path_out = generate_output_path(path_in, path_out, file_path_in, output_type);
     match dspbptk::io::write_file(&file_path_out, blueprint_kind_out) {
-        Ok(_) => Some(()),
+        Ok(()) => Some(()),
         Err(e) => {
             error!("\"{}\": {:?}", file_path_in.display(), e);
             None
@@ -242,7 +242,7 @@ struct Args {
     #[clap(long, short, default_value = "txt")]
     type_output: Option<String>,
 
-    /// Round local_offset to 1/300 may make blueprint smaller. Lossy.
+    /// Round `local_offset` to 1/300 may make blueprint smaller. Lossy.
     #[clap(long, short)]
     rounding_local_offset: bool,
 
@@ -250,15 +250,15 @@ struct Args {
     #[clap(long)]
     no_sorting_buildings: bool,
 
-    /// Compress arguments: zopfli iteration_count.
+    /// Compress arguments: zopfli `iteration_count`.
     #[clap(long, default_value = "256")]
     iteration_count: Option<u64>,
 
-    /// Compress arguments: zopfli iterations_without_improvement.
+    /// Compress arguments: zopfli `iterations_without_improvement`.
     #[clap(long, default_value = "18446744073709551615")]
     iterations_without_improvement: Option<u64>,
 
-    /// Compress arguments: zopfli maximum_block_splits.
+    /// Compress arguments: zopfli `maximum_block_splits`.
     #[clap(long, default_value = "0")]
     maximum_block_splits: Option<u16>,
 }

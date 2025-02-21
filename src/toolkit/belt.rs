@@ -1,7 +1,7 @@
 use crate::blueprint::content::building::DspbptkBuildingData;
 
 /// 把vec中的传送带节点连接成一条整体，注意这个函数并不检查建筑是否为传送带  
-pub fn connect_belts(
+#[must_use] pub fn connect_belts(
     belts: Vec<DspbptkBuildingData>,
     temp_input_obj_idx: Option<u128>,
     input_from_slot: i8,

@@ -45,7 +45,7 @@ impl ContentData {
         Ok((content, warns))
     }
 
-    pub fn to_bin(&self) -> Vec<u8> {
+    #[must_use] pub fn to_bin(&self) -> Vec<u8> {
         let mut bin = Vec::new();
         bin.extend_from_slice(&self.patch.to_le_bytes());
         bin.extend_from_slice(&self.cursor_offset_x.to_le_bytes());

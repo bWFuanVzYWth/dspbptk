@@ -229,7 +229,7 @@ fn main() -> Result<(), DspbptkError<'static>> {
         dspbptk::io::process_back_end(&header_data, &content_data, &zopfli_options, &FileType::Txt)?
     {
         // cargo run --bin photon --release > "C:\Users\%USERNAME%\Documents\Dyson Sphere Program\Blueprint\receiver2920.txt"
-        print!("{}", blueprint);
+        print!("{blueprint}");
     }
 
     Ok(())
