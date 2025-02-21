@@ -46,7 +46,7 @@ fn main() -> Result<(), DspbptkError<'static>> {
         .map(|x| {
             new_receiver([
                 f64::from(x).mul_add(15.0, 7.2),
-                f64::from(x).mul_add(-0.00001, 4.1982),
+                f64::from(x).mul_add(-0.00001, -4.1982),
                 0.0,
             ])
         })
