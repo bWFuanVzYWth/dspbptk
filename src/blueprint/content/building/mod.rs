@@ -6,13 +6,12 @@ use nom::{branch::alt, IResult};
 
 use building_0::deserialization_version_0;
 use building_neg100::deserialization_version_neg100;
-use building_neg101::{deserialization_version_neg101, serialization_version_neg101, NEG_101};
+use building_neg101::{deserialization_version_neg101, serialization_version_neg101};
 
 pub const INDEX_NULL: i32 = -1;
 
 #[derive(Debug, Clone)]
 pub struct BuildingData {
-    pub _version: i32, // version不参与序列化/反序列化，但是保留字段
     pub index: i32,
     pub area_index: i8,
     pub local_offset_x: f32,
@@ -70,6 +69,7 @@ pub struct DspbptkBuildingData {
     pub parameters: Vec<i32>,
 }
 
+// TODO 检查index范围是否合理，如果不合理警告
 fn uuid_from_index(index: i32) -> Option<u128> {
     if index == INDEX_NULL {
         None
@@ -80,7 +80,7 @@ fn uuid_from_index(index: i32) -> Option<u128> {
 
 fn index_from_uuid(uuid: Option<u128>) -> i32 {
     match uuid {
-        Some(num) => i32::try_from(num).expect("casting `u128` to `i32` truncate the uuid"),
+        Some(num) => i32::try_from(num).unwrap(),
         None => INDEX_NULL,
     }
 }
@@ -126,7 +126,6 @@ impl BuildingData {
 impl DspbptkBuildingData {
     pub fn to_building_data(&self) -> BuildingData {
         BuildingData {
-            _version: NEG_101,
             index: index_from_uuid(self.uuid),
             area_index: self.area_index,
             local_offset_x: self.local_offset[0] as f32,
@@ -162,7 +161,6 @@ impl DspbptkBuildingData {
 impl Default for BuildingData {
     fn default() -> Self {
         Self {
-            _version: NEG_101,
             index: INDEX_NULL,
             area_index: 0,
             local_offset_x: 0.0,

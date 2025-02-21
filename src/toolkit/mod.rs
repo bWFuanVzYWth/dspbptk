@@ -41,7 +41,7 @@ pub fn fix_buildings_index(buildings: Vec<building::BuildingData>) -> Vec<buildi
         .map(|(index, building)| {
             (
                 building.index,
-                i32::try_from(index).expect("casting `usize` to `i32` truncate the value"),
+                i32::try_from(index).unwrap(),
             )
         })
         .collect();
@@ -83,10 +83,9 @@ pub fn fix_dspbptk_buildings_index(
         .into_iter()
         .map(|building| {
             building::DspbptkBuildingData {
-                // 这里panic是安全的，因为理论上所有的building.index都应该在index_lut里
                 uuid: *uuid_lut
                     .get(&building.uuid)
-                    .expect("Fatal error: unknown dspbptk building uuid"),
+                    .unwrap_or(&None),
                 temp_output_obj_idx: uuid_lut
                     .get(&building.temp_output_obj_idx)
                     .copied()

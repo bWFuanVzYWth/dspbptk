@@ -1,7 +1,12 @@
 pub mod area;
 pub mod building;
 
-use crate::error::{DspbptkError, DspbptkError::{BrokenBase64, BrokenContent, BrokenGzip, CanNotCompressGzip}, DspbptkWarn, DspbptkWarn::{FewUnknownAfterContent, LotUnknownAfterContent}};
+use crate::error::{
+    DspbptkError,
+    DspbptkError::{BrokenBase64, BrokenContent, BrokenGzip, CanNotCompressGzip},
+    DspbptkWarn,
+    DspbptkWarn::{FewUnknownAfterContent, LotUnknownAfterContent},
+};
 
 use nom::{
     multi::count,
@@ -131,7 +136,7 @@ fn string_from_gzip(gzip: &[u8]) -> String {
 fn bin_from_gzip<'a>(bin: &mut Vec<u8>, gzip: &[u8]) -> Result<(), DspbptkError<'a>> {
     use flate2::read::GzDecoder;
     use std::io::Read;
-    let mut decoder = GzDecoder::new(&gzip[..]);
+    let mut decoder = GzDecoder::new(gzip);
     decoder.read_to_end(bin).map_err(BrokenGzip)?;
     Ok(())
 }

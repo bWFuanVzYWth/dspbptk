@@ -43,7 +43,6 @@ pub fn deserialization_version_neg100(bin: &[u8]) -> IResult<&[u8], BuildingData
     Ok((
         unknown,
         BuildingData {
-            _version: NEG_100,
             index,
             area_index,
             local_offset_x,
