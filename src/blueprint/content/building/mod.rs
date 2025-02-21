@@ -82,10 +82,9 @@ fn uuid_from_index<'a>(index: i32) -> Result<Option<u128>, DspbptkError<'a>> {
 }
 
 fn index_from_uuid<'a>(uuid: Option<u128>) -> Result<i32, DspbptkError<'a>> {
-    match uuid {
-        None => Ok(INDEX_NULL),
-        Some(num) => i32::try_from(num).map_err(NonStandardUuid),
-    }
+    uuid.map_or(Ok(INDEX_NULL), |num| {
+        i32::try_from(num).map_err(NonStandardUuid)
+    })
 }
 
 impl BuildingData {
