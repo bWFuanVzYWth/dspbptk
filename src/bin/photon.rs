@@ -117,7 +117,7 @@ fn receivers_with_io(
     (0..row.n)
         .map(|i| {
             let local_offset = [
-                (1000.0 / (row.n as f64) * (i as f64 + 0.5)),
+                1000.0 * (i as f64 + 0.5) / (row.n as f64),
                 grid_from_arc(row.y),
                 0.0,
             ];

@@ -118,14 +118,13 @@ pub fn local_offset_to_direction(local_offset: [f64; 3]) -> Vector3<f64> {
 
 // 修复非有限值的情况
 fn fix_value(value: f64, component: f64, default_positive: f64, default_negative: f64) -> f64 {
-    if !value.is_finite() {
-        return if component >= 0.0 {
-            default_positive
-        } else {
-            default_negative
-        };
+    if value.is_finite() {
+        value
+    } else if component >= 0.0 {
+        default_positive
+    } else {
+        default_negative
     }
-    value
 }
 
 // 将方向向量转换为局部偏移

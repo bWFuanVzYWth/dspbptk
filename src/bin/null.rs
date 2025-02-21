@@ -5,9 +5,8 @@ use dspbptk::{
 };
 
 fn main() -> Result<(), DspbptkError<'static>> {
-    let header_data = HeaderData::default();
     let zopfli_options = zopfli::Options::default();
-
+    let header_data = HeaderData::default();
     let content_data = ContentData::default();
 
     if let BlueprintKind::Txt(blueprint) =

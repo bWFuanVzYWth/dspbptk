@@ -67,9 +67,10 @@ fn process_middle_layer(
     if rounding_local_offset {
         content_data_out.buildings.iter_mut().for_each(|building| {
             const ROUND_SCALE: f32 = 300.0;
-            building.local_offset_x = (building.local_offset_x * ROUND_SCALE).round() / ROUND_SCALE;
-            building.local_offset_y = (building.local_offset_y * ROUND_SCALE).round() / ROUND_SCALE;
-            building.local_offset_z = (building.local_offset_z * ROUND_SCALE).round() / ROUND_SCALE;
+            let round = |x: f32| (x * ROUND_SCALE).round() / ROUND_SCALE;
+            building.local_offset_x = round(building.local_offset_x);
+            building.local_offset_y = round(building.local_offset_y);
+            building.local_offset_z = round(building.local_offset_z);
         });
     }
 
