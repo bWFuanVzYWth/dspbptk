@@ -40,7 +40,7 @@ pub struct BuildingData {
     pub input_offset: i8,
     pub recipe_id: i16,
     pub filter_id: i16,
-    pub parameters_length: i16,
+    pub parameters_length: u16,
     pub parameters: Vec<i32>,
 }
 
@@ -152,7 +152,7 @@ impl DspbptkBuildingData {
             input_offset: self.input_offset,
             recipe_id: self.recipe_id,
             filter_id: self.filter_id,
-            parameters_length: i16::try_from(self.parameters.len())
+            parameters_length: u16::try_from(self.parameters.len())
                 .map_err(UnexpectParametersLength)?,
             parameters: self.parameters.clone(),
         })

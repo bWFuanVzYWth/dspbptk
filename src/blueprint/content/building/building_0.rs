@@ -1,6 +1,6 @@
 use nom::{
     multi::count,
-    number::complete::{le_f32, le_i16, le_i32, le_i8},
+    number::complete::{le_f32, le_i16, le_i32, le_i8, le_u16},
     IResult,
 };
 
@@ -32,7 +32,7 @@ pub fn deserialization_version_0(bin: &[u8]) -> IResult<&[u8], BuildingData> {
     let (unknown, input_offset) = le_i8(unknown)?;
     let (unknown, recipe_id) = le_i16(unknown)?;
     let (unknown, filter_id) = le_i16(unknown)?;
-    let (unknown, parameters_length) = le_i16(unknown)?;
+    let (unknown, parameters_length) = le_u16(unknown)?;
     let (unknown, parameters) = count(le_i32, parameters_length as usize)(unknown)?;
 
     Ok((

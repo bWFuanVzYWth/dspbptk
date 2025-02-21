@@ -27,7 +27,7 @@ pub enum FileType {
 pub fn create_father_dir(path: &PathBuf) -> Result<(), DspbptkError> {
     let parent = path
         .parent()
-        .map_or_else(|| PathBuf::from("."), |p| p.to_path_buf());
+        .map_or_else(|| PathBuf::from("."), std::path::Path::to_path_buf);
     std::fs::create_dir_all(&parent).map_err(|e| CanNotWriteFile { path, source: e })
 }
 
