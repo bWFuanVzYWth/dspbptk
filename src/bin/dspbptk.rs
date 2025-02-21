@@ -14,11 +14,13 @@ use dspbptk::io::{self, FileType};
 
 fn collect_files(path_in: &Path) -> Vec<PathBuf> {
     let mut files = Vec::new();
-    for entry in WalkDir::new(path_in).into_iter().filter_map(std::result::Result::ok) {
+    for entry in WalkDir::new(path_in)
+        .into_iter()
+        .filter_map(std::result::Result::ok)
+    {
         let entry_path = entry.into_path();
         match dspbptk::io::classify_file_type(&entry_path) {
-            FileType::Txt => files.push(entry_path),
-            FileType::Content => files.push(entry_path),
+            FileType::Txt | FileType::Content => files.push(entry_path),
             _ => {}
         }
     }
@@ -144,7 +146,7 @@ fn process_one_file(
 }
 
 fn process_all_files(
-    files: Vec<PathBuf>,
+    files: &[PathBuf],
     path_in: &Path,
     path_out: &Path,
     zopfli_options: &zopfli::Options,
@@ -187,7 +189,7 @@ fn process_workflow(args: &Args) {
     let rounding_local_offset = args.rounding_local_offset;
 
     process_all_files(
-        files,
+        &files,
         path_in,
         path_out,
         &zopfli_options,

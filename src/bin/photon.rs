@@ -65,11 +65,11 @@ fn calculate_layout() -> Vec<Row> {
 
         let row_next = if (row_try_offset.y + ARC_B / 2.0).cos() < row_try_offset.n as f64 * ARC_A {
             // 如果直接偏移太挤了
-            let y_fixed =
-                match calculate_next_y(rows.last().unwrap().y + HALF_ARC_A, *scale, *theta_down) {
-                    Some(num) => num,
-                    None => break,
-                };
+            let Some(y_fixed) =
+                calculate_next_y(rows.last().unwrap().y + HALF_ARC_A, *scale, *theta_down)
+            else {
+                break;
+            };
             let n = ((y_fixed + HALF_ARC_B).cos() * ((2.0 * PI) / ARC_A)).floor() as u64;
             Row {
                 t: Item::射线接收站,
@@ -170,7 +170,7 @@ fn main_belts(row: &Row) -> Vec<DspbptkBuildingData> {
         .collect::<Vec<_>>()
 }
 
-fn layout_to_buildings(rows: Vec<Row>) -> Vec<DspbptkBuildingData> {
+fn layout_to_buildings(rows: &[Row]) -> Vec<DspbptkBuildingData> {
     // 生成主干传送带
     let belts_in_rows = rows
         .iter()
@@ -214,7 +214,7 @@ fn main() -> Result<(), DspbptkError<'static>> {
     let rows = calculate_layout();
 
     // 再转换为建筑列表
-    let buildings = layout_to_buildings(rows);
+    let buildings = layout_to_buildings(&rows);
 
     let content_data = ContentData {
         buildings_length: u32::try_from(buildings.len()).map_err(UnexpectBuildingsCount)?,

@@ -45,7 +45,7 @@ fn main() -> Result<(), DspbptkError<'static>> {
     let buildings = fix_dspbptk_buildings_index(buildings);
 
     let content_data = ContentData {
-        buildings_length: buildings.len() as u32,
+        buildings_length: u32::try_from(buildings.len()).unwrap(),
         buildings: buildings
             .iter()
             .map(|dspbptk_building| dspbptk_building.to_building_data().unwrap())
