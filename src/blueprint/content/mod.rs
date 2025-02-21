@@ -101,7 +101,7 @@ fn deserialization_non_finish(bin: &[u8]) -> IResult<&[u8], ContentData> {
     let (unknown, buildings_length) = le_u32(unknown)?;
     let (unknown, buildings) = count(
         building::deserialization,
-        usize::try_from(buildings_length).unwrap(),
+        usize::try_from(buildings_length).expect("Fatal error: can not casting `u32` to `usize`"),
     )(unknown)?;
 
     Ok((

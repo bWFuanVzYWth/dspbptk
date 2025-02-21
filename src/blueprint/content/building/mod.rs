@@ -8,7 +8,9 @@ use building_0::deserialization_version_0;
 use building_neg100::deserialization_version_neg100;
 use building_neg101::{deserialization_version_neg101, serialization_version_neg101};
 
-use crate::error::DspbptkError::{self, UnexpectParametersLength};
+use crate::error::DspbptkError::{
+    self, NonStandardIndex, NonStandardUuid, UnexpectParametersLength,
+};
 
 pub const INDEX_NULL: i32 = -1;
 
@@ -71,23 +73,26 @@ pub struct DspbptkBuildingData {
     pub parameters: Vec<i32>,
 }
 
-fn uuid_from_index(index: i32) -> Option<u128> {
+fn uuid_from_index<'a>(index: i32) -> Result<Option<u128>, DspbptkError<'a>> {
     if index == INDEX_NULL {
-        None
+        Ok(None)
     } else {
-        Some(u128::try_from(index).unwrap())
+        Ok(Some(u128::try_from(index).map_err(NonStandardIndex)?))
     }
 }
 
-fn index_from_uuid(uuid: Option<u128>) -> i32 {
-    uuid.map_or(INDEX_NULL, |num| i32::try_from(num).unwrap())
+fn index_from_uuid<'a>(uuid: Option<u128>) -> Result<i32, DspbptkError<'a>> {
+    match uuid {
+        None => Ok(INDEX_NULL),
+        Some(num) => i32::try_from(num).map_err(NonStandardUuid),
+    }
 }
 
 impl BuildingData {
     #[must_use]
-    pub fn to_dspbptk_building_data(&self) -> DspbptkBuildingData {
-        DspbptkBuildingData {
-            uuid: uuid_from_index(self.index),
+    pub fn to_dspbptk_building_data(&self) -> Result<DspbptkBuildingData, DspbptkError> {
+        Ok(DspbptkBuildingData {
+            uuid: uuid_from_index(self.index)?,
             area_index: self.area_index,
             local_offset: [
                 f64::from(self.local_offset_x),
@@ -107,8 +112,8 @@ impl BuildingData {
             pitch2: f64::from(self.pitch2),
             item_id: self.item_id,
             model_index: self.model_index,
-            temp_output_obj_idx: uuid_from_index(self.temp_output_obj_idx),
-            temp_input_obj_idx: uuid_from_index(self.temp_input_obj_idx),
+            temp_output_obj_idx: uuid_from_index(self.temp_output_obj_idx)?,
+            temp_input_obj_idx: uuid_from_index(self.temp_input_obj_idx)?,
             output_to_slot: self.output_to_slot,
             input_from_slot: self.input_from_slot,
             output_from_slot: self.output_from_slot,
@@ -118,7 +123,7 @@ impl BuildingData {
             recipe_id: self.recipe_id,
             filter_id: self.filter_id,
             parameters: self.parameters.clone(),
-        }
+        })
     }
 }
 
@@ -126,7 +131,7 @@ impl DspbptkBuildingData {
     #[allow(clippy::cast_possible_truncation)]
     pub fn to_building_data(&self) -> Result<BuildingData, DspbptkError> {
         Ok(BuildingData {
-            index: index_from_uuid(self.uuid),
+            index: index_from_uuid(self.uuid)?,
             area_index: self.area_index,
             local_offset_x: self.local_offset[0] as f32,
             local_offset_y: self.local_offset[1] as f32,
@@ -142,8 +147,8 @@ impl DspbptkBuildingData {
             pitch2: self.pitch2 as f32,
             item_id: self.item_id,
             model_index: self.model_index,
-            temp_output_obj_idx: index_from_uuid(self.temp_output_obj_idx),
-            temp_input_obj_idx: index_from_uuid(self.temp_input_obj_idx),
+            temp_output_obj_idx: index_from_uuid(self.temp_output_obj_idx)?,
+            temp_input_obj_idx: index_from_uuid(self.temp_input_obj_idx)?,
             output_to_slot: self.output_to_slot,
             input_from_slot: self.input_from_slot,
             output_from_slot: self.output_from_slot,

@@ -30,6 +30,10 @@ pub enum DspbptkError<'a> {
     UnexpectBuildingsCount(<u32 as TryFrom<usize>>::Error),
     #[error("unexpect parameters length: {0}")]
     UnexpectParametersLength(<u16 as TryFrom<usize>>::Error),
+    #[error("non-standard uuid: {0}")]
+    NonStandardUuid(std::num::TryFromIntError),
+    #[error("non-standard index: {0}")]
+    NonStandardIndex(std::num::TryFromIntError),
 }
 
 #[derive(Error, Debug, Eq, PartialEq, Clone)]
