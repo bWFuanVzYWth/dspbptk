@@ -6,7 +6,7 @@ use crate::item::Item;
 pub struct Row {
     pub t: Item,
     pub y: f64, // 这一行建筑坐标的中心
-    pub n: u64, // 这一行建筑的数量
+    pub n: i64, // 这一行建筑的数量
 }
 
 // TODO 重构，为不同的模块impl对应的方法

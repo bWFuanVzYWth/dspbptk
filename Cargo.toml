@@ -2,6 +2,7 @@ cargo-features = ["profile-rustflags"]
 
 [package]
 name = "dspbptk"
+keywords = ["dspbptk", "dsp"]
 authors = ["bWFuanVzYWth"]
 version = "0.1.0"
 edition = "2021"
@@ -59,4 +60,11 @@ mimalloc = "0.1.43"
 [profile.release]
 codegen-units = 1
 lto = "fat"
-rustflags = ["-C", "target-cpu=native", "-C", "link-arg=-fuse-ld=lld", "-Z", "threads=8"]
+rustflags = [
+    "-C",
+    "target-cpu=native",
+    "-C",
+    "link-arg=-fuse-ld=lld",
+    "-Z",
+    "threads=8",
+]

@@ -51,7 +51,7 @@ fn calculate_layout() -> Vec<Row> {
     let row_0 = Row {
         t: Item::射线接收站,
         y: HALF_ARC_A,
-        n: (TAU / ARC_A).floor() as u64,
+        n: (TAU / ARC_A).floor() as i64,
     };
     rows.push(row_0);
 
@@ -70,7 +70,7 @@ fn calculate_layout() -> Vec<Row> {
             else {
                 break;
             };
-            let n = ((y_fixed + HALF_ARC_B).cos() * (TAU / ARC_A)).floor() as u64;
+            let n = ((y_fixed + HALF_ARC_B).cos() * (TAU / ARC_A)).floor() as i64;
             Row {
                 t: Item::射线接收站,
                 y: y_fixed,
