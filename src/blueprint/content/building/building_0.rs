@@ -6,7 +6,7 @@ use nom::{
 
 use super::BuildingData;
 
-#[allow(clippy::similar_names, clippy::cast_sign_loss)]
+#[allow(clippy::similar_names)]
 pub fn deserialization_version_0(bin: &[u8]) -> IResult<&[u8], BuildingData> {
     let unknown = bin;
 
