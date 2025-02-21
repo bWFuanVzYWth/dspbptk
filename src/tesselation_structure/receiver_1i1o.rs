@@ -92,7 +92,7 @@ pub fn new(
         local_offset: [
             receiver.local_offset[0],
             // receiver.local_offset[1] - y_scale * ((GRID_A / 2.0) * (1.0 / 3.0)),
-            y_scale.mul_add((GRID_A / 2.0) * (1.0 / 3.0), receiver.local_offset[1]),
+            (-y_scale).mul_add((GRID_A / 2.0) * (1.0 / 3.0), receiver.local_offset[1]),
             receiver.local_offset[2],
         ],
         ..Default::default()
@@ -105,7 +105,7 @@ pub fn new(
         local_offset: [
             receiver.local_offset[0],
             // receiver.local_offset[1] - y_scale * ((GRID_A / 2.0) * (2.0 / 3.0)),
-            y_scale.mul_add((GRID_A / 2.0) * (2.0 / 3.0), receiver.local_offset[1]),
+            (-y_scale).mul_add((GRID_A / 2.0) * (2.0 / 3.0), receiver.local_offset[1]),
             receiver.local_offset[2],
         ],
         ..Default::default()
