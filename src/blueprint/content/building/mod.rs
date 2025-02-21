@@ -126,6 +126,7 @@ impl BuildingData {
 }
 
 impl DspbptkBuildingData {
+    #[allow(clippy::cast_possible_truncation)]
     pub fn to_building_data(&self) -> Result<BuildingData, DspbptkError> {
         Ok(BuildingData {
             index: index_from_uuid(self.uuid),
