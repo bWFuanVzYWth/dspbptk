@@ -90,7 +90,7 @@ mod test {
                     md5f: "E4E5A1CF28F1EC611E33498CBD0DF02B",
                     unknown: "\n\0",
                 },
-                Vec::new()
+                vec![FewUnknownAfterBlueprint("\n\0".to_string())]
             ))
         );
     }
