@@ -154,7 +154,7 @@ impl DspbptkBuildingData {
             recipe_id: self.recipe_id,
             filter_id: self.filter_id,
             parameters_length: i16::try_from(self.parameters.len())
-                .map_err(|e| UnexpectParametersLength(e))?,
+                .map_err(UnexpectParametersLength)?,
             parameters: self.parameters.clone(),
         })
     }
