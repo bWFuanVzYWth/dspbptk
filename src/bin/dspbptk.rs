@@ -199,7 +199,7 @@ fn process_workflow(args: &Args) {
     );
 }
 
-fn configure_zopfli_options(args: &Args) -> zopfli::Options {
+const fn configure_zopfli_options(args: &Args) -> zopfli::Options {
     // 参数的正确性必须由用户保证，如果参数无效则拒绝处理，然后立即退出程序
     let iteration_count = args
         .iteration_count

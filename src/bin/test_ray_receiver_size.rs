@@ -32,15 +32,21 @@ fn main() -> Result<(), DspbptkError<'static>> {
 
     // 测试长轴碰撞
     let test_axis = (0..=9)
-        .map(|x| new_receiver([15.0 * f64::from(x), 7.3072 + 0.00001 * f64::from(x), 0.0]))
+        .map(|x| {
+            new_receiver([
+                15.0 * f64::from(x),
+                f64::from(x).mul_add(0.00001, 7.3072),
+                0.0,
+            ])
+        })
         .collect(); // (7.30725, 7.30726)
 
     // 测试角落碰撞
     let test_corner = (0..=9)
         .map(|x| {
             new_receiver([
-                15.0 * f64::from(x) + 7.2,
-                -(4.1982 + 0.00001 * f64::from(x)),
+                f64::from(x).mul_add(15.0, 7.2),
+                f64::from(x).mul_add(-0.00001, 4.1982),
                 0.0,
             ])
         })

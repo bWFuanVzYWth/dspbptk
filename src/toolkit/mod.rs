@@ -21,10 +21,18 @@ pub fn sort_buildings(buildings: &mut [building::BuildingData]) {
             .then({
                 const KY: f64 = 256.0;
                 const KX: f64 = 1024.0;
-                let score_a = (f64::from(a.local_offset_y) * KY + f64::from(a.local_offset_x)) * KX
-                    + f64::from(a.local_offset_z);
-                let score_b = (f64::from(b.local_offset_y) * KY + f64::from(b.local_offset_x)) * KX
-                    + f64::from(b.local_offset_z);
+                // let score = |x: f64, y: f64, z: f64| (y * KY + x) * KX + z;
+                let score = |x: f64, y: f64, z: f64| y.mul_add(KY, x).mul_add(KX, z);
+                let score_a = score(
+                    f64::from(a.local_offset_x),
+                    f64::from(a.local_offset_y),
+                    f64::from(a.local_offset_z),
+                );
+                let score_b = score(
+                    f64::from(b.local_offset_x),
+                    f64::from(b.local_offset_y),
+                    f64::from(b.local_offset_z),
+                );
                 score_a
                     .partial_cmp(&score_b)
                     .unwrap_or(std::cmp::Ordering::Equal)

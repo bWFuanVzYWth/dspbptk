@@ -129,7 +129,7 @@ pub struct MD5 {
 pub type MD5Hash = [u8; 16];
 
 impl MD5 {
-    fn new(algo: Algo) -> Self {
+    const fn new(algo: Algo) -> Self {
         let s = match algo {
             Algo::MD5 => INIT_MD5,
             _ => INIT_MD5F,
@@ -138,7 +138,7 @@ impl MD5 {
         Self { s, algo }
     }
 
-    fn k(&self, i: usize) -> u32 {
+    const fn k(&self, i: usize) -> u32 {
         let u = match self.algo {
             Algo::MD5F => K_MD5F[i],
             Algo::MD5FC => K_MD5FC[i],

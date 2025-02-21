@@ -18,7 +18,7 @@ use dspbptk::{
     },
 };
 
-use std::f64::consts::PI;
+use std::f64::consts::{PI, TAU};
 
 // 当error=0时，期望输出2920锅；然后在锅不减少的情况下试出最大的error(0.00019, 0.00020)
 // 考虑行星尺寸与IEEE754标准，至少要让ERROR > 2^-15 (约0.00003)
@@ -51,7 +51,7 @@ fn calculate_layout() -> Vec<Row> {
     let row_0 = Row {
         t: Item::射线接收站,
         y: HALF_ARC_A,
-        n: ((2.0 * PI) / ARC_A).floor() as u64,
+        n: ((TAU) / ARC_A).floor() as u64,
     };
     rows.push(row_0);
 
@@ -70,7 +70,7 @@ fn calculate_layout() -> Vec<Row> {
             else {
                 break;
             };
-            let n = ((y_fixed + HALF_ARC_B).cos() * ((2.0 * PI) / ARC_A)).floor() as u64;
+            let n = ((y_fixed + HALF_ARC_B).cos() * ((TAU) / ARC_A)).floor() as u64;
             Row {
                 t: Item::射线接收站,
                 y: y_fixed,
@@ -78,7 +78,7 @@ fn calculate_layout() -> Vec<Row> {
             }
         } else {
             // 如果直接偏移放得下
-            if row_try_offset.y > (2.0 * PI) {
+            if row_try_offset.y > (TAU) {
                 break;
             }
             row_try_offset
@@ -151,7 +151,7 @@ fn main_belts(row: &Row) -> Vec<DspbptkBuildingData> {
     let y = row.y - HALF_ARC_A;
     let x_protect = arc_from_grid(1.0);
     let x_from = x_protect / y.cos();
-    let x_to = (2.0 * PI) - x_protect / y.cos();
+    let x_to = TAU - x_from;
     let x_arc = x_to - x_from;
     let belts_count = (y.cos() * (x_arc / BELT_ARC)).ceil() as u64;
 
@@ -161,7 +161,7 @@ fn main_belts(row: &Row) -> Vec<DspbptkBuildingData> {
             item_id: Item::极速传送带 as i16,
             model_index: Item::极速传送带.model()[0],
             local_offset: [
-                grid_from_arc(x_arc / (belts_count as f64) * (i as f64) + x_from),
+                grid_from_arc(x_arc.mul_add((i as f64) / (belts_count as f64), x_from)),
                 grid_from_arc(y),
                 0.0,
             ],

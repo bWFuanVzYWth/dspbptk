@@ -8,7 +8,7 @@ use crate::error::{
     DspbptkError, DspbptkError::BrokenHeader, DspbptkWarn, DspbptkWarn::UnknownAfterHeader,
 };
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, Eq, PartialEq)]
 pub struct HeaderData {
     pub layout: String,
     pub icons_0: String,

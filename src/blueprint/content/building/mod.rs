@@ -80,10 +80,7 @@ fn uuid_from_index(index: i32) -> Option<u128> {
 }
 
 fn index_from_uuid(uuid: Option<u128>) -> i32 {
-    match uuid {
-        Some(num) => i32::try_from(num).unwrap(),
-        None => INDEX_NULL,
-    }
+    uuid.map_or(INDEX_NULL, |num| i32::try_from(num).unwrap())
 }
 
 impl BuildingData {

@@ -1,4 +1,4 @@
-use std::f64::consts::PI;
+use std::f64::consts::{FRAC_PI_2, PI};
 
 use crate::item::Item;
 
@@ -19,7 +19,7 @@ pub fn calculate_next_y(edge_y: f64, scale: f64, theta_down: f64) -> Option<f64>
         return None;
     }
     let theta_up = theta_up_sin.asin();
-    if theta_up >= PI / 2.0 {
+    if theta_up >= FRAC_PI_2 {
         return None;
     }
     Some(theta_up + theta_down)

@@ -25,24 +25,21 @@ pub enum FileType {
 }
 
 pub fn create_father_dir(path: &PathBuf) -> Result<(), DspbptkError> {
-    let parent = match path.parent() {
-        Some(p) => p.to_path_buf(),
-        None => PathBuf::from("."),
-    };
+    let parent = path
+        .parent()
+        .map_or_else(|| PathBuf::from("."), |p| p.to_path_buf());
     std::fs::create_dir_all(&parent).map_err(|e| CanNotWriteFile { path, source: e })
 }
 
 #[must_use]
 pub fn classify_file_type(entry: &Path) -> FileType {
-    if let Some(extension) = entry.extension() {
-        match extension.to_str() {
+    entry
+        .extension()
+        .map_or(FileType::Unknown, |extension| match extension.to_str() {
             Some("txt") => FileType::Txt,
             Some("content") => FileType::Content,
             _ => FileType::Other,
-        }
-    } else {
-        FileType::Unknown
-    }
+        })
 }
 
 fn read_content_file(path: &Path) -> Result<Vec<u8>, DspbptkError> {

@@ -12,9 +12,10 @@ pub fn connect_belts(
     let nexts = belts
         .iter()
         .enumerate()
-        .map(|(i, _belt)| match belts.get(i + 1) {
-            Some(belt) => (belt.uuid, 1),
-            None => (temp_output_obj_idx, output_to_slot),
+        .map(|(i, _belt)| {
+            belts
+                .get(i + 1)
+                .map_or((temp_output_obj_idx, output_to_slot), |belt| (belt.uuid, 1))
         })
         .collect::<Vec<_>>();
 

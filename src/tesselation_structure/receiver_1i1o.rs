@@ -17,9 +17,9 @@ pub fn new(
     output_to_slot: i8,
 ) -> Vec<DspbptkBuildingData> {
     let (y_scale, sorter_yaw) = if input_obj.local_offset[1] > output_obj.local_offset[1] {
-        (1.0, 180.0)
+        (1.0_f64, 180.0_f64)
     } else {
-        (-1.0, 0.0)
+        (-1.0_f64, 0.0_f64)
     };
 
     // 光子锅
@@ -39,7 +39,8 @@ pub fn new(
         model_index: Item::极速传送带.model()[0],
         local_offset: [
             receiver.local_offset[0],
-            receiver.local_offset[1] + y_scale * ((GRID_A / 2.0) * (2.0 / 3.0)),
+            // receiver.local_offset[1] + y_scale * ((GRID_A / 2.0) * (2.0 / 3.0)),
+            y_scale.mul_add((GRID_A / 2.0) * (2.0 / 3.0), receiver.local_offset[1]),
             receiver.local_offset[2],
         ],
         ..Default::default()
@@ -51,7 +52,8 @@ pub fn new(
         model_index: Item::极速传送带.model()[0],
         local_offset: [
             receiver.local_offset[0],
-            receiver.local_offset[1] + y_scale * ((GRID_A / 2.0) * (1.0 / 3.0)),
+            // receiver.local_offset[1] + y_scale * ((GRID_A / 2.0) * (1.0 / 3.0)),
+            y_scale.mul_add((GRID_A / 2.0) * (1.0 / 3.0), receiver.local_offset[1]),
             receiver.local_offset[2],
         ],
         ..Default::default()
@@ -66,7 +68,8 @@ pub fn new(
         yaw2: sorter_yaw,
         local_offset: [
             receiver.local_offset[0],
-            receiver.local_offset[1] + y_scale * ((GRID_A / 2.0) - 0.25),
+            // receiver.local_offset[1] + y_scale * ((GRID_A / 2.0) - 0.25),
+            y_scale.mul_add((GRID_A / 2.0) - 0.25, receiver.local_offset[1]),
             receiver.local_offset[2],
         ],
         local_offset_2: belt_lens_from_sorter.local_offset,
@@ -88,7 +91,8 @@ pub fn new(
         model_index: Item::极速传送带.model()[0],
         local_offset: [
             receiver.local_offset[0],
-            receiver.local_offset[1] - y_scale * ((GRID_A / 2.0) * (1.0 / 3.0)),
+            // receiver.local_offset[1] - y_scale * ((GRID_A / 2.0) * (1.0 / 3.0)),
+            y_scale.mul_add((GRID_A / 2.0) * (1.0 / 3.0), receiver.local_offset[1]),
             receiver.local_offset[2],
         ],
         ..Default::default()
@@ -100,7 +104,8 @@ pub fn new(
         model_index: Item::极速传送带.model()[0],
         local_offset: [
             receiver.local_offset[0],
-            receiver.local_offset[1] - y_scale * ((GRID_A / 2.0) * (2.0 / 3.0)),
+            // receiver.local_offset[1] - y_scale * ((GRID_A / 2.0) * (2.0 / 3.0)),
+            y_scale.mul_add((GRID_A / 2.0) * (2.0 / 3.0), receiver.local_offset[1]),
             receiver.local_offset[2],
         ],
         ..Default::default()

@@ -15,7 +15,7 @@ use nom::{
     Finish, IResult,
 };
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, Eq, PartialEq)]
 pub struct BlueprintData<'a> {
     pub header: &'a str,
     pub content: &'a str,

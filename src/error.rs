@@ -32,7 +32,7 @@ pub enum DspbptkError<'a> {
     UnexpectParametersLength(<u16 as TryFrom<usize>>::Error),
 }
 
-#[derive(Error, Debug, PartialEq, Clone)]
+#[derive(Error, Debug, Eq, PartialEq, Clone)]
 pub enum DspbptkWarn {
     #[error("few unknown after blueprint: {0:?}")]
     FewUnknownAfterBlueprint(String),
