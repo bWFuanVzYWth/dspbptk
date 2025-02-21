@@ -98,12 +98,14 @@ pub fn local_offset_to_direction(local_offset: [f64; 3]) -> Vector3<f64> {
     let theta_x = (local_offset[0]) * ANGLE_SCALE;
     let theta_y = (local_offset[1]) * ANGLE_SCALE;
 
-    let z = theta_y.sin();
-    let radius = (1.0 - z * z).sqrt();
-
+    let (sin_theta_y, cos_theta_y) = theta_y.sin_cos();
     let (sin_theta_x, cos_theta_x) = theta_x.sin_cos();
 
-    Vector3::new(radius * cos_theta_x, radius * sin_theta_x, z).normalize()
+    Vector3::new(
+        cos_theta_y * cos_theta_x,
+        cos_theta_y * sin_theta_x,
+        sin_theta_y,
+    )
 }
 
 // 修复非有限值的情况
