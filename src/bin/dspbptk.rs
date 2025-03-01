@@ -64,6 +64,7 @@ fn process_middle_layer(
     let header_data_out = header_data_in;
     let mut content_data_out = content_data_in;
 
+    // TODO 改写成方法
     if rounding_local_offset {
         content_data_out.buildings.iter_mut().for_each(|building| {
             const ROUND_SCALE: f32 = 300.0;
