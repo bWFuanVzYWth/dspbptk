@@ -17,81 +17,77 @@ pub const HALF_EQUATORIAL_GRID: f64 = 500.0;
 /// 首先根据`item_id`给建筑分组，如果是传送带`(2001 <= item_id && item_id <= 2009)`则跨`item_id`进行拓扑排序(不稳定)，传送带放在建筑列表前面；\
 /// 如果是其它建筑则依次按照`item_id`、`model_index`、`recipe_id`、`area_index`、`local_offset`进行排序(稳定)，其它建筑放在建筑列表后面。\
 /// 注意传送带单独分组，并不与其它建筑保证`item_id`的顺序关系
+// 主函数职责：协调整个排序流程
 pub fn sort_buildings(buildings: &mut [building::BuildingData]) {
     let n = buildings.len();
     if n == 0 {
         return;
     }
 
-    // 1. 分组：传送带 & 非传送带
-    let mut belt_indices: Vec<usize> = Vec::new();
-    let mut non_belt_indices: Vec<usize> = Vec::new();
+    let (belt_indices, non_belt_indices) = split_belt_and_non_belt(buildings);
+    let mut belt_buildings = topological_sort_belt(buildings, &belt_indices);
+    let mut non_belt_buildings = stable_sort_non_belt(buildings, &non_belt_indices);
+    let mut new_order = combine_sorted_results(belt_buildings, non_belt_buildings);
+    buildings[..n].clone_from_slice(&new_order[..n]);
+}
 
-    buildings
-        .iter()
-        .enumerate()
-        .take(n)
-        .for_each(|(i, building)| {
-            if (2001..=2009).contains(&building.item_id) {
-                belt_indices.push(i);
-            } else {
-                non_belt_indices.push(i);
-            }
-        });
+fn split_belt_and_non_belt(buildings: &[building::BuildingData]) -> (Vec<usize>, Vec<usize>) {
+    let mut belt = Vec::new();
+    let mut non_belt = Vec::new();
 
-    // TODO 这里有两个clone，是否可以优化？
-    // 2. 对传送带组进行拓扑排序
-    let mut belt_buildings: Vec<building::BuildingData> =
-        belt_indices.iter().map(|&i| buildings[i].clone()).collect();
+    buildings.iter().enumerate().for_each(|(i, b)| {
+        if (2001..=2009).contains(&b.item_id) {
+            belt.push(i);
+        } else {
+            non_belt.push(i);
+        }
+    });
+    (belt, non_belt)
+}
 
-    sort_belt_buildings(&mut belt_buildings); // 拓扑排序
+fn topological_sort_belt(
+    buildings: &[building::BuildingData],
+    indices: &[usize],
+) -> Vec<building::BuildingData> {
+    let mut result: Vec<_> = indices.iter().map(|&i| buildings[i].clone()).collect();
+    sort_belt_buildings(&mut result); // 调用原有拓扑排序逻辑
+    result
+}
 
-    // 3. 构建排序后的索引映射
-    let mut new_order: Vec<building::BuildingData> = Vec::with_capacity(n);
+fn stable_sort_non_belt(
+    buildings: &[building::BuildingData],
+    indices: &[usize],
+) -> Vec<building::BuildingData> {
+    let mut result: Vec<_> = indices.iter().map(|&i| buildings[i].clone()).collect();
 
-    // 添加拓扑排序后的传送带
-    new_order.extend(belt_buildings);
-
-    // 对非传送带进行稳定排序（按原逻辑）
-    let mut non_belt_buildings: Vec<_> = non_belt_indices
-        .iter()
-        .map(|&i| buildings[i].clone())
-        .collect();
-
-    non_belt_buildings.sort_by(|a, b| {
+    result.sort_by(|a, b| {
         a.item_id
             .cmp(&b.item_id)
             .then(a.model_index.cmp(&b.model_index))
             .then(a.recipe_id.cmp(&b.recipe_id))
             .then(a.area_index.cmp(&b.area_index))
-            .then({
-                const KY: f64 = 256.0;
-                const KX: f64 = 1024.0;
-                let score = |x: f64, y: f64, z: f64| y.mul_add(KY, x).mul_add(KX, z);
-                let score_a = score(
-                    f64::from(a.local_offset_x),
-                    f64::from(a.local_offset_y),
-                    f64::from(a.local_offset_z),
-                );
-                let score_b = score(
-                    f64::from(b.local_offset_x),
-                    f64::from(b.local_offset_y),
-                    f64::from(b.local_offset_z),
-                );
-                score_a
-                    .partial_cmp(&score_b)
+            .then_with(|| {
+                let score = |x, y, z| {
+                    let (x, y, z) = (f64::from(x), f64::from(y), f64::from(z));
+                    y.mul_add(256.0, x).mul_add(1024.0, z)
+                };
+                score(a.local_offset_x, a.local_offset_y, a.local_offset_z)
+                    .partial_cmp(&score(b.local_offset_x, b.local_offset_y, b.local_offset_z))
                     .unwrap_or(std::cmp::Ordering::Equal)
             })
     });
+    result
+}
 
-    // 4. 合并结果（稳定排序）
-    new_order.extend(non_belt_buildings);
-
-    // 5. 蓝图内建筑顺序与实际生成顺序相反，因此需要翻转一次
-    new_order.reverse();
-
-    // 6. 重新填充 buildings
-    buildings[..n].clone_from_slice(&new_order[..n]);
+fn combine_sorted_results(
+    mut belt_buildings: Vec<building::BuildingData>,
+    mut non_belt_buildings: Vec<building::BuildingData>,
+) -> Vec<building::BuildingData> {
+    let mut result = Vec::with_capacity(belt_buildings.len() + non_belt_buildings.len());
+    result.append(&mut belt_buildings);
+    result.append(&mut non_belt_buildings);
+    result.reverse(); // 蓝图顺序反转
+    result
 }
 
 #[must_use]
