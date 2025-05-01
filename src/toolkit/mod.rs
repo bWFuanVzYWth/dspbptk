@@ -12,10 +12,11 @@ use crate::blueprint::content::building;
 pub const EARTH_R: f64 = 200.0;
 pub const HALF_EQUATORIAL_GRID: f64 = 500.0;
 
-/// 对建筑进行排序。  
-/// 首先根据item_id给建筑分组，如果是传送带(2001<=item_id<=2009)则跨item_id进行拓扑排序(不稳定)，传送带放在建筑列表前面；
-/// 如果是其它建筑则依次按照item_id、model_index、recipe_id、area_index、local_offset进行排序(稳定)，其它建筑放在建筑列表后面。  
-/// 注意传送带单独分组，并不与其它建筑保证item_id的顺序关系
+/// 对建筑进行排序。
+///
+/// 首先根据`item_id`给建筑分组，如果是传送带`(2001 <= item_id && item_id <= 2009)`则跨`item_id`进行拓扑排序(不稳定)，传送带放在建筑列表前面；\
+/// 如果是其它建筑则依次按照`item_id`、`model_index`、`recipe_id`、`area_index`、`local_offset`进行排序(稳定)，其它建筑放在建筑列表后面。\
+/// 注意传送带单独分组，并不与其它建筑保证`item_id`的顺序关系
 pub fn sort_buildings(buildings: &mut [building::BuildingData]) {
     let n = buildings.len();
     if n == 0 {
@@ -26,26 +27,30 @@ pub fn sort_buildings(buildings: &mut [building::BuildingData]) {
     let mut belt_indices: Vec<usize> = Vec::new();
     let mut non_belt_indices: Vec<usize> = Vec::new();
 
-    for i in 0..n {
-        if (2001..=2009).contains(&buildings[i].item_id) {
-            belt_indices.push(i);
-        } else {
-            non_belt_indices.push(i);
-        }
-    }
+    buildings
+        .iter()
+        .enumerate()
+        .take(n)
+        .for_each(|(i, building)| {
+            if (2001..=2009).contains(&building.item_id) {
+                belt_indices.push(i);
+            } else {
+                non_belt_indices.push(i);
+            }
+        });
 
     // TODO 这里有两个clone，是否可以优化？
     // 2. 对传送带组进行拓扑排序
     let mut belt_buildings: Vec<building::BuildingData> =
         belt_indices.iter().map(|&i| buildings[i].clone()).collect();
 
-    let _ = sort_belt_buildings(&mut belt_buildings); // 拓扑排序
+    sort_belt_buildings(&mut belt_buildings); // 拓扑排序
 
     // 3. 构建排序后的索引映射
     let mut new_order: Vec<building::BuildingData> = Vec::with_capacity(n);
 
     // 添加拓扑排序后的传送带
-    new_order.extend(belt_buildings.into_iter());
+    new_order.extend(belt_buildings);
 
     // 对非传送带进行稳定排序（按原逻辑）
     let mut non_belt_buildings: Vec<_> = non_belt_indices
@@ -80,15 +85,13 @@ pub fn sort_buildings(buildings: &mut [building::BuildingData]) {
     });
 
     // 4. 合并结果（稳定排序）
-    new_order.extend(non_belt_buildings.into_iter());
+    new_order.extend(non_belt_buildings);
 
     // 5. 蓝图内建筑顺序与实际生成顺序相反，因此需要翻转一次
     new_order.reverse();
 
     // 6. 重新填充 buildings
-    for i in 0..n {
-        buildings[i] = new_order[i].clone();
-    }
+    buildings[..n].clone_from_slice(&new_order[..n]);
 }
 
 #[must_use]
@@ -195,15 +198,15 @@ pub fn direction_to_local_offset(direction: &Vector3<f64>, z: f64) -> [f64; 3] {
     [x, y, z]
 }
 
-/// TODO 性能优化
-/// 根据传送带连接关系尝试进行拓扑排序。假定所有的建筑都是传送带。  
-/// 所有传送带可能形成非连通图，对其中的每个连通子图尝试进行拓扑排序，非连通子图的顺序未定义。  
-/// 返回成功排序的子图的数量。  
+/// 根据传送带连接关系尝试进行拓扑排序。假定所有的建筑都是传送带。
 ///
-/// # 传送带连接格式
-/// 传送带由节点构成，每个节点最多从三个其它节点输入，并输出到最多一个其它节点，可以成环。  
-/// 每个节点通过temp_output_obj_idx来表示输出的节点，不设置输入节点  
+/// 所有传送带可能形成非连通图，对其中的每个连通子图尝试进行拓扑排序，非连通子图的顺序未定义。\
+/// 返回成功排序的子图的数量。\
+/// 传送带由节点构成，每个节点最多从三个其它节点输入，并输出到最多一个其它节点，可以成环。\
+/// 每个节点通过`temp_output_obj_idx`来表示输出的节点，不设置输入节点。
 pub fn sort_belt_buildings(buildings: &mut [building::BuildingData]) {
+    // TODO 性能优化
+
     // let (n, adj, in_degree) = match build_graph(buildings) {
     //     Some(value) => value,
     //     None => return ;
@@ -245,7 +248,7 @@ pub fn sort_belt_buildings(buildings: &mut [building::BuildingData]) {
                 }
 
                 // 如果排序后的节点数等于当前连通图的节点数，说明排序成功
-                if sorted_nodes.len() > 0 {
+                if !sorted_nodes.is_empty() {
                     result.extend(sorted_nodes);
                 }
             }
@@ -261,19 +264,14 @@ pub fn sort_belt_buildings(buildings: &mut [building::BuildingData]) {
             temp.push(buildings[idx].clone());
         }
 
-        for i in 0..n {
-            buildings[i] = temp[i].clone();
-        }
-    } else {
-        return;
+        buildings[..n].clone_from_slice(&temp[..n]);
     }
 }
 
-/// 分析传送带连接关系，构建传送带图。  
+/// 分析传送带连接关系，构建传送带图。
+///
 /// 节点的度计算仅考虑传送带节点，不考虑其他建筑。  
-fn build_graph(
-    buildings: &mut [building::BuildingData],
-) -> Option<(usize, Vec<Vec<usize>>, Vec<i32>)> {
+fn build_graph(buildings: &[building::BuildingData]) -> Option<(usize, Vec<Vec<usize>>, Vec<i32>)> {
     let n = buildings.len();
     if n == 0 {
         return None;
