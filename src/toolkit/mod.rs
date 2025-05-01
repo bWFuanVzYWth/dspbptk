@@ -221,8 +221,8 @@ pub fn topological_sort_belt(buildings: &mut [building::BuildingData]) {
         let mut result = Vec::with_capacity(n);
 
         // 初始化队列：所有入度为0的节点
-        for i in 0..n {
-            if in_degree[i] == 0 {
+        for (i, &degree) in in_degree.iter().enumerate() {
+            if degree == 0 {
                 queue.push_back(i);
             }
         }
