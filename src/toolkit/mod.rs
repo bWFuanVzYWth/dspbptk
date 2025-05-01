@@ -11,8 +11,48 @@ use crate::blueprint::content::building;
 pub const EARTH_R: f64 = 200.0;
 pub const HALF_EQUATORIAL_GRID: f64 = 500.0;
 
+/// 对建筑进行排序。  
+/// 首先根据item_id给建筑分组，如果是传送带(2001<=item_id<=2009)则跨item_id进行拓扑排序(不稳定)，传送带放在建筑列表前面；
+/// 如果是其它建筑则依次按照item_id、model_index、recipe_id、area_index、local_offset进行排序(稳定)，其它建筑放在建筑列表后面。  
+/// 注意传送带单独分组，并不与其它建筑保证item_id的顺序关系
 pub fn sort_buildings(buildings: &mut [building::BuildingData]) {
-    buildings.sort_by(|a, b| {
+    let n = buildings.len();
+    if n == 0 {
+        return;
+    }
+
+    // 1. 分组：传送带 & 非传送带
+    let mut belt_indices: Vec<usize> = Vec::new();
+    let mut non_belt_indices: Vec<usize> = Vec::new();
+
+    for i in 0..n {
+        if (2001..=2009).contains(&buildings[i].item_id) {
+            belt_indices.push(i);
+        } else {
+            non_belt_indices.push(i);
+        }
+    }
+
+    // TODO 这里有两个clone，是否可以优化？
+    // 2. 对传送带组进行拓扑排序
+    let mut belt_buildings: Vec<building::BuildingData> =
+        belt_indices.iter().map(|&i| buildings[i].clone()).collect();
+
+    let _ = sort_belt_buildings(&mut belt_buildings); // 拓扑排序
+
+    // 3. 构建排序后的索引映射
+    let mut new_order: Vec<building::BuildingData> = Vec::with_capacity(n);
+
+    // 添加拓扑排序后的传送带
+    new_order.extend(belt_buildings.into_iter());
+
+    // 对非传送带进行稳定排序（按原逻辑）
+    let mut non_belt_buildings: Vec<_> = non_belt_indices
+        .iter()
+        .map(|&i| buildings[i].clone())
+        .collect();
+
+    non_belt_buildings.sort_by(|a, b| {
         a.item_id
             .cmp(&b.item_id)
             .then(a.model_index.cmp(&b.model_index))
@@ -21,7 +61,6 @@ pub fn sort_buildings(buildings: &mut [building::BuildingData]) {
             .then({
                 const KY: f64 = 256.0;
                 const KX: f64 = 1024.0;
-                // let score = |x: f64, y: f64, z: f64| (y * KY + x) * KX + z;
                 let score = |x: f64, y: f64, z: f64| y.mul_add(KY, x).mul_add(KX, z);
                 let score_a = score(
                     f64::from(a.local_offset_x),
@@ -38,6 +77,14 @@ pub fn sort_buildings(buildings: &mut [building::BuildingData]) {
                     .unwrap_or(std::cmp::Ordering::Equal)
             })
     });
+
+    // 4. 合并结果（稳定排序）
+    new_order.extend(non_belt_buildings.into_iter());
+
+    // 5. 重新填充 buildings
+    for i in 0..n {
+        buildings[i] = new_order[i].clone();
+    }
 }
 
 #[must_use]
@@ -154,30 +201,10 @@ use std::collections::{HashMap, VecDeque};
 /// 传送带由节点构成，每个节点最多从三个其它节点输入，并输出到最多一个其它节点，可以成环。  
 /// 每个节点通过temp_output_obj_idx来表示输出的节点，不设置输入节点  
 pub fn sort_belt_buildings(buildings: &mut [building::BuildingData]) -> usize {
-    let n = buildings.len();
-    if n == 0 {
-        return 0;
-    }
-
-    // 构建索引映射：原始 index -> 连续索引
-    let index_map: HashMap<i32, usize> = buildings
-        .iter()
-        .enumerate()
-        .map(|(i, b)| (b.index, i))
-        .collect();
-
-    // 构建邻接表和入度表
-    let mut adj = vec![vec![]; n];
-    let mut in_degree = vec![0; n];
-
-    for (i, building) in buildings.iter().enumerate() {
-        if building.temp_output_obj_idx != building::INDEX_NULL {
-            if let Some(&j) = index_map.get(&building.temp_output_obj_idx) {
-                adj[i].push(j);
-                in_degree[j] += 1;
-            }
-        }
-    }
+    let (n, adj, in_degree) = match build_graph(buildings) {
+        Ok(value) => value,
+        Err(value) => return value,
+    };
 
     let mut visited = vec![false; n];
     let mut result = Vec::new();
@@ -237,4 +264,31 @@ pub fn sort_belt_buildings(buildings: &mut [building::BuildingData]) -> usize {
     }
 
     success_count
+}
+
+/// 分析传送带连接关系，构建传送带图。  
+/// 节点的度计算仅考虑传送带节点，不考虑其他建筑。  
+fn build_graph(
+    buildings: &mut [building::BuildingData],
+) -> Result<(usize, Vec<Vec<usize>>, Vec<i32>), usize> {
+    let n = buildings.len();
+    if n == 0 {
+        return Err(0);
+    }
+    let index_map: HashMap<i32, usize> = buildings
+        .iter()
+        .enumerate()
+        .map(|(i, b)| (b.index, i))
+        .collect();
+    let mut adj = vec![vec![]; n];
+    let mut in_degree = vec![0; n];
+    for (i, building) in buildings.iter().enumerate() {
+        if building.temp_output_obj_idx != building::INDEX_NULL {
+            if let Some(&j) = index_map.get(&building.temp_output_obj_idx) {
+                adj[i].push(j);
+                in_degree[j] += 1;
+            }
+        }
+    }
+    Ok((n, adj, in_degree))
 }
