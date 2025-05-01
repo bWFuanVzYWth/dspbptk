@@ -219,28 +219,53 @@ pub fn topological_sort_belt(buildings: &mut [building::BuildingData]) {
     if let Some((n, adj, mut in_degree)) = build_graph(buildings) {
         let mut queue: VecDeque<usize> = VecDeque::new();
         let mut result = Vec::with_capacity(n);
+        let mut visited = vec![false; n]; // 新增访问标记数组
 
         // 初始化队列：所有入度为0的节点
         for (i, &degree) in in_degree.iter().enumerate() {
             if degree == 0 {
                 queue.push_back(i);
+                visited[i] = true;
             }
         }
 
-        // 处理队列
-        while let Some(node) = queue.pop_front() {
-            result.push(node);
-            for &next in &adj[node] {
-                in_degree[next] -= 1;
-                if in_degree[next] == 0 {
-                    queue.push_back(next);
+        loop {
+            // 处理当前队列中的节点
+            while let Some(node) = queue.pop_front() {
+                result.push(node);
+                for &next in &adj[node] {
+                    // 仅处理未访问的节点
+                    if !visited[next] {
+                        in_degree[next] -= 1;
+                        if in_degree[next] == 0 {
+                            queue.push_back(next);
+                            visited[next] = true;
+                        }
+                    }
                 }
             }
-        }
 
-        // 若排序结果为空，直接返回
-        if result.is_empty() {
-            return;
+            // 检查是否处理所有节点
+            if result.len() == n {
+                break;
+            }
+
+            // 存在环，寻找未处理的节点并强制处理
+            let mut has_cycle = false;
+            for i in 0..n {
+                if !visited[i] {
+                    // 强行将该节点入度设为零，并加入队列
+                    in_degree[i] = 0;
+                    queue.push_back(i);
+                    visited[i] = true;
+                    has_cycle = true;
+                    break;
+                }
+            }
+
+            if !has_cycle {
+                break;
+            }
         }
 
         // 重新排列建筑数组
@@ -255,7 +280,7 @@ pub fn topological_sort_belt(buildings: &mut [building::BuildingData]) {
 
 /// 分析传送带连接关系，构建传送带图。
 ///
-/// 节点的度计算仅考虑传送带节点，不考虑其他建筑。  
+/// 节点的度计算仅考虑传送带节点，不考虑其他建筑。
 fn build_graph(buildings: &[building::BuildingData]) -> Option<(usize, Vec<Vec<usize>>, Vec<i32>)> {
     let n = buildings.len();
     if n == 0 {
