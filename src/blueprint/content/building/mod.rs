@@ -2,7 +2,7 @@ mod building_0;
 mod building_neg100;
 mod building_neg101;
 
-use nom::{branch::alt, IResult};
+use nom::{IResult, branch::alt};
 
 use building_0::deserialization_version_0;
 use building_neg100::deserialization_version_neg100;

@@ -219,13 +219,30 @@ impl MD5 {
 #[must_use]
 pub fn compute_md5f_string(header_content: &str) -> String {
     let md5f = MD5::new(Algo::MD5F).process(header_content.as_bytes());
-    format!("{:02X}{:02X}{:02X}{:02X}{:02X}{:02X}{:02X}{:02X}{:02X}{:02X}{:02X}{:02X}{:02X}{:02X}{:02X}{:02X}",
-        md5f[0], md5f[1], md5f[2], md5f[3], md5f[4], md5f[5], md5f[6], md5f[7], md5f[8], md5f[9], md5f[10], md5f[11], md5f[12], md5f[13], md5f[14], md5f[15])
+    format!(
+        "{:02X}{:02X}{:02X}{:02X}{:02X}{:02X}{:02X}{:02X}{:02X}{:02X}{:02X}{:02X}{:02X}{:02X}{:02X}{:02X}",
+        md5f[0],
+        md5f[1],
+        md5f[2],
+        md5f[3],
+        md5f[4],
+        md5f[5],
+        md5f[6],
+        md5f[7],
+        md5f[8],
+        md5f[9],
+        md5f[10],
+        md5f[11],
+        md5f[12],
+        md5f[13],
+        md5f[14],
+        md5f[15]
+    )
 }
 
 #[cfg(test)]
 mod test {
-    use super::{Algo, MD5Hash, MD5};
+    use super::{Algo, MD5, MD5Hash};
 
     #[test]
     fn test_md5_empty() {

@@ -10,9 +10,9 @@ use crate::error::{
 };
 
 use nom::{
+    Finish, IResult,
     bytes::complete::{tag, take, take_till},
     sequence::preceded,
-    Finish, IResult,
 };
 
 #[derive(Debug, Clone, Eq, PartialEq)]

@@ -1,6 +1,6 @@
 use nom::{
-    number::complete::{le_i16, le_i8},
     IResult,
+    number::complete::{le_i8, le_i16},
 };
 
 pub const INDEX_NULL: i8 = -1;

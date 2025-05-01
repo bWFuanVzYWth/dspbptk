@@ -2,6 +2,7 @@ pub mod belt;
 pub mod tesselation;
 pub mod unit_conversion;
 
+use std::collections::{HashMap, VecDeque};
 use std::f64::consts::PI;
 
 use nalgebra::Vector3;
@@ -81,7 +82,10 @@ pub fn sort_buildings(buildings: &mut [building::BuildingData]) {
     // 4. 合并结果（稳定排序）
     new_order.extend(non_belt_buildings.into_iter());
 
-    // 5. 重新填充 buildings
+    // 5. 蓝图内建筑顺序与实际生成顺序相反，因此需要翻转一次
+    new_order.reverse();
+
+    // 6. 重新填充 buildings
     for i in 0..n {
         buildings[i] = new_order[i].clone();
     }
@@ -191,8 +195,7 @@ pub fn direction_to_local_offset(direction: &Vector3<f64>, z: f64) -> [f64; 3] {
     [x, y, z]
 }
 
-use std::collections::{HashMap, VecDeque};
-
+/// TODO 性能优化
 /// 根据传送带连接关系尝试进行拓扑排序。假定所有的建筑都是传送带。  
 /// 所有传送带可能形成非连通图，对其中的每个连通子图尝试进行拓扑排序，非连通子图的顺序未定义。  
 /// 返回成功排序的子图的数量。  

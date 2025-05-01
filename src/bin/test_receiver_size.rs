@@ -1,6 +1,6 @@
 use dspbptk::{
     blueprint::{
-        content::{building::DspbptkBuildingData, ContentData},
+        content::{ContentData, building::DspbptkBuildingData},
         header::HeaderData,
     },
     error::DspbptkError::{self},

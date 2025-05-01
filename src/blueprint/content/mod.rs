@@ -9,9 +9,9 @@ use crate::error::{
 };
 
 use nom::{
-    multi::count,
-    number::complete::{le_i32, le_u32, le_u8},
     IResult,
+    multi::count,
+    number::complete::{le_i32, le_u8, le_u32},
 };
 
 #[derive(Debug, Clone)]

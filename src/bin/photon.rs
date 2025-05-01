@@ -3,7 +3,7 @@ use uuid::Uuid;
 
 use dspbptk::{
     blueprint::{
-        content::{building::DspbptkBuildingData, ContentData},
+        content::{ContentData, building::DspbptkBuildingData},
         header::HeaderData,
     },
     error::DspbptkError::{self, UnexpectBuildingsCount},
@@ -13,7 +13,7 @@ use dspbptk::{
     toolkit::{
         belt::connect_belts,
         fix_dspbptk_buildings_index, local_offset_to_direction,
-        tesselation::{calculate_next_y, Row},
+        tesselation::{Row, calculate_next_y},
         unit_conversion::{arc_from_grid, grid_from_arc},
     },
 };

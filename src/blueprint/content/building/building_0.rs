@@ -1,7 +1,7 @@
 use nom::{
-    multi::count,
-    number::complete::{le_f32, le_i16, le_i32, le_i8, le_u16},
     IResult,
+    multi::count,
+    number::complete::{le_f32, le_i8, le_i16, le_i32, le_u16},
 };
 
 use super::BuildingData;

@@ -3,7 +3,7 @@ use std::path::{Path, PathBuf};
 use crate::{
     blueprint::{
         self,
-        content::{self, string_from_data, ContentData},
+        content::{self, ContentData, string_from_data},
         header::{self, HeaderData},
     },
     error::{

@@ -1,7 +1,7 @@
 use nom::{
+    Finish, IResult,
     bytes::complete::{tag, take_till},
     sequence::preceded,
-    Finish, IResult,
 };
 
 use crate::error::{
