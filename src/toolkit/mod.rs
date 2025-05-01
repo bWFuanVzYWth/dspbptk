@@ -216,58 +216,37 @@ pub fn direction_to_local_offset(direction: &Vector3<f64>, z: f64) -> [f64; 3] {
 /// 每个节点通过`temp_output_obj_idx`来表示输出的节点，不设置输入节点。\
 /// 所有传送带可能形成非连通图，对其中的每个连通子图尝试进行拓扑排序，非连通子图的顺序未定义。
 pub fn topological_sort_belt(buildings: &mut [building::BuildingData]) {
-    // TODO 性能优化
+    if let Some((n, adj, mut in_degree)) = build_graph(buildings) {
+        let mut queue: VecDeque<usize> = VecDeque::new();
+        let mut result = Vec::with_capacity(n);
 
-    if let Some((n, adj, in_degree)) = build_graph(buildings) {
-        let mut visited = vec![false; n];
-        let mut result = Vec::new();
-
+        // 初始化队列：所有入度为0的节点
         for i in 0..n {
-            if !visited[i] {
-                // Kahn 算法进行拓扑排序
-                let mut queue: VecDeque<usize> = VecDeque::new();
-                let mut current_in_degree = in_degree.clone();
+            if in_degree[i] == 0 {
+                queue.push_back(i);
+            }
+        }
 
-                for j in 0..n {
-                    if visited[j] {
-                        continue;
-                    }
-                    if current_in_degree[j] == 0 {
-                        queue.push_back(j);
-                    }
-                }
-
-                let mut sorted_nodes = Vec::new();
-                while let Some(node) = queue.pop_front() {
-                    if visited[node] {
-                        continue;
-                    }
-                    visited[node] = true;
-                    sorted_nodes.push(node);
-
-                    for &next in &adj[node] {
-                        current_in_degree[next] -= 1;
-                        if current_in_degree[next] == 0 {
-                            queue.push_back(next);
-                        }
-                    }
-                }
-
-                // 如果排序后的节点数等于当前连通图的节点数，说明排序成功
-                if !sorted_nodes.is_empty() {
-                    result.extend(sorted_nodes);
+        // 处理队列
+        while let Some(node) = queue.pop_front() {
+            result.push(node);
+            for &next in &adj[node] {
+                in_degree[next] -= 1;
+                if in_degree[next] == 0 {
+                    queue.push_back(next);
                 }
             }
         }
 
+        // 若排序结果为空，直接返回
         if result.is_empty() {
             return;
         }
 
-        // 将排序后的索引映射回原始数组
+        // 重新排列建筑数组
         let mut temp = Vec::with_capacity(n);
         for &idx in &result {
-            temp.push(buildings[idx].clone());
+            temp.push(std::mem::take(&mut buildings[idx]));
         }
 
         buildings[..n].clone_from_slice(&temp[..n]);
