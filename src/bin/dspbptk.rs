@@ -11,7 +11,6 @@ use walkdir::WalkDir;
 use dspbptk::blueprint::content::ContentData;
 use dspbptk::blueprint::header::HeaderData;
 use dspbptk::io::{self, FileType};
-
 fn collect_files(path_in: &Path) -> Vec<PathBuf> {
     let mut files = Vec::new();
     for entry in WalkDir::new(path_in)
@@ -60,7 +59,6 @@ fn process_middle_layer(
     rounding_local_offset: bool,
 ) -> (HeaderData, ContentData) {
     use dspbptk::toolkit::{fix_buildings_index, sort_buildings};
-
     let header_data_out = header_data_in;
     let mut content_data_out = content_data_in;
 
