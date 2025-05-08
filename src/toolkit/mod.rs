@@ -7,6 +7,8 @@ use std::f64::consts::PI;
 
 use nalgebra::Vector3;
 
+use petgraph;
+
 use crate::blueprint::content::building;
 
 pub const EARTH_R: f64 = 200.0;
@@ -210,96 +212,18 @@ pub fn direction_to_local_offset(direction: &Vector3<f64>, z: f64) -> [f64; 3] {
     [x, y, z]
 }
 
-/// 根据传送带连接关系尝试进行拓扑排序。假定所有的建筑都是传送带。
+/// 根据传送带连接关系，进行广义的拓扑排序。假定所有的建筑都是传送带。
 ///
-/// 传送带由节点构成，每个节点最多从三个其它节点输入，并输出到最多一个其它节点，可以成环。\
-/// 每个节点通过`temp_output_obj_idx`来表示输出的节点，不设置输入节点。\
-/// 所有传送带可能形成非连通图，对其中的每个连通子图尝试进行拓扑排序，非连通子图的顺序未定义。
+/// 传送带节点通过`temp_output_obj_idx`记录输出连接（可为`INDEX_NULL`），输入连接不记录，永远都是`INDEX_NULL`。
+/// 每个节点最多有三个输入和一个输出，支持环形连接。
+///
+/// 实现步骤：
+/// 1. 构建以`temp_output_obj_idx`为边的有向图
+/// 2. 将每个SCC收缩为单个节点
+/// 3. 对生成的DAG进行拓扑排序，然后把收缩后的节点原地展开为SCC，得到最终结果
+///
+/// 在保持拓扑序的前提下，应尽量优化内存布局，使线性链节点连续存储
 pub fn topological_sort_belt(buildings: &mut [building::BuildingData]) {
-    if let Some((n, adj, mut in_degree)) = build_graph(buildings) {
-        let mut queue: VecDeque<usize> = VecDeque::new();
-        let mut result = Vec::with_capacity(n);
-        let mut visited = vec![false; n]; // 新增访问标记数组
 
-        // 初始化队列：所有入度为0的节点
-        for (i, &degree) in in_degree.iter().enumerate() {
-            if degree == 0 {
-                queue.push_back(i);
-                visited[i] = true;
-            }
-        }
-
-        loop {
-            // 处理当前队列中的节点
-            while let Some(node) = queue.pop_front() {
-                result.push(node);
-                for &next in &adj[node] {
-                    // 仅处理未访问的节点
-                    if !visited[next] {
-                        in_degree[next] -= 1;
-                        if in_degree[next] == 0 {
-                            queue.push_back(next);
-                            visited[next] = true;
-                        }
-                    }
-                }
-            }
-
-            // 检查是否处理所有节点
-            if result.len() == n {
-                break;
-            }
-
-            // 存在环，寻找未处理的节点并强制处理
-            let mut has_cycle = false;
-            for i in 0..n {
-                if !visited[i] {
-                    // 强行将该节点入度设为零，并加入队列
-                    in_degree[i] = 0;
-                    queue.push_back(i);
-                    visited[i] = true;
-                    has_cycle = true;
-                    break;
-                }
-            }
-
-            if !has_cycle {
-                break;
-            }
-        }
-
-        // 重新排列建筑数组
-        let mut temp = Vec::with_capacity(n);
-        for &idx in &result {
-            temp.push(std::mem::take(&mut buildings[idx]));
-        }
-
-        buildings[..n].clone_from_slice(&temp[..n]);
-    }
 }
 
-/// 分析传送带连接关系，构建传送带图。
-///
-/// 节点的度计算仅考虑传送带节点，不考虑其他建筑。
-fn build_graph(buildings: &[building::BuildingData]) -> Option<(usize, Vec<Vec<usize>>, Vec<i32>)> {
-    let n = buildings.len();
-    if n == 0 {
-        return None;
-    }
-    let index_map: HashMap<i32, usize> = buildings
-        .iter()
-        .enumerate()
-        .map(|(i, b)| (b.index, i))
-        .collect();
-    let mut adj = vec![vec![]; n];
-    let mut in_degree = vec![0; n];
-    for (i, building) in buildings.iter().enumerate() {
-        if building.temp_output_obj_idx != building::INDEX_NULL {
-            if let Some(&j) = index_map.get(&building.temp_output_obj_idx) {
-                adj[i].push(j);
-                in_degree[j] += 1;
-            }
-        }
-    }
-    Some((n, adj, in_degree))
-}

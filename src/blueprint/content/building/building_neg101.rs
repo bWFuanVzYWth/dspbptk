@@ -14,6 +14,9 @@ const BELT_HIGH: i16 = 2009;
 const SORTER_LOW: i16 = 2011;
 const SORTER_HIGH: i16 = 2019;
 
+// 避免clippy警告
+pub type F32x12 = (f32, f32, f32, f32, f32, f32, f32, f32, f32, f32, f32, f32);
+
 #[allow(clippy::similar_names)]
 pub fn deserialization_version_neg101(bin: &[u8]) -> IResult<&[u8], BuildingData> {
     let unknown = bin;
@@ -41,84 +44,9 @@ pub fn deserialization_version_neg101(bin: &[u8]) -> IResult<&[u8], BuildingData
             pitch2,
         ),
     ) = match item_id {
-        SORTER_LOW..=SORTER_HIGH => {
-            let (unknown, local_offset_x) = le_f32(unknown)?;
-            let (unknown, local_offset_y) = le_f32(unknown)?;
-            let (unknown, local_offset_z) = le_f32(unknown)?;
-            let (unknown, yaw) = le_f32(unknown)?;
-            let (unknown, tilt) = le_f32(unknown)?;
-            let (unknown, pitch) = le_f32(unknown)?;
-            let (unknown, local_offset_x2) = le_f32(unknown)?;
-            let (unknown, local_offset_y2) = le_f32(unknown)?;
-            let (unknown, local_offset_z2) = le_f32(unknown)?;
-            let (unknown, yaw2) = le_f32(unknown)?;
-            let (unknown, tilt2) = le_f32(unknown)?;
-            let (unknown, pitch2) = le_f32(unknown)?;
-            (
-                unknown,
-                (
-                    local_offset_x,
-                    local_offset_y,
-                    local_offset_z,
-                    yaw,
-                    tilt,
-                    pitch,
-                    local_offset_x2,
-                    local_offset_y2,
-                    local_offset_z2,
-                    yaw2,
-                    tilt2,
-                    pitch2,
-                ),
-            )
-        }
-        BELT_LOW..=BELT_HIGH => {
-            let (unknown, local_offset_x) = le_f32(unknown)?;
-            let (unknown, local_offset_y) = le_f32(unknown)?;
-            let (unknown, local_offset_z) = le_f32(unknown)?;
-            let (unknown, yaw) = le_f32(unknown)?;
-            let (unknown, tilt) = le_f32(unknown)?;
-            (
-                unknown,
-                (
-                    local_offset_x,
-                    local_offset_y,
-                    local_offset_z,
-                    yaw,
-                    tilt,
-                    0.0,
-                    0.0,
-                    yaw,
-                    tilt,
-                    0.0,
-                    0.0,
-                    0.0,
-                ),
-            )
-        }
-        _ => {
-            let (unknown, local_offset_x) = le_f32(unknown)?;
-            let (unknown, local_offset_y) = le_f32(unknown)?;
-            let (unknown, local_offset_z) = le_f32(unknown)?;
-            let (unknown, yaw) = le_f32(unknown)?;
-            (
-                unknown,
-                (
-                    local_offset_x,
-                    local_offset_y,
-                    local_offset_z,
-                    yaw,
-                    0.0,
-                    0.0,
-                    0.0,
-                    0.0,
-                    0.0,
-                    yaw,
-                    0.0,
-                    0.0,
-                ),
-            )
-        }
+        SORTER_LOW..=SORTER_HIGH => parse_sorter(unknown)?,
+        BELT_LOW..=BELT_HIGH => parse_belt(unknown)?,
+        _ => parse_default(unknown)?,
     };
 
     let (unknown, temp_output_obj_idx) = le_i32(unknown)?;
@@ -220,4 +148,89 @@ pub fn serialization_version_neg101(bin: &mut Vec<u8>, data: &BuildingData) {
     data.parameters
         .iter()
         .for_each(|x| bin.extend_from_slice(&x.to_le_bytes()));
+}
+
+#[allow(clippy::similar_names)]
+fn parse_sorter(input: &[u8]) -> IResult<&[u8], F32x12> {
+    let (input, local_offset_x) = le_f32(input)?;
+    let (input, local_offset_y) = le_f32(input)?;
+    let (input, local_offset_z) = le_f32(input)?;
+    let (input, yaw) = le_f32(input)?;
+    let (input, tilt) = le_f32(input)?;
+    let (input, pitch) = le_f32(input)?;
+    let (input, local_offset_x2) = le_f32(input)?;
+    let (input, local_offset_y2) = le_f32(input)?;
+    let (input, local_offset_z2) = le_f32(input)?;
+    let (input, yaw2) = le_f32(input)?;
+    let (input, tilt2) = le_f32(input)?;
+    let (input, pitch2) = le_f32(input)?;
+
+    Ok((
+        input,
+        (
+            local_offset_x,
+            local_offset_y,
+            local_offset_z,
+            yaw,
+            tilt,
+            pitch,
+            local_offset_x2,
+            local_offset_y2,
+            local_offset_z2,
+            yaw2,
+            tilt2,
+            pitch2,
+        ),
+    ))
+}
+
+fn parse_belt(input: &[u8]) -> IResult<&[u8], F32x12> {
+    let (input, local_offset_x) = le_f32(input)?;
+    let (input, local_offset_y) = le_f32(input)?;
+    let (input, local_offset_z) = le_f32(input)?;
+    let (input, yaw) = le_f32(input)?;
+    let (input, tilt) = le_f32(input)?;
+
+    Ok((
+        input,
+        (
+            local_offset_x,
+            local_offset_y,
+            local_offset_z,
+            yaw,
+            tilt,
+            0.0,
+            0.0,
+            yaw,
+            tilt,
+            0.0,
+            0.0,
+            0.0,
+        ),
+    ))
+}
+
+fn parse_default(input: &[u8]) -> IResult<&[u8], F32x12> {
+    let (input, local_offset_x) = le_f32(input)?;
+    let (input, local_offset_y) = le_f32(input)?;
+    let (input, local_offset_z) = le_f32(input)?;
+    let (input, yaw) = le_f32(input)?;
+
+    Ok((
+        input,
+        (
+            local_offset_x,
+            local_offset_y,
+            local_offset_z,
+            yaw,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            yaw,
+            0.0,
+            0.0,
+        ),
+    ))
 }
