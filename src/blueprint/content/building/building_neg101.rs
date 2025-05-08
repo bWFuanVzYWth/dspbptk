@@ -14,7 +14,7 @@ const BELT_HIGH: i16 = 2009;
 const SORTER_LOW: i16 = 2011;
 const SORTER_HIGH: i16 = 2019;
 
-// 避免clippy警告
+// 定义过于复杂的类型，避免使用时不小心写错
 pub type F32x12 = (f32, f32, f32, f32, f32, f32, f32, f32, f32, f32, f32, f32);
 
 #[allow(clippy::similar_names)]

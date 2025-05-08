@@ -91,10 +91,10 @@ impl BuildingData {
     /// 将当前`Building`对象转换为`DspbptkBuildingData`结构体
     ///
     /// # Errors
-    /// 失败时返回包含`DspbptkError`错误的Err结果
+    /// 失败时返回`NonStandardIndex`错误
     pub fn to_dspbptk_building_data(&self) -> Result<DspbptkBuildingData, DspbptkError> {
         Ok(DspbptkBuildingData {
-            // 转换主索引为UUID，可能返回错误（如索引越界）
+            // 转换主索引为UUID，可能返回NonStandardIndex错误
             uuid: uuid_from_index(self.index)?,
             area_index: self.area_index,
             // 转换局部偏移量为f64类型数组
@@ -119,10 +119,9 @@ impl BuildingData {
             pitch2: f64::from(self.pitch2),
             item_id: self.item_id,
             model_index: self.model_index,
-            // 转换临时输出/输入对象索引为UUID，可能返回错误
+            // 转换输出/输入对象索引为UUID，可能返回NonStandardIndex错误
             temp_output_obj_idx: uuid_from_index(self.temp_output_obj_idx)?,
             temp_input_obj_idx: uuid_from_index(self.temp_input_obj_idx)?,
-            // 槽位连接信息直接复制
             output_to_slot: self.output_to_slot,
             input_from_slot: self.input_from_slot,
             output_from_slot: self.output_from_slot,
@@ -131,18 +130,17 @@ impl BuildingData {
             input_offset: self.input_offset,
             recipe_id: self.recipe_id,
             filter_id: self.filter_id,
-            // 克隆参数集合以保证数据独立性
             parameters: self.parameters.clone(),
         })
     }
 }
 
 impl DspbptkBuildingData {
-    #[allow(clippy::cast_possible_truncation)]
     ///  将`DspbptkBuildingData`转换为`BuildingData`
     ///
     /// # Errors
-    /// 失败时返回包含`DspbptkError`错误的Err结果
+    /// 失败时返回`NonStandardUuid`或者`UnexpectParametersLength`错误
+    #[allow(clippy::cast_possible_truncation)]
     pub fn to_building_data(&self) -> Result<BuildingData, DspbptkError> {
         Ok(BuildingData {
             index: index_from_uuid(self.uuid)?,
@@ -243,10 +241,7 @@ impl Default for DspbptkBuildingData {
     }
 }
 
-/// 依次尝试匹配不同版本的格式
-///
-/// # Errors
-/// 失败时返回`nom::IResult`
+#[allow(clippy::missing_errors_doc)]
 pub fn deserialization(bin: &[u8]) -> IResult<&[u8], BuildingData> {
     let (unknown, data) = alt((
         deserialization_version_neg101,

@@ -32,6 +32,7 @@ impl Default for AreaData {
     }
 }
 
+#[allow(clippy::missing_errors_doc)]
 pub fn deserialization(bin: &[u8]) -> IResult<&[u8], AreaData> {
     let unknown = bin;
 
