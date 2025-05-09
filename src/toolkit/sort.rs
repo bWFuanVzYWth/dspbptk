@@ -1,4 +1,8 @@
+use std::collections::HashMap;
+
 use crate::blueprint::content::building::{self, BuildingData};
+
+use petgraph::graph::{Graph, NodeIndex};
 
 /// 对建筑进行排序。
 ///
@@ -117,5 +121,39 @@ pub fn fix_buildings_index(buildings: Vec<BuildingData>) -> Vec<BuildingData> {
 /// 在保持拓扑序的前提下，应尽量优化内存布局，使线性链节点连续存储
 #[must_use]
 pub fn topological_sort_belt(buildings: &[BuildingData]) -> Vec<BuildingData> {
+    let mut graph = build_graph(buildings);
+
     Vec::from(buildings)
+}
+
+/// 构建建筑依赖关系图
+///
+/// # 参数
+/// * `buildings` - 建筑数据切片，包含建筑索引和输出对象索引等信息
+///
+/// # 返回值
+/// 返回构建完成的有向图结构，节点权重和边权重均为usize类型
+fn build_graph(buildings: &[BuildingData]) -> Graph<usize, usize> {
+    let mut graph: Graph<usize, usize> = Graph::new();
+
+    // 建立建筑全局索引到本地数组下标的映射表，用于快速查找建筑在数组中的位置
+    let buildings_hashmap: HashMap<i32, usize> = buildings
+        .iter()
+        .enumerate()
+        .map(|(i, building)| (building.index, i))
+        .collect();
+
+    // 建立数组下标到图节点的映射表，为每个建筑创建对应的图节点
+    let nodes_lut: Vec<NodeIndex> = buildings.iter().map(|_| graph.add_node(1)).collect();
+
+    // 处理建筑间的依赖关系，将传送带输出关系转换为图的有向边
+    for (i, edge_from) in nodes_lut.iter().enumerate() {
+        if let Some(output_i) = buildings_hashmap.get(&buildings[i].temp_output_obj_idx) {
+            if let Some(edge_to) = nodes_lut.get(*output_i) {
+                graph.add_edge(*edge_from, *edge_to, 1);
+            }
+        }
+    }
+
+    graph
 }
