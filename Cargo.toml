@@ -27,26 +27,26 @@ base64 = "0.22.1"
 # md5f
 lazy_static = "1.5.0"
 # Decompress GZIP
-flate2 = "1.0.35"
+flate2 = "1.1.1"
 # Compress GZIP
-zopfli = "0.8.1"
+zopfli = "0.8.2"
 # test float equal
 approx = "0.5.1"
 
 # Recursive directory traversal
 walkdir = "2.5.0"
 # Command Line Argument Parser
-clap = { version = "4.5.30", features = ["derive"] }
+clap = { version = "4.5.37", features = ["derive"] }
 # log
-log = "0.4.26"
+log = "0.4.27"
 # log >> stderr
-env_logger = "0.11.6"
+env_logger = "0.11.8"
 # test & debug
 nalgebra = "0.33.2"
 # error
-thiserror = "2.0.11"
+thiserror = "2.0.12"
 # DspbptkBuildingData.uuid
-uuid = { version = "1.14.0", features = [
+uuid = { version = "1.16.0", features = [
     "v4",
     "fast-rng",
     "macro-diagnostics",
@@ -55,7 +55,7 @@ uuid = { version = "1.14.0", features = [
 strum = "0.27.1"
 strum_macros = "0.27.1"
 # alloc
-mimalloc = "0.1.43"
+mimalloc = "0.1.46"
 petgraph = "0.8.1"
 bimap = "0.6.3"
 
