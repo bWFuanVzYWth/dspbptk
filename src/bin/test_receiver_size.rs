@@ -1,12 +1,9 @@
 use dspbptk::{
-    blueprint::{
-        content::{ContentData, building::DspbptkBuildingData},
-        header::HeaderData,
-    },
+    blueprint::{content::ContentData, header::HeaderData},
+    dspbptk_building::{DspbptkBuildingData, fix_dspbptk_buildings_index},
     error::DspbptkError::{self},
     io::{BlueprintKind, FileType},
     item::Item,
-    toolkit::fix_dspbptk_buildings_index,
 };
 use uuid::Uuid;
 

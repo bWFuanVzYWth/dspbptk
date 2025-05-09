@@ -2,19 +2,14 @@ use lazy_static::lazy_static;
 use uuid::Uuid;
 
 use dspbptk::{
-    blueprint::{
-        content::{ContentData, building::DspbptkBuildingData},
-        header::HeaderData,
-    },
+    blueprint::{content::ContentData, header::HeaderData},
+    dspbptk_building::{fix_dspbptk_buildings_index, DspbptkBuildingData},
     error::DspbptkError::{self, UnexpectBuildingsCount},
     io::{BlueprintKind, FileType},
     item::Item,
     tesselation_structure::receiver_1i1o,
     toolkit::{
-        belt::connect_belts,
-        fix_dspbptk_buildings_index, local_offset_to_direction,
-        tesselation::{Row, calculate_next_y},
-        unit_conversion::{arc_from_grid, grid_from_arc},
+        belt::connect_belts, coordinate_transformation::local_offset_to_direction, tesselation::{calculate_next_y, Row}, unit_conversion::{arc_from_grid, grid_from_arc}
     },
 };
 

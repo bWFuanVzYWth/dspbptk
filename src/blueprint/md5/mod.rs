@@ -147,7 +147,7 @@ impl MD5 {
         u32::from_le(u)
     }
 
-    #[allow(clippy::many_single_char_names)]
+    #[allow(clippy::many_single_char_names, clippy::unwrap_used)]
     fn update_block(&mut self, buf: &[u8]) {
         assert!(buf.len() == 64);
         let words: Vec<u32> = buf

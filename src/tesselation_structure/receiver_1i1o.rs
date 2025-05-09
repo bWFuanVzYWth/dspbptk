@@ -1,7 +1,7 @@
 use uuid::Uuid;
 
 use crate::{
-    blueprint::content::building::DspbptkBuildingData, item::Item, toolkit::belt::connect_belts,
+     dspbptk_building::DspbptkBuildingData, item::Item, toolkit::belt::connect_belts
 };
 
 // 模块尺寸即锅的尺寸，数据由src/bin/test_ray_receiver_size测出
