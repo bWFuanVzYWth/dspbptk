@@ -13,18 +13,18 @@ use dspbptk::blueprint::content::ContentData;
 use dspbptk::blueprint::header::HeaderData;
 use dspbptk::io::{self, FileType};
 fn collect_files(path_in: &Path) -> Vec<PathBuf> {
-    let mut files = Vec::new();
-    for entry in WalkDir::new(path_in)
+    WalkDir::new(path_in)
         .into_iter()
         .filter_map(std::result::Result::ok)
-    {
-        let entry_path = entry.into_path();
-        match dspbptk::io::classify_file_type(&entry_path) {
-            FileType::Txt | FileType::Content => files.push(entry_path),
-            _ => {}
-        }
-    }
-    files
+        .filter(|entry| {
+            let entry_path = entry.path();
+            matches!(
+                dspbptk::io::classify_file_type(entry_path),
+                FileType::Txt | FileType::Content
+            )
+        })
+        .map(|entry| entry.into_path())
+        .collect()
 }
 
 fn generate_output_path(
