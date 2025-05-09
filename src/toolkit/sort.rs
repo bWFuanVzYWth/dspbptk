@@ -163,10 +163,7 @@ pub fn topological_sort_belt(buildings: &[BuildingData]) -> Vec<BuildingData> {
             .expect("Fatal error: SCC index not found.")];
 
         // 7. 对每个SCC内部进行局部排序（线性链优化）
-        let scc_nodes: Vec<_> = scc
-            .iter()
-            .map(|&node| buildings[node.index()].clone())
-            .collect();
+        let scc_nodes = optimize_scc_layout(scc, buildings);
 
         // 8. 保持SCC内部节点的相对顺序（可扩展为更复杂的优化策略）
         result.extend(scc_nodes);
@@ -205,4 +202,73 @@ fn build_graph(buildings: &[BuildingData]) -> Graph<usize, usize> {
     }
 
     graph
+}
+
+/// 优化强连通分量（SCC）中的建筑布局顺序
+///
+/// # 参数
+/// * `scc` - SCC中的节点索引列表
+/// * `buildings` - 建筑物数据切片
+///
+/// # 返回值
+/// 返回按拓扑顺序排列的建筑物数据向量
+///
+/// # 算法说明
+/// 1. 构建节点间链表关系`next_node`
+/// 2. 标记没有输出依赖的起始节点`is_start`
+/// 3. 按链表顺序收集结果
+///
+/// 复杂度: O(n)
+fn optimize_scc_layout(scc: &[NodeIndex], buildings: &[BuildingData]) -> Vec<BuildingData> {
+    let scc_size = scc.len();
+
+    // 创建节点索引映射表: 建筑物ID -> SCC中的位置
+    let node_index_map: HashMap<i32, usize> = scc
+        .iter()
+        .enumerate()
+        .map(|(idx, node)| (buildings[node.index()].index, idx))
+        .collect();
+
+    // 初始化节点链表关系与起始标记
+    let mut next_node = vec![None; scc_size];
+    let mut is_start = vec![false; scc_size];
+
+    // 构建节点链表关系:
+    // 1. 遍历所有节点
+    // 2. 通过哈希表O(1)查找目标节点位置
+    for (i, &node) in scc.iter().enumerate() {
+        let node_idx = node.index();
+        let output = buildings[node_idx].temp_output_obj_idx;
+
+        if output == building::INDEX_NULL {
+            is_start[i] = true;
+        } else {
+            // 通过哈希表直接查找目标节点位置
+            if let Some(&j) = node_index_map.get(&output) {
+                next_node[i] = Some(j);
+            }
+        }
+    }
+
+    // 按链表顺序收集结果:
+    // 1. 维护访问标记数组
+    // 2. 从每个未访问的起始节点开始遍历
+    let mut visited = vec![false; scc_size];
+    let mut result = Vec::with_capacity(scc_size);
+
+    for i in 0..scc_size {
+        if is_start[i] && !visited[i] {
+            let mut curr = i;
+            while !visited[curr] {
+                visited[curr] = true;
+                result.push(buildings[scc[curr].index()].clone());
+                curr = match next_node[curr] {
+                    Some(n) => n,
+                    None => break,
+                };
+            }
+        }
+    }
+
+    result
 }
