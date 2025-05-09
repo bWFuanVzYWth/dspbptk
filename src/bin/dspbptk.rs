@@ -250,7 +250,7 @@ struct Args {
     no_sorting_buildings: bool,
 
     /// Compress arguments: zopfli `iteration_count`.
-    #[clap(long, default_value = "256")]
+    #[clap(long, default_value = "16")]
     iteration_count: Option<u64>,
 
     /// Compress arguments: zopfli `iterations_without_improvement`.
