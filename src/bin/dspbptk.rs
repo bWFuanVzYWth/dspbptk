@@ -39,18 +39,15 @@ fn generate_output_path(
         _ => panic!("Unsupported file type"),
     };
 
-    let relative_path = relative_path
+    let stripped_path = relative_path
         .strip_prefix(root_path_in)
         .expect("Fatal error: can not process file path");
 
-    let mut output_path = if relative_path == Path::new("") {
-        root_path_out.to_path_buf()
+    if stripped_path == Path::new("") {
+        root_path_out.to_path_buf().with_extension(extension)
     } else {
-        root_path_out.join(relative_path)
-    };
-
-    output_path.set_extension(extension);
-    output_path
+        root_path_out.join(stripped_path).with_extension(extension)
+    }
 }
 
 fn process_middle_layer(
