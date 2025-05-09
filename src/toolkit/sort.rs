@@ -2,7 +2,10 @@ use std::collections::HashMap;
 
 use crate::blueprint::content::building::{self, BuildingData};
 
-use petgraph::graph::{Graph, NodeIndex};
+use petgraph::{
+    graph::{Graph, NodeIndex},
+    visit::EdgeRef,
+};
 
 /// 对建筑进行排序。
 ///
@@ -121,9 +124,55 @@ pub fn fix_buildings_index(buildings: Vec<BuildingData>) -> Vec<BuildingData> {
 /// 在保持拓扑序的前提下，应尽量优化内存布局，使线性链节点连续存储
 #[must_use]
 pub fn topological_sort_belt(buildings: &[BuildingData]) -> Vec<BuildingData> {
-    let mut graph = build_graph(buildings);
+    let graph = build_graph(buildings);
 
-    Vec::from(buildings)
+    // 1. 获取所有强连通分量（SCC）
+    let sccs = petgraph::algo::tarjan_scc(&graph);
+
+    // 2. 构建缩点后的DAG
+    let mut dag = Graph::<usize, usize>::new();
+    let mut scc_map = HashMap::<NodeIndex, usize>::new();
+
+    // 3. 为每个SCC创建DAG节点
+    for (scc_idx, scc) in sccs.iter().enumerate() {
+        for &node in scc {
+            scc_map.insert(node, scc_idx);
+        }
+        dag.add_node(scc_idx);
+    }
+
+    // 4. 添加DAG中的边（过滤重复边）
+    for edge_ref in graph.edge_references() {
+        let source = edge_ref.source();
+        let target = edge_ref.target();
+
+        if scc_map[&source] != scc_map[&target] {
+            dag.add_edge(source, target, 1);
+        }
+    }
+
+    // 5. 对DAG进行拓扑排序
+    let dag_order =
+        petgraph::algo::toposort(&dag, None).unwrap_or_else(|_| panic!("Fatal error: Not a DAG."));
+
+    // 6. 按照拓扑序展开SCC
+    let mut result = Vec::with_capacity(buildings.len());
+    for scc_idx in dag_order {
+        let scc = &sccs[*scc_map
+            .get(&scc_idx)
+            .expect("Fatal error: SCC index not found.")];
+
+        // 7. 对每个SCC内部进行局部排序（线性链优化）
+        let scc_nodes: Vec<_> = scc
+            .iter()
+            .map(|&node| buildings[node.index()].clone())
+            .collect();
+
+        // 8. 保持SCC内部节点的相对顺序（可扩展为更复杂的优化策略）
+        result.extend(scc_nodes);
+    }
+
+    result
 }
 
 /// 构建建筑依赖关系图
