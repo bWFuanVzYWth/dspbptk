@@ -13,35 +13,28 @@ pub fn sort_buildings(buildings: &[BuildingData], reserved: bool) -> Vec<Buildin
     }
 
     // 1. 分组阶段：根据item_id进行分类
-    let (mut belts, mut non_belts) = split_belt_and_non_belt(buildings);
+    let (belts, non_belts) = split_belt_and_non_belt(buildings);
 
     // 2. 排序阶段：传送带和非传送带独立排序
-    topological_sort_belt(&mut belts);
-    stable_sort_non_belt(&mut non_belts);
+    let sorted_belt = topological_sort_belt(&belts);
+    let sorted_non_belt = stable_sort_non_belt(&non_belts);
 
     // 3. 合并阶段：合并排序结果
-    combine_sorted_results(belts, non_belts, reserved)
+    combine_sorted_results(sorted_belt, sorted_non_belt, reserved)
 }
 
 fn split_belt_and_non_belt(buildings: &[BuildingData]) -> (Vec<BuildingData>, Vec<BuildingData>) {
-    let mut belt = Vec::new();
-    let mut non_belt = Vec::new();
-
-    for building in buildings {
-        if (2001..=2009).contains(&building.item_id) {
-            belt.push(building.clone());
-        } else {
-            non_belt.push(building.clone());
-        }
-    }
-
-    (belt, non_belt)
+    buildings
+        .iter()
+        .cloned()
+        .partition(|building| (2001..=2009).contains(&building.item_id))
 }
 
-fn stable_sort_non_belt(non_belts: &mut [BuildingData]) {
+fn stable_sort_non_belt(non_belts: &[BuildingData]) -> Vec<BuildingData> {
+    let mut sorted = non_belts.to_vec();
+
     // 使用Schwartzian transform优化多字段排序
-    // 修改后的排序逻辑（替换原stable_sort_non_belt中的sort_by部分）
-    non_belts.sort_by(|a, b| {
+    sorted.sort_by(|a, b| {
         // 先比较前四个整型字段
         let order = (a.item_id, a.model_index, a.recipe_id, a.area_index).cmp(&(
             b.item_id,
@@ -63,6 +56,8 @@ fn stable_sort_non_belt(non_belts: &mut [BuildingData]) {
             .partial_cmp(&score_b)
             .map_or(std::cmp::Ordering::Equal, |ord| ord)
     });
+
+    sorted
 }
 
 fn calculate_offset_score(b: &BuildingData) -> f64 {
@@ -128,4 +123,7 @@ pub fn fix_buildings_index(buildings: Vec<BuildingData>) -> Vec<BuildingData> {
 /// 3. 对生成的DAG进行拓扑排序，然后把收缩后的节点原地展开为SCC，得到最终结果
 ///
 /// 在保持拓扑序的前提下，应尽量优化内存布局，使线性链节点连续存储
-pub fn topological_sort_belt(buildings: &mut [BuildingData]) {}
+#[must_use]
+pub fn topological_sort_belt(buildings: &[BuildingData]) -> Vec<BuildingData> {
+    Vec::from(buildings)
+}
