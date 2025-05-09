@@ -116,12 +116,16 @@ pub fn fix_buildings_index(buildings: Vec<BuildingData>) -> Vec<BuildingData> {
 /// 传送带节点通过`temp_output_obj_idx`记录输出连接（可为`INDEX_NULL`），输入连接不记录，永远都是`INDEX_NULL`。
 /// 每个节点最多有三个输入和一个输出，支持环形连接。
 ///
-/// 实现步骤：
+/// # 实现步骤
+///
 /// 1. 构建以`temp_output_obj_idx`为边的有向图
 /// 2. 将每个SCC收缩为单个节点
 /// 3. 对生成的DAG进行拓扑排序，然后把收缩后的节点原地展开为SCC，得到最终结果
 ///
 /// 在保持拓扑序的前提下，应尽量优化内存布局，使线性链节点连续存储
+///
+/// # Panic
+///
 #[must_use]
 pub fn topological_sort_belt(buildings: &[BuildingData]) -> Vec<BuildingData> {
     let graph = build_graph(buildings);
@@ -168,11 +172,10 @@ pub fn topological_sort_belt(buildings: &[BuildingData]) -> Vec<BuildingData> {
     let mut result = Vec::with_capacity(buildings.len());
     for &dag_node_idx in &dag_order {
         // 通过反向查找表获取对应的SCC索引
-        let scc_idx = dag_node_idx.index();
-        let scc = &sccs[scc_idx];
-        // 7. 对每个SCC内部进行局部排序（线性链优化）
+        let scc = &sccs[dag_node_idx.index()];
+        // 6.1. 对每个SCC内部进行局部排序（线性链优化）
         let scc_nodes = optimize_scc_layout(scc, buildings);
-        // 8. 保持SCC内部节点的相对顺序（可扩展为更复杂的优化策略）
+        // 6.2. 保持SCC内部节点的相对顺序（可扩展为更复杂的优化策略）
         result.extend(scc_nodes);
     }
 

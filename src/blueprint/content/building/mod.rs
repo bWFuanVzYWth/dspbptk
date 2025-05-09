@@ -77,7 +77,6 @@ impl Default for BuildingData {
     }
 }
 
-#[allow(clippy::missing_errors_doc)]
 pub fn deserialization(bin: &[u8]) -> IResult<&[u8], BuildingData> {
     let (unknown, data) = alt((
         deserialization_version_neg101,
