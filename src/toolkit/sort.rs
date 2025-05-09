@@ -33,28 +33,20 @@ fn split_belt_and_non_belt(buildings: &[BuildingData]) -> (Vec<BuildingData>, Ve
 fn stable_sort_non_belt(non_belts: &[BuildingData]) -> Vec<BuildingData> {
     let mut sorted = non_belts.to_vec();
 
-    // 使用Schwartzian transform优化多字段排序
-    sorted.sort_by(|a, b| {
-        // 先比较前四个整型字段
-        let order = (a.item_id, a.model_index, a.recipe_id, a.area_index).cmp(&(
-            b.item_id,
-            b.model_index,
-            b.recipe_id,
-            b.area_index,
-        ));
+    sorted.sort_by_cached_key(|building| {
+        // 预计算排序键，实现Schwartzian transform优化
+        let int_key = (
+            building.item_id,
+            building.model_index,
+            building.recipe_id,
+            building.area_index,
+        );
+        let float_score = calculate_offset_score(building);
 
-        if order != std::cmp::Ordering::Equal {
-            return order;
-        }
+        // 将浮点数转换为可排序的整数表示（处理NaN）
+        let float_key = float_score.to_bits();
 
-        // 单独处理浮点数比较
-        let score_a = calculate_offset_score(a);
-        let score_b = calculate_offset_score(b);
-
-        // 处理NaN情况，保持排序稳定性
-        score_a
-            .partial_cmp(&score_b)
-            .map_or(std::cmp::Ordering::Equal, |ord| ord)
+        (int_key, float_key)
     });
 
     sorted
