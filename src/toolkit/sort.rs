@@ -24,7 +24,6 @@ pub fn sort_buildings(buildings: &[BuildingData], reserved: bool) -> Vec<Buildin
 
     // 2. 排序阶段：传送带和非传送带独立排序
     let sorted_belt = topological_sort_belt(&belts);
-    // let sorted_belt = belts;
     let sorted_non_belt = stable_sort_non_belt(&non_belts);
 
     // 3. 合并阶段：合并排序结果
@@ -133,14 +132,10 @@ pub fn topological_sort_belt(buildings: &[BuildingData]) -> Vec<BuildingData> {
     // 2. 构建缩点后的DAG
     let mut dag = Graph::<usize, usize>::new();
     let mut scc_hashmap = HashMap::<NodeIndex, usize>::new();
-    let mut dag_node_indices = Vec::new();
-    let mut dag_node_to_scc_index = HashMap::new();
 
-    // 3. 为每个SCC创建DAG节点
+    // 3. 为每个SCC创建DAG节点（直接使用SCC索引作为节点标识）
     for (i, scc) in sccs.iter().enumerate() {
-        let node_idx = dag.add_node(1);
-        dag_node_indices.push(node_idx);
-        dag_node_to_scc_index.insert(node_idx, i);
+        dag.add_node(1);
         for &node in scc {
             scc_hashmap.insert(node, i);
         }
@@ -153,15 +148,14 @@ pub fn topological_sort_belt(buildings: &[BuildingData]) -> Vec<BuildingData> {
         let target = edge_ref.target();
 
         // 获取源和目标的SCC编号
-        let scc_source = scc_hashmap[&source];
-        let scc_target = scc_hashmap[&target];
-
-        if scc_source != scc_target {
-            let source_node_idx = dag_node_indices[scc_source];
-            let target_node_idx = dag_node_indices[scc_target];
-            let edge_key = (scc_source, scc_target);
-            if edge_set.insert(edge_key) {
-                dag.add_edge(source_node_idx, target_node_idx, 1);
+        if let (Some(scc_source), Some(scc_target)) =
+            (scc_hashmap.get(&source), scc_hashmap.get(&target))
+        {
+            if scc_source != scc_target {
+                let edge_key = (*scc_source, *scc_target);
+                if edge_set.insert(edge_key) {
+                    dag.add_edge(NodeIndex::new(*scc_source), NodeIndex::new(*scc_target), 1);
+                }
             }
         }
     }
@@ -174,7 +168,7 @@ pub fn topological_sort_belt(buildings: &[BuildingData]) -> Vec<BuildingData> {
     let mut result = Vec::with_capacity(buildings.len());
     for &dag_node_idx in &dag_order {
         // 通过反向查找表获取对应的SCC索引
-        let scc_idx = dag_node_to_scc_index[&dag_node_idx];
+        let scc_idx = dag_node_idx.index();
         let scc = &sccs[scc_idx];
         // 7. 对每个SCC内部进行局部排序（线性链优化）
         let scc_nodes = optimize_scc_layout(scc, buildings);
@@ -195,23 +189,21 @@ pub fn topological_sort_belt(buildings: &[BuildingData]) -> Vec<BuildingData> {
 fn build_graph(buildings: &[BuildingData]) -> Graph<usize, usize> {
     let mut graph: Graph<usize, usize> = Graph::new();
 
-    // TODO 合并两个查找表
+    // 合并两个查找表为单一结构
+    let mut index_to_node = HashMap::new();
+    // 直接按building.index存储对应的NodeIndex
+    for building in buildings {
+        let node_idx = graph.add_node(1);
+        index_to_node.insert(building.index, node_idx);
+    }
 
-    // 建立建筑全局索引到本地数组下标的映射表，用于快速查找建筑在数组中的位置
-    let buildings_hashmap: HashMap<i32, usize> = buildings
-        .iter()
-        .enumerate()
-        .map(|(i, building)| (building.index, i))
-        .collect();
-
-    // 建立数组下标到图节点的映射表，为每个建筑创建对应的图节点
-    let nodes_lut: Vec<NodeIndex> = buildings.iter().map(|_| graph.add_node(1)).collect();
-
-    // 处理建筑间的依赖关系，将传送带输出关系转换为图的有向边
-    for (i, edge_from) in nodes_lut.iter().enumerate() {
-        if let Some(output_i) = buildings_hashmap.get(&buildings[i].temp_output_obj_idx) {
-            if let Some(edge_to) = nodes_lut.get(*output_i) {
-                graph.add_edge(*edge_from, *edge_to, 1);
+    // 一次查找完成边的建立
+    for building in buildings {
+        if building.temp_output_obj_idx != building::INDEX_NULL {
+            if let Some(&edge_to) = index_to_node.get(&building.temp_output_obj_idx) {
+                if let Some(edge_from) = index_to_node.get(&building.index) {
+                    graph.add_edge(*edge_from, edge_to, 1);
+                }
             }
         }
     }
