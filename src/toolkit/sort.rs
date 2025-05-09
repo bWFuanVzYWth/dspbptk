@@ -24,6 +24,7 @@ pub fn sort_buildings(buildings: &[BuildingData], reserved: bool) -> Vec<Buildin
 
     // 2. 排序阶段：传送带和非传送带独立排序
     let sorted_belt = topological_sort_belt(&belts);
+    // let sorted_belt = belts;
     let sorted_non_belt = stable_sort_non_belt(&non_belts);
 
     // 3. 合并阶段：合并排序结果
@@ -222,6 +223,7 @@ fn build_graph(buildings: &[BuildingData]) -> Graph<usize, usize> {
 fn optimize_scc_layout(scc: &[NodeIndex], buildings: &[BuildingData]) -> Vec<BuildingData> {
     let scc_size = scc.len();
 
+    // 利用SCC特性：所有节点强连通，无需处理孤立节点
     // 创建节点索引映射表: 建筑物ID -> SCC中的位置
     let node_index_map: HashMap<i32, usize> = scc
         .iter()
@@ -229,20 +231,13 @@ fn optimize_scc_layout(scc: &[NodeIndex], buildings: &[BuildingData]) -> Vec<Bui
         .map(|(idx, node)| (buildings[node.index()].index, idx))
         .collect();
 
-    // 初始化节点链表关系与起始标记
+    // 构建节点链表关系
     let mut next_node = vec![None; scc_size];
-    let mut is_start = vec![false; scc_size];
-
-    // 构建节点链表关系:
-    // 1. 遍历所有节点
-    // 2. 通过哈希表O(1)查找目标节点位置
     for (i, &node) in scc.iter().enumerate() {
         let node_idx = node.index();
         let output = buildings[node_idx].temp_output_obj_idx;
 
-        if output == building::INDEX_NULL {
-            is_start[i] = true;
-        } else {
+        if output != building::INDEX_NULL {
             // 通过哈希表直接查找目标节点位置
             if let Some(&j) = node_index_map.get(&output) {
                 next_node[i] = Some(j);
@@ -250,15 +245,14 @@ fn optimize_scc_layout(scc: &[NodeIndex], buildings: &[BuildingData]) -> Vec<Bui
         }
     }
 
-    // 按链表顺序收集结果:
-    // 1. 维护访问标记数组
-    // 2. 从每个未访问的起始节点开始遍历
+    // 保证至少有一个起点（SCC特性：可从任意节点遍历整个分量）
     let mut visited = vec![false; scc_size];
     let mut result = Vec::with_capacity(scc_size);
 
-    for i in 0..scc_size {
-        if is_start[i] && !visited[i] {
-            let mut curr = i;
+    // 找到第一个可用起点
+    for start in 0..scc_size {
+        if !visited[start] {
+            let mut curr = start;
             while !visited[curr] {
                 visited[curr] = true;
                 result.push(buildings[scc[curr].index()].clone());
