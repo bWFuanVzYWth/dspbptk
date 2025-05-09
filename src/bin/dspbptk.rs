@@ -74,7 +74,7 @@ fn process_middle_layer(
     }
 
     if sorting_buildings {
-        sort_buildings(&mut content_data_out.buildings);
+        content_data_out.buildings = sort_buildings(&content_data_out.buildings, true);
         content_data_out.buildings = fix_buildings_index(content_data_out.buildings);
     }
 
