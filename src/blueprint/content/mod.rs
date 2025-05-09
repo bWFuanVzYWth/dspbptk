@@ -178,8 +178,3 @@ pub fn string_from_data<'a>(
     let gzip = gzip_from_bin(&bin, zopfli_options)?;
     Ok(string_from_gzip(&gzip))
 }
-
-#[cfg(test)]
-mod test {
-    // TODO test
-}

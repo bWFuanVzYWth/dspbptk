@@ -89,8 +89,3 @@ pub fn deserialization(bin: &[u8]) -> IResult<&[u8], BuildingData> {
 pub fn serialization(bin: &mut Vec<u8>, data: &BuildingData) {
     serialization_version_neg101(bin, data);
 }
-
-#[cfg(test)]
-mod test {
-    // TODO test 检查每一种不同建筑
-}

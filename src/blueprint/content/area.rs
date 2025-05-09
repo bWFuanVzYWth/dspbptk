@@ -69,8 +69,3 @@ pub fn serialization(bin: &mut Vec<u8>, data: &AreaData) {
     bin.extend_from_slice(&data.width.to_le_bytes());
     bin.extend_from_slice(&data.height.to_le_bytes());
 }
-
-#[cfg(test)]
-mod test {
-    // TODO test
-}
