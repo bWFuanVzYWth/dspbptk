@@ -94,4 +94,18 @@ mod test {
             ))
         );
     }
+
+    #[test]
+    fn test_serialization() {
+        let blueprint_data = BlueprintData {
+            header: "BLUEPRINT:0,0,0,0,0,0,0,0,0,0.0.0.0,,",
+            content: "H4sIAAAAAAAAA2NkQAWMUMyARCMBANjTKTsvAAAA",
+            md5f: "E4E5A1CF28F1EC611E33498CBD0DF02B",
+            unknown: "\n\0",
+        };
+        assert_eq!(
+            serialization(blueprint_data.header, blueprint_data.content),
+            "BLUEPRINT:0,0,0,0,0,0,0,0,0,0.0.0.0,,\"H4sIAAAAAAAAA2NkQAWMUMyARCMBANjTKTsvAAAA\"E4E5A1CF28F1EC611E33498CBD0DF02B"
+        );
+    }
 }

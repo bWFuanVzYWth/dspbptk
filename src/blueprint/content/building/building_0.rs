@@ -106,7 +106,7 @@ mod test {
     use super::*;
 
     #[test]
-    fn test_serialization() {
+    fn test_serialization_version_0() {
         let bin_expected: Vec<u8> = vec![
             1, 0, 0, 0, 2, 102, 102, 70, 64, 51, 51, 131, 64, 51, 51, 163, 64, 51, 51, 19, 65, 51,
             51, 35, 65, 51, 51, 51, 65, 51, 51, 195, 64, 51, 51, 67, 65, 15, 0, 16, 0, 17, 0, 0, 0,
@@ -152,7 +152,7 @@ mod test {
     }
 
     #[test]
-    fn test_deserialization() {
+    fn test_deserialization_version_0() {
         let data_expected = BuildingData {
             index: 1,
             area_index: 2,
