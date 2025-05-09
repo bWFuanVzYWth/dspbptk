@@ -131,7 +131,7 @@ pub fn topological_sort_belt(buildings: &[BuildingData]) -> Vec<BuildingData> {
     let graph = build_graph(buildings);
 
     // 1. 获取所有强连通分量（SCC）
-    let sccs = petgraph::algo::tarjan_scc(&graph);
+    let sccs = petgraph::algo::kosaraju_scc(&graph);
 
     // 2. 构建缩点后的DAG
     let mut dag = Graph::<usize, usize>::new();
