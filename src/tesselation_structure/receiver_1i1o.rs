@@ -1,8 +1,6 @@
 use uuid::Uuid;
 
-use crate::{
-     dspbptk_building::DspbptkBuildingData, item::Item, toolkit::belt::connect_belts
-};
+use crate::{dspbptk_building::DspbptkBuildingData, item::Item, toolkit::belt::connect_belts};
 
 // 模块尺寸即锅的尺寸，数据由src/bin/test_ray_receiver_size测出
 pub const GRID_A: f64 = 7.30726;

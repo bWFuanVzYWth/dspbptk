@@ -1,11 +1,6 @@
-use std::collections::{HashMap, VecDeque};
 use std::f64::consts::PI;
 
 use nalgebra::Vector3;
-
-use petgraph;
-
-use crate::blueprint::content::building;
 
 pub const EARTH_R: f64 = 200.0;
 pub const HALF_EQUATORIAL_GRID: f64 = 500.0;
