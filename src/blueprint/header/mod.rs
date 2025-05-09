@@ -144,4 +144,26 @@ mod test {
             ))
         );
     }
+
+    #[test]
+    fn test_serialization() {
+        let header = HeaderData {
+            layout: "9".to_string(),
+            icons_0: "0".to_string(),
+            icons_1: "1".to_string(),
+            icons_2: "2".to_string(),
+            icons_3: "3".to_string(),
+            icons_4: "4".to_string(),
+            time: "5".to_string(),
+            game_version: "6.7.8.9".to_string(),
+            short_desc: String::new(),
+            desc: String::new(),
+            unknown: String::new(),
+        };
+
+        assert_eq!(
+            serialization(&header),
+            "BLUEPRINT:0,9,0,1,2,3,4,0,5,6.7.8.9,,"
+        );
+    }
 }
