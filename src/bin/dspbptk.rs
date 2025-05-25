@@ -23,7 +23,7 @@ fn collect_files(path_in: &Path) -> Vec<PathBuf> {
                 FileType::Txt | FileType::Content
             )
         })
-        .map(|entry| entry.into_path())
+        .map(walkdir::DirEntry::into_path)
         .collect()
 }
 
