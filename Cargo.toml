@@ -17,6 +17,9 @@ name = "dspbptk"
 path = "src/lib.rs"
 
 [dependencies]
+# DSP data base
+dspdb = { git = "https://github.com/bWFuanVzYWth/dspdb", branch = "master" }
+
 # Multi-threaded
 rayon = "1.10.0"
 # TODO 更新到nom 8.0
@@ -56,8 +59,8 @@ strum = "0.27.1"
 strum_macros = "0.27.1"
 # alloc
 mimalloc = "0.1.46"
+# graph
 petgraph = "0.8.1"
-bimap = "0.6.3"
 
 [profile.release]
 codegen-units = 1
