@@ -154,12 +154,11 @@ pub fn topological_sort_belt(buildings: &[BuildingData]) -> Vec<BuildingData> {
         // 获取源和目标的SCC编号
         if let (Some(scc_source), Some(scc_target)) =
             (scc_hashmap.get(&source), scc_hashmap.get(&target))
+            && scc_source != scc_target
         {
-            if scc_source != scc_target {
-                let edge_key = (*scc_source, *scc_target);
-                if edge_set.insert(edge_key) {
-                    dag.add_edge(NodeIndex::new(*scc_source), NodeIndex::new(*scc_target), 1);
-                }
+            let edge_key = (*scc_source, *scc_target);
+            if edge_set.insert(edge_key) {
+                dag.add_edge(NodeIndex::new(*scc_source), NodeIndex::new(*scc_target), 1);
             }
         }
     }
@@ -202,12 +201,11 @@ fn build_graph(buildings: &[BuildingData]) -> Graph<usize, usize> {
 
     // 一次查找完成边的建立
     for building in buildings {
-        if building.temp_output_obj_idx != building::INDEX_NULL {
-            if let Some(&edge_to) = index_to_node.get(&building.temp_output_obj_idx) {
-                if let Some(edge_from) = index_to_node.get(&building.index) {
-                    graph.add_edge(*edge_from, edge_to, 1);
-                }
-            }
+        if building.temp_output_obj_idx != building::INDEX_NULL
+            && let Some(&edge_to) = index_to_node.get(&building.temp_output_obj_idx)
+            && let Some(edge_from) = index_to_node.get(&building.index)
+        {
+            graph.add_edge(*edge_from, edge_to, 1);
         }
     }
 
