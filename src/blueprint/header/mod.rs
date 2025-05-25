@@ -1,5 +1,5 @@
 use nom::{
-    Finish, IResult,
+    Finish, IResult, Parser,
     bytes::complete::{tag, take_till},
     sequence::preceded,
 };
@@ -60,16 +60,16 @@ fn take_till_comma(string: &str) -> IResult<&str, &str> {
 fn parse_non_finish(string: &str) -> IResult<&str, HeaderData> {
     let unknown = string;
 
-    let (unknown, layout) = preceded(tag_blueprint, take_till_comma)(unknown)?;
-    let (unknown, icons_0) = preceded(tag_comma, take_till_comma)(unknown)?;
-    let (unknown, icons_1) = preceded(tag_comma, take_till_comma)(unknown)?;
-    let (unknown, icons_2) = preceded(tag_comma, take_till_comma)(unknown)?;
-    let (unknown, icons_3) = preceded(tag_comma, take_till_comma)(unknown)?;
-    let (unknown, icons_4) = preceded(tag_comma, take_till_comma)(unknown)?;
-    let (unknown, time) = preceded(tag_zero, take_till_comma)(unknown)?;
-    let (unknown, game_version) = preceded(tag_comma, take_till_comma)(unknown)?;
-    let (unknown, short_desc) = preceded(tag_comma, take_till_comma)(unknown)?;
-    let (unknown, desc) = preceded(tag_comma, take_till_comma)(unknown)?;
+    let (unknown, layout) = preceded(tag_blueprint, take_till_comma).parse(unknown)?;
+    let (unknown, icons_0) = preceded(tag_comma, take_till_comma).parse(unknown)?;
+    let (unknown, icons_1) = preceded(tag_comma, take_till_comma).parse(unknown)?;
+    let (unknown, icons_2) = preceded(tag_comma, take_till_comma).parse(unknown)?;
+    let (unknown, icons_3) = preceded(tag_comma, take_till_comma).parse(unknown)?;
+    let (unknown, icons_4) = preceded(tag_comma, take_till_comma).parse(unknown)?;
+    let (unknown, time) = preceded(tag_zero, take_till_comma).parse(unknown)?;
+    let (unknown, game_version) = preceded(tag_comma, take_till_comma).parse(unknown)?;
+    let (unknown, short_desc) = preceded(tag_comma, take_till_comma).parse(unknown)?;
+    let (unknown, desc) = preceded(tag_comma, take_till_comma).parse(unknown)?;
 
     Ok((
         unknown,

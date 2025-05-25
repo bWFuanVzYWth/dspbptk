@@ -10,7 +10,7 @@ use crate::error::{
 };
 
 use nom::{
-    Finish, IResult,
+    Finish, IResult, Parser,
     bytes::complete::{tag, take, take_till},
     sequence::preceded,
 };
@@ -39,8 +39,8 @@ fn parse_non_finish(string: &str) -> IResult<&str, BlueprintData> {
     let unknown = string;
 
     let (unknown, header) = take_till_quote(unknown)?;
-    let (unknown, content) = preceded(tag_quote, take_till_quote)(unknown)?;
-    let (unknown, md5f) = preceded(tag_quote, take_32)(unknown)?;
+    let (unknown, content) = preceded(tag_quote, take_till_quote).parse(unknown)?;
+    let (unknown, md5f) = preceded(tag_quote, take_32).parse(unknown)?;
     Ok((
         unknown,
         BlueprintData {

@@ -1,5 +1,5 @@
 use nom::{
-    IResult,
+    IResult, Parser,
     bytes::complete::tag,
     multi::count,
     number::complete::{le_f32, le_i8, le_i16, le_i32, le_u16},
@@ -21,7 +21,7 @@ pub type F32x12 = (f32, f32, f32, f32, f32, f32, f32, f32, f32, f32, f32, f32);
 pub fn deserialization_version_neg101(bin: &[u8]) -> IResult<&[u8], BuildingData> {
     let unknown = bin;
 
-    let (unknown, _version) = tag((NEG_101).to_le_bytes())(unknown)?;
+    let (unknown, _version) = tag((NEG_101).to_le_bytes().as_slice())(unknown)?;
     let (unknown, index) = le_i32(unknown)?;
     let (unknown, item_id) = le_i16(unknown)?;
     let (unknown, model_index) = le_i16(unknown)?;
@@ -60,7 +60,7 @@ pub fn deserialization_version_neg101(bin: &[u8]) -> IResult<&[u8], BuildingData
     let (unknown, recipe_id) = le_i16(unknown)?;
     let (unknown, filter_id) = le_i16(unknown)?;
     let (unknown, parameters_length) = le_u16(unknown)?;
-    let (unknown, parameters) = count(le_i32, parameters_length as usize)(unknown)?;
+    let (unknown, parameters) = count(le_i32, parameters_length as usize).parse(unknown)?;
 
     Ok((
         unknown,

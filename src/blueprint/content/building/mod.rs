@@ -2,7 +2,7 @@ mod building_0;
 mod building_neg100;
 mod building_neg101;
 
-use nom::{IResult, branch::alt};
+use nom::{IResult, Parser, branch::alt};
 
 use building_0::deserialization_version_0;
 use building_neg100::deserialization_version_neg100;
@@ -82,7 +82,8 @@ pub fn deserialization(bin: &[u8]) -> IResult<&[u8], BuildingData> {
         deserialization_version_neg101,
         deserialization_version_neg100,
         deserialization_version_0,
-    ))(bin)?;
+    ))
+    .parse(bin)?;
     Ok((unknown, data))
 }
 
