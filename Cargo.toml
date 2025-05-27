@@ -21,10 +21,9 @@ path = "src/lib.rs"
 dspdb = { git = "https://github.com/bWFuanVzYWth/dspdb", branch = "master" }
 
 # Multi-threaded
-nom = { version = "8.0.0", features = ["alloc"] }
 rayon = "1.10.0"
-# TODO 更新到nom 8.0
 # Parser
+nom = { version = "8.0.0", features = ["alloc"] }
 # decode/encode base64
 base64 = "0.22.1"
 # md5f

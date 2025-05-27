@@ -123,28 +123,24 @@ pub enum Algo {
 
 pub struct MD5 {
     s: [u32; 4],
-    algo: Algo,
+    k_table: &'static [u32; 64],
 }
 
 pub type MD5Hash = [u8; 16];
 
 impl MD5 {
     const fn new(algo: Algo) -> Self {
-        let s = match algo {
-            Algo::MD5 => INIT_MD5,
-            _ => INIT_MD5F,
+        let (s, k_table) = match algo {
+            Algo::MD5 => (INIT_MD5, &K),
+            Algo::MD5F => (INIT_MD5F, &K_MD5F),
+            Algo::MD5FC => (INIT_MD5F, &K_MD5FC), // 注意此处用的仍然是INIT_MD5F
         };
 
-        Self { s, algo }
+        Self { s, k_table }
     }
 
     const fn k(&self, i: usize) -> u32 {
-        let u = match self.algo {
-            Algo::MD5F => K_MD5F[i],
-            Algo::MD5FC => K_MD5FC[i],
-            Algo::MD5 => K[i],
-        };
-        u32::from_le(u)
+        self.k_table[i]
     }
 
     #[allow(clippy::many_single_char_names)]
