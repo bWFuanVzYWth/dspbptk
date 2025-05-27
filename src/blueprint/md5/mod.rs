@@ -139,17 +139,13 @@ impl MD5 {
         Self { s, k_table }
     }
 
-    const fn k(&self, i: usize) -> u32 {
-        self.k_table[i]
-    }
-
     #[allow(clippy::many_single_char_names)]
     fn update_block(&mut self, buf: &[u8]) {
         assert!(buf.len() == 64);
-        let words: Vec<u32> = buf
-            .chunks_exact(4)
-            .map(|b| u32::from_le_bytes(b.try_into().unwrap(/* impossible */)))
-            .collect();
+        let words: [u32; 16] = std::array::from_fn(|i| {
+            let start = i * 4;
+            u32::from_le_bytes([buf[start], buf[start + 1], buf[start + 2], buf[start + 3]])
+        });
         let mut a = self.s[0];
         let mut b = self.s[1];
         let mut c = self.s[2];
@@ -174,7 +170,7 @@ impl MD5 {
 
             f = f
                 .wrapping_add(a)
-                .wrapping_add(self.k(i))
+                .wrapping_add(self.k_table[i])
                 .wrapping_add(words[g]);
             a = d;
             d = c;
@@ -190,25 +186,41 @@ impl MD5 {
 
     fn process(&mut self, data: &[u8]) -> MD5Hash {
         let chunks = data.chunks_exact(64);
-        let mut last: Vec<u8> = chunks.remainder().into();
-        for chunk in chunks {
-            self.update_block(chunk);
-        }
-        last.push(0x80);
-        while last.len() % 64 != 56 {
-            last.push(0x0);
-        }
-        last.extend_from_slice(&(data.len() as u64 * 8).to_le_bytes());
-        for chunk in last.chunks_exact(64) {
+        let remainder = chunks.remainder();
+
+        // 使用固定大小数组替代 Vec<u8>
+        let mut last = [0u8; 128];
+        let remainder_len = remainder.len();
+
+        // 复制剩余数据并添加 0x80 标记
+        last[..remainder_len].copy_from_slice(remainder);
+        last[remainder_len] = 0x80;
+        let current_length = remainder_len + 1;
+
+        // 计算填充长度
+        let pad_len = (56 - (current_length % 64)) % 64;
+
+        // 无需显式填充 0x00（数组初始化为零）
+
+        // 添加位长度字段
+        let bit_len = data.len() * 8;
+        last[current_length + pad_len..current_length + pad_len + 8]
+            .copy_from_slice(&bit_len.to_le_bytes());
+
+        // 计算最终填充后的总长度
+        let filled_len = current_length + pad_len + 8;
+
+        // 处理所有块
+        for chunk in chunks.chain(last[..filled_len].chunks_exact(64)) {
             self.update_block(chunk);
         }
 
-        let mut out: MD5Hash = [0; 16];
-        out[0..4].copy_from_slice(&self.s[0].to_le_bytes());
-        out[4..8].copy_from_slice(&self.s[1].to_le_bytes());
-        out[8..12].copy_from_slice(&self.s[2].to_le_bytes());
-        out[12..16].copy_from_slice(&self.s[3].to_le_bytes());
-        out
+        // 构造输出
+        std::array::from_fn(|i| {
+            let word_index = i / 4;
+            let byte_index = i % 4;
+            self.s[word_index].to_le_bytes()[byte_index]
+        })
     }
 }
 
