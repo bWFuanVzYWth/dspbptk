@@ -151,32 +151,61 @@ impl MD5 {
         let mut c = self.s[2];
         let mut d = self.s[3];
 
-        S.iter().enumerate().for_each(|(i, si)| {
-            let mut f: u32;
-            let g: usize;
-            if i < 16 {
-                f = (b & c) | (!b & d);
-                g = i;
-            } else if i < 32 {
-                f = (d & b) | (!d & c);
-                g = (5 * i + 1) % 16;
-            } else if i < 48 {
-                f = b ^ c ^ d;
-                g = (3 * i + 5) % 16;
-            } else {
-                f = c ^ (b | !d);
-                g = (7 * i) % 16;
-            }
-
-            f = f
+        for (idx, &s) in S[0..16].iter().enumerate() {
+            let i = idx;
+            let function_result = (b & c) | (!b & d);
+            let word_index = i;
+            let f = function_result
                 .wrapping_add(a)
                 .wrapping_add(self.k_table[i])
-                .wrapping_add(words[g]);
+                .wrapping_add(words[word_index]);
             a = d;
             d = c;
             c = b;
-            b = b.wrapping_add(f.rotate_left(*si));
-        });
+            b = b.wrapping_add(f.rotate_left(s));
+        }
+
+        for (idx, &s) in S[16..32].iter().enumerate() {
+            let i = 16 + idx;
+            let function_result = (d & b) | (!d & c);
+            let word_index = (5 * i + 1) % 16;
+            let f = function_result
+                .wrapping_add(a)
+                .wrapping_add(self.k_table[i])
+                .wrapping_add(words[word_index]);
+            a = d;
+            d = c;
+            c = b;
+            b = b.wrapping_add(f.rotate_left(s));
+        }
+
+        for (idx, &s) in S[32..48].iter().enumerate() {
+            let i = 32 + idx;
+            let function_result = b ^ c ^ d;
+            let word_index = (3 * i + 5) % 16;
+            let f = function_result
+                .wrapping_add(a)
+                .wrapping_add(self.k_table[i])
+                .wrapping_add(words[word_index]);
+            a = d;
+            d = c;
+            c = b;
+            b = b.wrapping_add(f.rotate_left(s));
+        }
+
+        for (idx, &s) in S[48..64].iter().enumerate() {
+            let i = 48 + idx;
+            let function_result = c ^ (b | !d);
+            let word_index = (7 * i) % 16;
+            let f = function_result
+                .wrapping_add(a)
+                .wrapping_add(self.k_table[i])
+                .wrapping_add(words[word_index]);
+            a = d;
+            d = c;
+            c = b;
+            b = b.wrapping_add(f.rotate_left(s));
+        }
 
         self.s[0] = self.s[0].wrapping_add(a);
         self.s[1] = self.s[1].wrapping_add(b);
