@@ -191,7 +191,9 @@ mod test {
             0, 0, 0, 30, 0, 0, 0,
         ];
 
-        let (remaining, data_test) = deserialization_version_0(&bin_test).finish().unwrap();
+        let (remaining, data_test) = deserialization_version_0(&bin_test)
+            .finish()
+            .expect("deserialization no finish.");
 
         assert!(remaining.is_empty());
         assert_eq!(data_test.index, data_expected.index);
