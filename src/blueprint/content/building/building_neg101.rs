@@ -235,6 +235,8 @@ fn parse_default(input: &[u8]) -> IResult<&[u8], F32x12> {
     ))
 }
 
+#[allow(clippy::cognitive_complexity)]
+#[allow(clippy::unwrap_used)]
 #[cfg(test)]
 mod test {
     use nom::Finish;

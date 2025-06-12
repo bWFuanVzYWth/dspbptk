@@ -99,6 +99,8 @@ pub fn _serialization_version_0(bin: &mut Vec<u8>, data: &BuildingData) {
         .for_each(|x| bin.extend_from_slice(&x.to_le_bytes()));
 }
 
+#[allow(clippy::cognitive_complexity)]
+#[allow(clippy::unwrap_used)]
 #[cfg(test)]
 mod test {
     use nom::Finish;
