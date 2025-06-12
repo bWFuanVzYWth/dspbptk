@@ -113,7 +113,7 @@ const INIT_MD5F: [u32; 4] = [
     u32::from_le_bytes([0x46, 0x57, 0x32, 0x10]),
 ];
 
-#[allow(dead_code)]
+#[expect(dead_code)]
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub enum Algo {
     MD5,
@@ -139,7 +139,7 @@ impl MD5 {
         Self { s, k_table }
     }
 
-    #[allow(clippy::many_single_char_names)]
+    #[expect(clippy::many_single_char_names)]
     fn update_block(&mut self, buf: &[u8]) {
         assert!(buf.len() == 64);
         let words: [u32; 16] = std::array::from_fn(|i| {

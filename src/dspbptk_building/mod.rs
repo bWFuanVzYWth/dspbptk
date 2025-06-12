@@ -35,7 +35,7 @@ impl DspbptkBuildingData {
     ///
     /// # Errors
     /// 失败时返回`NonStandardUuid`或者`UnexpectParametersLength`错误
-    #[allow(clippy::cast_possible_truncation)]
+    #[expect(clippy::cast_possible_truncation)]
     pub fn to_building_data(&self) -> Result<BuildingData, DspbptkError> {
         Ok(BuildingData {
             index: index_from_uuid(self.uuid)?,

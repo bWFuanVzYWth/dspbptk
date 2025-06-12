@@ -15,12 +15,12 @@
 
     clippy::suspicious,
     clippy::style,
-    clippy::pedantic,
+    // clippy::pedantic,
 
     clippy::nursery,
 
-    clippy::restriction,
-    clippy::cargo,
+    // clippy::restriction,
+    // clippy::cargo,
 )]
 
 pub mod blueprint;

@@ -17,7 +17,7 @@ const SORTER_HIGH: i16 = 2019;
 // 定义过于复杂的类型，避免使用时不小心写错
 pub type F32x12 = (f32, f32, f32, f32, f32, f32, f32, f32, f32, f32, f32, f32);
 
-#[allow(clippy::similar_names)]
+#[expect(clippy::similar_names)]
 pub fn deserialization_version_neg101(bin: &[u8]) -> IResult<&[u8], BuildingData> {
     let unknown = bin;
 
@@ -150,7 +150,7 @@ pub fn serialization_version_neg101(bin: &mut Vec<u8>, data: &BuildingData) {
         .for_each(|x| bin.extend_from_slice(&x.to_le_bytes()));
 }
 
-#[allow(clippy::similar_names)]
+#[expect(clippy::similar_names)]
 fn parse_sorter(input: &[u8]) -> IResult<&[u8], F32x12> {
     let (input, local_offset_x) = le_f32(input)?;
     let (input, local_offset_y) = le_f32(input)?;
