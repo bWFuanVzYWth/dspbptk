@@ -24,6 +24,9 @@ pub enum FileType {
     Content,
 }
 
+/// # Errors
+/// 可能的原因：
+/// 无法为将要输出的文件创建父文件夹，一般是权限之类的问题
 pub fn create_father_dir(path: &PathBuf) -> Result<(), DspbptkError> {
     let parent = path
         .parent()
@@ -50,6 +53,9 @@ fn read_blueprint_file(path: &Path) -> Result<String, DspbptkError> {
     std::fs::read_to_string(path).map_err(|e| CanNotReadFile { path, source: e })
 }
 
+/// # Errors
+/// 可能的原因：
+/// * 文件的后缀名不受支持
 pub fn read_file(path: &Path) -> Result<BlueprintKind, DspbptkError> {
     match classify_file_type(path) {
         FileType::Txt => {
@@ -74,6 +80,9 @@ fn write_content_file(path: &PathBuf, content: Vec<u8>) -> Result<(), DspbptkErr
     std::fs::write(path, content).map_err(|e| CanNotWriteFile { path, source: e })
 }
 
+/// # Errors
+/// 可能的错误：
+/// * 无法为待写入硬盘的文件创建文件夹，一般是权限之类的问题
 pub fn write_file(path: &PathBuf, blueprint_kind: BlueprintKind) -> Result<(), DspbptkError> {
     match blueprint_kind {
         BlueprintKind::Txt(blueprint) => write_blueprint_file(path, blueprint),
@@ -81,6 +90,10 @@ pub fn write_file(path: &PathBuf, blueprint_kind: BlueprintKind) -> Result<(), D
     }
 }
 
+/// 蓝图工具的前端，可读取并解码多种格式的蓝图数据
+///
+/// # Errors
+/// 所有读取或解码时发生的错误在此汇总
 pub fn process_front_end<'a>(
     blueprint: &'a BlueprintKind,
     blueprint_content_bin: &'a mut Vec<u8>,
@@ -116,6 +129,10 @@ pub fn process_front_end<'a>(
     }
 }
 
+/// 蓝图工具的后端，可编码并输出多种格式的蓝图数据
+///
+/// # Errors
+/// 所有编码或输出时发生的错误在此汇总
 pub fn process_back_end<'a>(
     header_data: &HeaderData,
     content_data: &ContentData,

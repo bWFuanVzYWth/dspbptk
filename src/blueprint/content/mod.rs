@@ -31,6 +31,9 @@ pub struct ContentData {
 }
 
 impl ContentData {
+    /// # Errors
+    /// 可能的原因：
+    /// * content编码错误，或者编码不受支持
     pub fn from_bin(bin: &[u8]) -> Result<(Self, Vec<DspbptkWarn>), DspbptkError> {
         use nom::Finish;
         let (unknown, content) = deserialization_non_finish(bin)
@@ -100,11 +103,8 @@ fn deserialization_non_finish(bin: &[u8]) -> IResult<&[u8], ContentData> {
     let (unknown, areas) =
         count(area::deserialization, usize::from(areas_length)).parse(unknown)?;
     let (unknown, buildings_length) = le_u32(unknown)?;
-    let (unknown, buildings) = count(
-        building::deserialization,
-        usize::try_from(buildings_length).expect("Fatal error: can not casting `u32` to `usize`"),
-    )
-    .parse(unknown)?;
+    let (unknown, buildings) =
+        count(building::deserialization, buildings_length as usize).parse(unknown)?;
 
     Ok((
         unknown,
@@ -163,6 +163,10 @@ fn gzip_from_bin<'a>(
     compress_gzip_zopfli(bin, zopfli_options)
 }
 
+/// # Errors
+/// 可能的原因：
+/// * base64解码错误，说明数据已损坏
+/// * gzip解压错误，说明数据已损坏
 pub fn bin_from_string<'a>(
     content_bin: &mut Vec<u8>,
     string: &'a str,
@@ -172,6 +176,9 @@ pub fn bin_from_string<'a>(
     Ok(())
 }
 
+/// # Errors
+/// 可能的原因：
+/// * gzip压缩错误，这个错误通常不该出现，万一真炸了得去看zopfli的文档
 pub fn string_from_data<'a>(
     data: &ContentData,
     zopfli_options: &zopfli::Options,

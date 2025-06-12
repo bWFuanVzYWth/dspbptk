@@ -89,6 +89,9 @@ fn parse_non_finish(string: &str) -> IResult<&str, HeaderData> {
     ))
 }
 
+/// # Errors
+/// 可能的原因：
+/// * 蓝图的header已经损坏，或编码不受支持
 pub fn parse(string: &str) -> Result<(HeaderData, Vec<DspbptkWarn>), DspbptkError> {
     let (unknown, data) = parse_non_finish(string).finish().map_err(BrokenHeader)?;
     match unknown.len() {

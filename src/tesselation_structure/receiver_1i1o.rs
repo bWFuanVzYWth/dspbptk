@@ -6,6 +6,10 @@ use crate::{dspbptk_building::DspbptkBuildingData, item::Item, toolkit::belt::co
 pub const GRID_A: f64 = 7.30726;
 pub const GRID_B: f64 = 4.19828;
 
+const RECEIVER_MODEL: i16 = Item::射线接收站.model()[0];
+const BELT_MODEL: i16 = Item::极速传送带.model()[0];
+const SORTER_MODEL: i16 = Item::分拣器.model()[0];
+
 #[must_use]
 pub fn new(
     local_offset: [f64; 3],
@@ -24,7 +28,7 @@ pub fn new(
     let receiver = DspbptkBuildingData {
         uuid: Some(Uuid::new_v4().to_u128_le()),
         item_id: Item::射线接收站 as i16,
-        model_index: Item::射线接收站.model()[0],
+        model_index: RECEIVER_MODEL,
         local_offset,
         parameters: vec![1208],
         ..Default::default()
@@ -34,7 +38,7 @@ pub fn new(
     let belt_lens_from_sorter = DspbptkBuildingData {
         uuid: Some(Uuid::new_v4().to_u128_le()),
         item_id: Item::极速传送带 as i16,
-        model_index: Item::极速传送带.model()[0],
+        model_index: BELT_MODEL,
         local_offset: [
             receiver.local_offset[0],
             // receiver.local_offset[1] + y_scale * ((GRID_A / 2.0) * (2.0 / 3.0)),
@@ -47,7 +51,7 @@ pub fn new(
     let belt_lens_into_receiver = DspbptkBuildingData {
         uuid: Some(Uuid::new_v4().to_u128_le()),
         item_id: Item::极速传送带 as i16,
-        model_index: Item::极速传送带.model()[0],
+        model_index: BELT_MODEL,
         local_offset: [
             receiver.local_offset[0],
             // receiver.local_offset[1] + y_scale * ((GRID_A / 2.0) * (1.0 / 3.0)),
@@ -61,7 +65,7 @@ pub fn new(
     let sorter_lens_input = DspbptkBuildingData {
         uuid: Some(Uuid::new_v4().to_u128_le()),
         item_id: Item::分拣器 as i16,
-        model_index: Item::分拣器.model()[0],
+        model_index: SORTER_MODEL,
         yaw: sorter_yaw,
         yaw2: sorter_yaw,
         local_offset: [
@@ -86,7 +90,7 @@ pub fn new(
     let belt_photons_from_receiver = DspbptkBuildingData {
         uuid: Some(Uuid::new_v4().to_u128_le()),
         item_id: Item::极速传送带 as i16,
-        model_index: Item::极速传送带.model()[0],
+        model_index: BELT_MODEL,
         local_offset: [
             receiver.local_offset[0],
             // receiver.local_offset[1] - y_scale * ((GRID_A / 2.0) * (1.0 / 3.0)),
@@ -99,7 +103,7 @@ pub fn new(
     let belt_photons_output = DspbptkBuildingData {
         uuid: Some(Uuid::new_v4().to_u128_le()),
         item_id: Item::极速传送带 as i16,
-        model_index: Item::极速传送带.model()[0],
+        model_index: BELT_MODEL,
         local_offset: [
             receiver.local_offset[0],
             // receiver.local_offset[1] - y_scale * ((GRID_A / 2.0) * (2.0 / 3.0)),

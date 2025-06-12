@@ -6,7 +6,7 @@ use nom::{
 
 use super::BuildingData;
 
-#[allow(clippy::similar_names)]
+#[expect(clippy::similar_names)]
 pub fn deserialization_version_0(bin: &[u8]) -> IResult<&[u8], BuildingData> {
     let unknown = bin;
 
@@ -70,7 +70,7 @@ pub fn deserialization_version_0(bin: &[u8]) -> IResult<&[u8], BuildingData> {
     ))
 }
 
-pub fn _serialization_version_0(bin: &mut Vec<u8>, data: &BuildingData) {
+pub fn serialization_version_0(bin: &mut Vec<u8>, data: &BuildingData) {
     bin.extend_from_slice(&data.index.to_le_bytes());
     bin.extend_from_slice(&data.area_index.to_le_bytes());
     bin.extend_from_slice(&data.local_offset_x.to_le_bytes());
@@ -99,6 +99,8 @@ pub fn _serialization_version_0(bin: &mut Vec<u8>, data: &BuildingData) {
         .for_each(|x| bin.extend_from_slice(&x.to_le_bytes()));
 }
 
+#[allow(clippy::cognitive_complexity)]
+#[allow(clippy::unwrap_used)]
 #[cfg(test)]
 mod test {
     use nom::Finish;
@@ -146,7 +148,7 @@ mod test {
         };
 
         let mut bin_test = Vec::new();
-        _serialization_version_0(&mut bin_test, &data_test);
+        serialization_version_0(&mut bin_test, &data_test);
 
         assert_eq!(bin_test, bin_expected);
     }

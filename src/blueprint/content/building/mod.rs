@@ -77,6 +77,9 @@ impl Default for BuildingData {
     }
 }
 
+/// # Errors
+/// 可能的原因：
+/// * 建筑数据已经损坏，或者编码不受支持
 pub fn deserialization(bin: &[u8]) -> IResult<&[u8], BuildingData> {
     let (unknown, data) = alt((
         deserialization_version_neg101,
