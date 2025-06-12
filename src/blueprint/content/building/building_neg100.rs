@@ -75,7 +75,7 @@ pub fn deserialization_version_neg100(bin: &[u8]) -> IResult<&[u8], BuildingData
     ))
 }
 
-pub fn _serialization_version_neg100(bin: &mut Vec<u8>, data: &BuildingData) {
+pub fn serialization_version_neg100(bin: &mut Vec<u8>, data: &BuildingData) {
     bin.extend_from_slice(&(NEG_100).to_le_bytes());
     bin.extend_from_slice(&data.index.to_le_bytes());
     bin.extend_from_slice(&data.area_index.to_le_bytes());
@@ -155,7 +155,7 @@ mod test {
         };
 
         let mut bin_test = Vec::new();
-        _serialization_version_neg100(&mut bin_test, &data_test);
+        serialization_version_neg100(&mut bin_test, &data_test);
 
         assert_eq!(bin_test, bin_expected);
     }

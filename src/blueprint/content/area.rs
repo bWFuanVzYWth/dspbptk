@@ -32,6 +32,9 @@ impl Default for AreaData {
     }
 }
 
+/// # Errors
+/// 可能的原因：
+/// * content的area部分已经损坏，或者编码不受支持
 pub fn deserialization(bin: &[u8]) -> IResult<&[u8], AreaData> {
     let unknown = bin;
 

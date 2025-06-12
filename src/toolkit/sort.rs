@@ -124,8 +124,8 @@ pub fn fix_buildings_index(buildings: Vec<BuildingData>) -> Vec<BuildingData> {
 ///
 /// 在保持拓扑序的前提下，应尽量优化内存布局，使线性链节点连续存储
 ///
-/// # Panic
-///
+/// # Panics
+/// 说明构建缩点后的DAG这一步的实现存在错误，实际生成的并不是DAG。这永远不应该出现。
 #[must_use]
 pub fn topological_sort_belt(buildings: &[BuildingData]) -> Vec<BuildingData> {
     let graph = build_graph(buildings);

@@ -52,6 +52,9 @@ fn parse_non_finish(string: &str) -> IResult<&str, BlueprintData> {
     ))
 }
 
+/// # Errors
+/// 可能的原因：
+/// * 蓝图已损坏，或者编码不受支持
 pub fn parse(string: &str) -> Result<(BlueprintData, Vec<DspbptkWarn>), DspbptkError> {
     let (unknown, data) = parse_non_finish(string).finish().map_err(BrokenBlueprint)?;
     let unknown_length = unknown.len();

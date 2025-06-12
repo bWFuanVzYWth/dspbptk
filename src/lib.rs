@@ -15,14 +15,13 @@
 
     clippy::suspicious,
     clippy::style,
-    // clippy::pedantic,
+    clippy::pedantic,
 
     clippy::nursery,
 
     // clippy::restriction,
     // clippy::cargo,
 )]
-
 #![feature(array_chunks)]
 
 pub mod blueprint;
@@ -35,7 +34,7 @@ pub mod toolkit;
 pub mod tesselation_structure;
 
 // TODO 给已经基本稳定下来的函数写文档
-// TODO cargo clippy --fix -- -D clippy::pedantic -D clippy::cargo -D clippy::nursery
+// TODO cargo clippy --fix
 // TODO cargo tarpaulin --ignore-tests
 
 // TODO 消除concat

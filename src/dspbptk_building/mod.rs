@@ -34,7 +34,9 @@ impl DspbptkBuildingData {
     ///  将`DspbptkBuildingData`转换为`BuildingData`
     ///
     /// # Errors
-    /// 失败时返回`NonStandardUuid`或者`UnexpectParametersLength`错误
+    /// 可能的原因：
+    /// * uuid无法转换为index。一般是uuid的数字太大超过了i32的范围，而这又往往是忘记了调用`fix_dspbptk_buildings_index`引起的
+    /// * `parameters.len()`太长。如果报这个错说明参数列表真的太长了。原版蓝图不可能出现这个报错。
     #[expect(clippy::cast_possible_truncation)]
     pub fn to_building_data(&self) -> Result<BuildingData, DspbptkError> {
         Ok(BuildingData {
@@ -121,7 +123,8 @@ impl BuildingData {
     /// 将当前`Building`对象转换为`DspbptkBuildingData`结构体
     ///
     /// # Errors
-    /// 失败时返回`NonStandardIndex`错误
+    /// 可能的原因：
+    /// * index无法转换为uuid，一般是出现了负数index。原版蓝图不可能出现这个报错。
     pub fn to_dspbptk_building_data(&self) -> Result<DspbptkBuildingData, DspbptkError> {
         Ok(DspbptkBuildingData {
             // 转换主索引为UUID，可能返回NonStandardIndex错误
