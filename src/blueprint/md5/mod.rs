@@ -113,7 +113,6 @@ const INIT_MD5F: [u32; 4] = [
     u32::from_le_bytes([0x46, 0x57, 0x32, 0x10]),
 ];
 
-#[expect(dead_code)]
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub enum Algo {
     MD5,
@@ -140,8 +139,7 @@ impl MD5 {
     }
 
     #[expect(clippy::many_single_char_names)]
-    fn update_block(&mut self, buf: &[u8]) {
-        assert!(buf.len() == 64);
+    fn update_block(&mut self, buf: &[u8; 64]) {
         let words: [u32; 16] = std::array::from_fn(|i| {
             let start = i * 4;
             u32::from_le_bytes([buf[start], buf[start + 1], buf[start + 2], buf[start + 3]])
@@ -214,7 +212,7 @@ impl MD5 {
     }
 
     fn process(&mut self, data: &[u8]) -> MD5Hash {
-        let chunks = data.chunks_exact(64);
+        let chunks = data.array_chunks::<64>();
         let remainder = chunks.remainder();
 
         // 使用固定大小数组替代 Vec<u8>
@@ -240,7 +238,7 @@ impl MD5 {
         let filled_len = current_length + pad_len + 8;
 
         // 处理所有块
-        for chunk in chunks.chain(last[..filled_len].chunks_exact(64)) {
+        for chunk in chunks.chain(last[..filled_len].array_chunks::<64>()) {
             self.update_block(chunk);
         }
 
