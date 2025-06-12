@@ -29,7 +29,7 @@ base64 = "0.22.1"
 # md5f
 lazy_static = "1.5.0"
 # Decompress GZIP
-flate2 = "1.1.1"
+flate2 = "1.1.2"
 # Compress GZIP
 zopfli = "0.8.2"
 # test float equal
@@ -38,7 +38,7 @@ approx = "0.5.1"
 # Recursive directory traversal
 walkdir = "2.5.0"
 # Command Line Argument Parser
-clap = { version = "4.5.38", features = ["derive"] }
+clap = { version = "4.5.40", features = ["derive"] }
 # log
 log = "0.4.27"
 # log >> stderr
@@ -59,7 +59,7 @@ strum_macros = "0.27.1"
 # alloc
 mimalloc = "0.1.46"
 # graph
-petgraph = "0.8.1"
+petgraph = "0.8.2"
 
 [profile.release]
 codegen-units = 1

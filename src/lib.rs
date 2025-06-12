@@ -1,6 +1,10 @@
 #![deny(
     clippy::correctness,
 
+    clippy::shadow_unrelated,
+    clippy::shadow_same,
+    clippy::shadow_unrelated,
+
     clippy::indexing_slicing,      // 禁止直接索引访问（可能导致越界 panic）
     clippy::unwrap_used,           // 禁止使用 `unwrap`
     clippy::expect_used,           // 禁止使用 `expect`
