@@ -104,7 +104,7 @@ fn find_nearest(
                 .partial_cmp(&cos_arc_b)
                 .unwrap_or(std::cmp::Ordering::Equal)
         })
-        .expect("Fatal error: can not find nearest buildings")
+        .expect("unreachable: can not find nearest buildings")
 }
 
 fn receivers_with_io(

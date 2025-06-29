@@ -165,7 +165,7 @@ pub fn topological_sort_belt(buildings: &[BuildingData]) -> Vec<BuildingData> {
 
     // 5. 对DAG进行拓扑排序
     let dag_order =
-        petgraph::algo::toposort(&dag, None).expect("fatal error: Cycle detected in DAG.");
+        petgraph::algo::toposort(&dag, None).expect("unreachable: cycle detected in DAG.");
 
     // 6. 按照拓扑序展开SCC
     let mut result = Vec::with_capacity(buildings.len());
