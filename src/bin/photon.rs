@@ -184,7 +184,7 @@ fn layout_to_buildings(rows: &[Row]) -> Vec<DspbptkBuildingData> {
         .take(rows.len() - 1) // 跳过最后一行
         .enumerate()
         .map(|(i, row)| {
-            let (lens_belts, photons_belts) = if i % 2 == 0 {
+            let (lens_belts, photons_belts) = if i.is_multiple_of(2) {
                 (&belts_in_rows[i + 1], &belts_in_rows[i])
             } else {
                 (&belts_in_rows[i], &belts_in_rows[i + 1])

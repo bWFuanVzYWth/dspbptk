@@ -83,7 +83,10 @@ fn write_content_file(path: &'_ PathBuf, content: Vec<u8>) -> Result<(), Dspbptk
 /// # Errors
 /// 可能的错误：
 /// * 无法为待写入硬盘的文件创建文件夹，一般是权限之类的问题
-pub fn write_file(path: &'_ PathBuf, blueprint_kind: BlueprintKind) -> Result<(), DspbptkError<'_>> {
+pub fn write_file(
+    path: &'_ PathBuf,
+    blueprint_kind: BlueprintKind,
+) -> Result<(), DspbptkError<'_>> {
     match blueprint_kind {
         BlueprintKind::Txt(blueprint) => write_blueprint_file(path, blueprint),
         BlueprintKind::Content(content) => write_content_file(path, content),
