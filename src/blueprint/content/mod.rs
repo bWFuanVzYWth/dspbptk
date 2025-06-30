@@ -34,7 +34,7 @@ impl ContentData {
     /// # Errors
     /// 可能的原因：
     /// * content编码错误，或者编码不受支持
-    pub fn from_bin(bin: &[u8]) -> Result<(Self, Vec<DspbptkWarn>), DspbptkError> {
+    pub fn from_bin(bin: &'_ [u8]) -> Result<(Self, Vec<DspbptkWarn>), DspbptkError<'_>> {
         use nom::Finish;
         let (unknown, content) = deserialization_non_finish(bin)
             .finish()
@@ -125,7 +125,7 @@ fn deserialization_non_finish(bin: &[u8]) -> IResult<&[u8], ContentData> {
     ))
 }
 
-fn gzip_from_string(string: &str) -> Result<Vec<u8>, DspbptkError> {
+fn gzip_from_string(string: &'_ str) -> Result<Vec<u8>, DspbptkError<'_>> {
     use base64::prelude::*;
     match BASE64_STANDARD.decode(string) {
         Ok(bin) => Ok(bin),

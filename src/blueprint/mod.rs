@@ -35,7 +35,7 @@ fn take_till_quote(string: &str) -> IResult<&str, &str> {
     take_till(|c| c == '"')(string)
 }
 
-fn parse_non_finish(string: &str) -> IResult<&str, BlueprintData> {
+fn parse_non_finish(string: &'_ str) -> IResult<&'_ str, BlueprintData<'_>> {
     let unknown = string;
 
     let (unknown, header) = take_till_quote(unknown)?;
@@ -55,7 +55,7 @@ fn parse_non_finish(string: &str) -> IResult<&str, BlueprintData> {
 /// # Errors
 /// 可能的原因：
 /// * 蓝图已损坏，或者编码不受支持
-pub fn parse(string: &str) -> Result<(BlueprintData, Vec<DspbptkWarn>), DspbptkError> {
+pub fn parse(string: &'_ str) -> Result<(BlueprintData<'_>, Vec<DspbptkWarn>), DspbptkError<'_>> {
     let (unknown, data) = parse_non_finish(string).finish().map_err(BrokenBlueprint)?;
     let unknown_length = unknown.len();
     let warns = match unknown.len() {

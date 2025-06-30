@@ -138,12 +138,12 @@ impl MD5 {
         Self { s, k_table }
     }
 
-    // #![feature(array_chunks)]
     #[expect(clippy::many_single_char_names)]
     fn update_block(&mut self, buf: &[u8; 64]) {
         let mut buf_iter = buf.array_chunks::<4>();
-        let words: [u32; 16] =
-            std::array::from_fn(|_| u32::from_le_bytes(*buf_iter.next().expect("unreachable: buf.len() < 64")));
+        let words: [u32; 16] = std::array::from_fn(|_| {
+            u32::from_le_bytes(*buf_iter.next().expect("unreachable: buf.len() < 64"))
+        });
 
         let mut a = self.s[0];
         let mut b = self.s[1];
