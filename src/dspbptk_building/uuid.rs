@@ -2,13 +2,18 @@ use uuid::Uuid;
 
 use crate::{blueprint::content::building::INDEX_NULL, error::DspbptkError};
 
-// FIXME 命名不太合理
+/// # Errors
+/// 可能的原因：
+/// * 尝试把uuid转换到index时，超出定义域
 pub fn index_try_from_uuid<'a>(uuid: Option<u128>) -> Result<i32, DspbptkError<'a>> {
     uuid.map_or(Ok(INDEX_NULL), |num| {
         i32::try_from(num).map_err(DspbptkError::TryFromUuidError)
     })
 }
 
+/// # Errors
+/// 可能的原因：
+/// * 尝试把index转换到uuid时，超出定义域
 pub fn uuid_try_from_index<'a>(index: i32) -> Result<Option<u128>, DspbptkError<'a>> {
     if index == INDEX_NULL {
         Ok(None)
