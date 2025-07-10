@@ -1,9 +1,9 @@
 use lazy_static::lazy_static;
-use uuid::Uuid;
+use nalgebra::Vector3;
 
 use dspbptk::{
     blueprint::{content::ContentData, header::HeaderData},
-    dspbptk_building::{DspbptkBuildingData, fix_dspbptk_buildings_index},
+    dspbptk_building::{fix_dspbptk_buildings_index, uuid::new_uuid, DspbptkBuildingData},
     error::DspbptkError::{self, UnexpectBuildingsCount},
     io::{BlueprintKind, FileType},
     item::Item,
@@ -11,7 +11,7 @@ use dspbptk::{
     toolkit::{
         belt::connect_belts,
         coordinate_transformation::local_offset_to_direction,
-        tesselation::{Row, calculate_next_y},
+        tesselation::{calculate_next_y, Row},
         unit_conversion::{arc_from_grid, grid_from_arc},
     },
 };
@@ -90,7 +90,7 @@ fn calculate_layout() -> Vec<Row> {
 
 fn find_nearest(
     buildings: &[DspbptkBuildingData],
-    reference_local_offset: [f64; 3],
+    reference_local_offset: Vector3<f64>,
 ) -> &DspbptkBuildingData {
     buildings
         .iter()
@@ -114,11 +114,11 @@ fn receivers_with_io(
 ) -> Vec<DspbptkBuildingData> {
     (0..row.n)
         .map(|i| {
-            let local_offset = [
+            let local_offset = Vector3::new(
                 1000.0 * (i as f64 + 0.5) / (row.n as f64),
                 grid_from_arc(row.y),
                 0.0,
-            ];
+            );
 
             let output_to_slot = if local_offset[1] > photons_belts[0].local_offset[1] {
                 2
@@ -155,14 +155,14 @@ fn main_belts(row: &Row) -> Vec<DspbptkBuildingData> {
 
     (0..=belts_count)
         .map(|i| DspbptkBuildingData {
-            uuid: Some(Uuid::new_v4().to_u128_le()),
+            uuid: new_uuid(),
             item_id: Item::极速传送带 as i16,
             model_index: Item::极速传送带.model()[0],
-            local_offset: [
+            local_offset: Vector3::new(
                 grid_from_arc(x_arc.mul_add((i as f64) / (belts_count as f64), x_from)),
                 grid_from_arc(y),
                 0.0,
-            ],
+            ),
             ..Default::default()
         })
         .collect::<Vec<_>>()

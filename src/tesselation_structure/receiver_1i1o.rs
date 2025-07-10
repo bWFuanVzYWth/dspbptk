@@ -1,6 +1,6 @@
-use uuid::Uuid;
+use nalgebra::Vector3;
 
-use crate::{dspbptk_building::DspbptkBuildingData, item::Item, toolkit::belt::connect_belts};
+use crate::{dspbptk_building::{uuid::new_uuid, DspbptkBuildingData}, item::Item, toolkit::belt::connect_belts};
 
 // 模块尺寸即锅的尺寸，数据由src/bin/test_ray_receiver_size测出
 pub const GRID_A: f64 = 7.30726;
@@ -12,7 +12,7 @@ const SORTER_MODEL: i16 = Item::分拣器.model()[0];
 
 #[must_use]
 pub fn new(
-    local_offset: [f64; 3],
+    local_offset: Vector3<f64>,
     input_obj: &DspbptkBuildingData,
     input_from_slot: i8,
     output_obj: &DspbptkBuildingData,
@@ -26,7 +26,7 @@ pub fn new(
 
     // 光子锅
     let receiver = DspbptkBuildingData {
-        uuid: Some(Uuid::new_v4().to_u128_le()),
+        uuid: new_uuid(),
         item_id: Item::射线接收站 as i16,
         model_index: RECEIVER_MODEL,
         local_offset,
@@ -36,44 +36,44 @@ pub fn new(
 
     // 透镜带
     let belt_lens_from_sorter = DspbptkBuildingData {
-        uuid: Some(Uuid::new_v4().to_u128_le()),
+        uuid: new_uuid(),
         item_id: Item::极速传送带 as i16,
         model_index: BELT_MODEL,
-        local_offset: [
+        local_offset: Vector3::new(
             receiver.local_offset[0],
             // receiver.local_offset[1] + y_scale * ((GRID_A / 2.0) * (2.0 / 3.0)),
             y_scale.mul_add((GRID_A / 2.0) * (2.0 / 3.0), receiver.local_offset[1]),
             receiver.local_offset[2],
-        ],
+        ),
         ..Default::default()
     };
 
     let belt_lens_into_receiver = DspbptkBuildingData {
-        uuid: Some(Uuid::new_v4().to_u128_le()),
+        uuid: new_uuid(),
         item_id: Item::极速传送带 as i16,
         model_index: BELT_MODEL,
-        local_offset: [
+        local_offset: Vector3::new(
             receiver.local_offset[0],
             // receiver.local_offset[1] + y_scale * ((GRID_A / 2.0) * (1.0 / 3.0)),
             y_scale.mul_add((GRID_A / 2.0) * (1.0 / 3.0), receiver.local_offset[1]),
             receiver.local_offset[2],
-        ],
+        ),
         ..Default::default()
     };
 
     // 分流透镜的黄爪
     let sorter_lens_input = DspbptkBuildingData {
-        uuid: Some(Uuid::new_v4().to_u128_le()),
+        uuid: new_uuid(),
         item_id: Item::分拣器 as i16,
         model_index: SORTER_MODEL,
         yaw: sorter_yaw,
         yaw2: sorter_yaw,
-        local_offset: [
+        local_offset: Vector3::new(
             receiver.local_offset[0],
             // receiver.local_offset[1] + y_scale * ((GRID_A / 2.0) - 0.25),
             y_scale.mul_add((GRID_A / 2.0) - 0.25, receiver.local_offset[1]),
             receiver.local_offset[2],
-        ],
+        ),
         local_offset_2: belt_lens_from_sorter.local_offset,
         temp_input_obj_idx: input_obj.uuid,
         temp_output_obj_idx: belt_lens_from_sorter.uuid,
@@ -88,28 +88,28 @@ pub fn new(
 
     // 光子带
     let belt_photons_from_receiver = DspbptkBuildingData {
-        uuid: Some(Uuid::new_v4().to_u128_le()),
+        uuid: new_uuid(),
         item_id: Item::极速传送带 as i16,
         model_index: BELT_MODEL,
-        local_offset: [
+        local_offset: Vector3::new(
             receiver.local_offset[0],
             // receiver.local_offset[1] - y_scale * ((GRID_A / 2.0) * (1.0 / 3.0)),
             (-y_scale).mul_add((GRID_A / 2.0) * (1.0 / 3.0), receiver.local_offset[1]),
             receiver.local_offset[2],
-        ],
+        ),
         ..Default::default()
     };
 
     let belt_photons_output = DspbptkBuildingData {
-        uuid: Some(Uuid::new_v4().to_u128_le()),
+        uuid: new_uuid(),
         item_id: Item::极速传送带 as i16,
         model_index: BELT_MODEL,
-        local_offset: [
+        local_offset: Vector3::new(
             receiver.local_offset[0],
             // receiver.local_offset[1] - y_scale * ((GRID_A / 2.0) * (2.0 / 3.0)),
             (-y_scale).mul_add((GRID_A / 2.0) * (2.0 / 3.0), receiver.local_offset[1]),
             receiver.local_offset[2],
-        ],
+        ),
         ..Default::default()
     };
 

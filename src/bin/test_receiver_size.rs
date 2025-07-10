@@ -1,15 +1,15 @@
 use dspbptk::{
     blueprint::{content::ContentData, header::HeaderData},
-    dspbptk_building::{DspbptkBuildingData, fix_dspbptk_buildings_index},
+    dspbptk_building::{fix_dspbptk_buildings_index, uuid::new_uuid, DspbptkBuildingData},
     error::DspbptkError::{self},
     io::{BlueprintKind, FileType},
     item::Item,
 };
-use uuid::Uuid;
+use nalgebra::Vector3;
 
-fn new_receiver(local_offset: [f64; 3]) -> DspbptkBuildingData {
+fn new_receiver(local_offset: Vector3<f64>) -> DspbptkBuildingData {
     DspbptkBuildingData {
-        uuid: Some(Uuid::new_v4().to_u128_le()),
+        uuid: new_uuid(),
         item_id: Item::射线接收站 as i16,
         model_index: Item::射线接收站.model()[0],
         local_offset,
@@ -24,28 +24,28 @@ fn main() -> Result<(), DspbptkError<'static>> {
 
     // 基础行
     let base = (0..=9)
-        .map(|x| new_receiver([15.0 * f64::from(x), 0.0, 0.0]))
+        .map(|x| new_receiver(Vector3::new(15.0 * f64::from(x), 0.0, 0.0)))
         .collect::<Vec<_>>();
 
     // 测试长轴碰撞
     let test_axis = (0..=9)
         .map(|x| {
-            new_receiver([
+            new_receiver(Vector3::new(
                 15.0 * f64::from(x),
                 f64::from(x).mul_add(0.00001, 7.3072),
                 0.0,
-            ])
+            ))
         })
         .collect(); // (7.30725, 7.30726)
 
     // 测试角落碰撞
     let test_corner = (0..=9)
         .map(|x| {
-            new_receiver([
+            new_receiver(Vector3::new(
                 f64::from(x).mul_add(15.0, 7.2),
                 f64::from(x).mul_add(-0.00001, -4.1982),
                 0.0,
-            ])
+            ))
         })
         .collect(); // (4.19828, 4.19829)
 

@@ -7,7 +7,7 @@ pub const HALF_EQUATORIAL_GRID: f64 = 500.0;
 
 // 将方向向量转换为局部偏移
 #[must_use]
-pub fn direction_to_local_offset(direction: &Vector3<f64>, z: f64) -> [f64; 3] {
+pub fn direction_to_local_offset(direction: &Vector3<f64>, z: f64) -> Vector3<f64> {
     const ANGLE_SCALE: f64 = HALF_EQUATORIAL_GRID / PI;
 
     let theta_x = direction.y.atan2(direction.x);
@@ -19,12 +19,12 @@ pub fn direction_to_local_offset(direction: &Vector3<f64>, z: f64) -> [f64; 3] {
     let x = fix_value(x, direction.x, 500.0, -500.0);
     let y = fix_value(y, direction.z, 250.0, -250.0);
 
-    [x, y, z]
+    Vector3::new(x, y, z)
 }
 
 // 将局部偏移转换为方向向量
 #[must_use]
-pub fn local_offset_to_direction(local_offset: [f64; 3]) -> Vector3<f64> {
+pub fn local_offset_to_direction(local_offset: Vector3<f64>) -> Vector3<f64> {
     const ANGLE_SCALE: f64 = PI / HALF_EQUATORIAL_GRID;
 
     let theta_x = (local_offset[0]) * ANGLE_SCALE;

@@ -1,17 +1,22 @@
+use nalgebra::Vector3;
+
 use crate::{
     blueprint::content::building::{BuildingData, INDEX_NULL},
     error::DspbptkError,
 };
 
+pub mod offset;
+pub mod uuid;
+
 #[derive(Debug, Clone)]
 pub struct DspbptkBuildingData {
     pub uuid: Option<u128>,
     pub area_index: i8,
-    pub local_offset: [f64; 3],
+    pub local_offset: Vector3<f64>,
     pub yaw: f64,
     pub tilt: f64,
     pub pitch: f64,
-    pub local_offset_2: [f64; 3],
+    pub local_offset_2: Vector3<f64>,
     pub yaw2: f64,
     pub tilt2: f64,
     pub pitch2: f64,
@@ -73,32 +78,18 @@ impl DspbptkBuildingData {
     }
 }
 
-fn index_from_uuid<'a>(uuid: Option<u128>) -> Result<i32, DspbptkError<'a>> {
-    uuid.map_or(Ok(INDEX_NULL), |num| {
-        i32::try_from(num).map_err(DspbptkError::NonStandardUuid)
-    })
-}
 
-fn uuid_from_index<'a>(index: i32) -> Result<Option<u128>, DspbptkError<'a>> {
-    if index == INDEX_NULL {
-        Ok(None)
-    } else {
-        Ok(Some(
-            u128::try_from(index).map_err(DspbptkError::NonStandardIndex)?,
-        ))
-    }
-}
 
 impl Default for DspbptkBuildingData {
     fn default() -> Self {
         Self {
             uuid: None,
             area_index: 0,
-            local_offset: [0.0, 0.0, 0.0],
+            local_offset: Vector3::new(0.0, 0.0, 0.0),
             yaw: 0.0,
             tilt: 0.0,
             pitch: 0.0,
-            local_offset_2: [0.0, 0.0, 0.0],
+            local_offset_2: Vector3::new(0.0, 0.0, 0.0),
             yaw2: 0.0,
             tilt2: 0.0,
             pitch2: 0.0,
@@ -131,21 +122,21 @@ impl BuildingData {
             uuid: uuid_from_index(self.index)?,
             area_index: self.area_index,
             // 转换局部偏移量为f64类型数组
-            local_offset: [
+            local_offset: Vector3::new(
                 f64::from(self.local_offset_x),
                 f64::from(self.local_offset_y),
                 f64::from(self.local_offset_z),
-            ],
+            ),
             // 转换方向角为f64类型
             yaw: f64::from(self.yaw),
             tilt: f64::from(self.tilt),
             pitch: f64::from(self.pitch),
             // 转换第二组局部偏移量为f64类型数组
-            local_offset_2: [
+            local_offset_2: Vector3::new(
                 f64::from(self.local_offset_x2),
                 f64::from(self.local_offset_y2),
                 f64::from(self.local_offset_z2),
-            ],
+            ),
             // 转换第二组方向角为f64类型
             yaw2: f64::from(self.yaw2),
             tilt2: f64::from(self.tilt2),
