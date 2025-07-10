@@ -3,15 +3,17 @@ use nalgebra::Vector3;
 
 use dspbptk::{
     blueprint::{content::ContentData, header::HeaderData},
-    dspbptk_building::{fix_dspbptk_buildings_index, uuid::new_uuid, DspbptkBuildingData},
+    dspbptk_building::{DspbptkBuildingData, fix_dspbptk_buildings_index, uuid::new_uuid},
     error::DspbptkError::{self, UnexpectBuildingsCount},
     io::{BlueprintKind, FileType},
     item::Item,
     tesselation_structure::receiver_1i1o,
     toolkit::{
-        belt::connect_belts,
-        coordinate_transformation::local_offset_to_direction,
-        tesselation::{calculate_next_y, Row},
+        dspbptk::{
+            belt::connect_belts,
+            coordinate_transformation::local_offset_to_direction,
+            tesselation::{Row, calculate_next_y},
+        },
         unit_conversion::{arc_from_grid, grid_from_arc},
     },
 };

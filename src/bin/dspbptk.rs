@@ -4,7 +4,7 @@ static GLOBAL: mimalloc::MiMalloc = mimalloc::MiMalloc;
 use std::path::{Path, PathBuf};
 
 use clap::Parser;
-use dspbptk::toolkit::sort::{fix_buildings_index, sort_buildings};
+use dspbptk::toolkit::dspbp::sort::{fix_buildings_index, sort_buildings};
 use log::{error, warn};
 use rayon::prelude::*;
 use walkdir::WalkDir;

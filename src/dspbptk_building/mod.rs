@@ -6,7 +6,6 @@ use crate::{
     error::DspbptkError,
 };
 
-pub mod offset;
 pub mod uuid;
 
 #[derive(Debug, Clone)]
