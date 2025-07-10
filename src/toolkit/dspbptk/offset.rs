@@ -1,6 +1,6 @@
 use nalgebra::Vector3;
 
-use crate::dspbptk_building::{uuid::new_uuid, DspbptkBuildingData};
+use crate::dspbptk_building::{DspbptkBuildingData, uuid::new_uuid};
 
 impl DspbptkBuildingData {
     // TODO 重命名
