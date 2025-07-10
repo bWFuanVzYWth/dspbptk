@@ -1,31 +1,31 @@
-// #![deny(
-//     clippy::correctness,
+#![deny(
+    clippy::correctness,
 
-//     clippy::shadow_unrelated,
-//     clippy::shadow_same,
-//     clippy::shadow_unrelated,
+    clippy::shadow_unrelated,
+    clippy::shadow_same,
+    clippy::shadow_unrelated,
 
-//     clippy::indexing_slicing,      // 禁止直接索引访问（可能导致越界 panic）
-//     clippy::unwrap_used,           // 禁止使用 `unwrap`
-//     clippy::expect_used,           // 禁止使用 `expect`
-//     clippy::panic_in_result_fn,    // 禁止在返回 `Result` 的函数中调用 `panic!`
-//     clippy::todo,                  // 禁止使用 `todo!`
-//     clippy::unreachable,           // 禁止使用 `unreachable!`
-//     clippy::unimplemented,         // 禁止使用 `unimplemented!`
-//     )]
-// #![warn(
-//     clippy::complexity,
-//     clippy::perf,
+    clippy::indexing_slicing,      // 禁止直接索引访问（可能导致越界 panic）
+    clippy::unwrap_used,           // 禁止使用 `unwrap`
+    clippy::expect_used,           // 禁止使用 `expect`
+    clippy::panic_in_result_fn,    // 禁止在返回 `Result` 的函数中调用 `panic!`
+    clippy::todo,                  // 禁止使用 `todo!`
+    clippy::unreachable,           // 禁止使用 `unreachable!`
+    clippy::unimplemented,         // 禁止使用 `unimplemented!`
+    )]
+#![warn(
+    clippy::complexity,
+    clippy::perf,
 
-//     clippy::suspicious,
-//     clippy::style,
-//     clippy::pedantic,
+    clippy::suspicious,
+    clippy::style,
+    clippy::pedantic,
 
-//     clippy::nursery,
+    clippy::nursery,
 
-//     // clippy::restriction,
-//     // clippy::cargo,
-// )]
+    // clippy::restriction,
+    // clippy::cargo,
+)]
 #![feature(array_chunks)]
 
 pub mod blueprint;

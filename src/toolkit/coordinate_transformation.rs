@@ -27,8 +27,8 @@ pub fn direction_to_local_offset(direction: &Vector3<f64>, z: f64) -> Vector3<f6
 pub fn local_offset_to_direction(local_offset: Vector3<f64>) -> Vector3<f64> {
     const ANGLE_SCALE: f64 = PI / HALF_EQUATORIAL_GRID;
 
-    let theta_x = (local_offset[0]) * ANGLE_SCALE;
-    let theta_y = (local_offset[1]) * ANGLE_SCALE;
+    let theta_x = local_offset.x * ANGLE_SCALE;
+    let theta_y = local_offset.y * ANGLE_SCALE;
 
     let (sin_theta_y, cos_theta_y) = theta_y.sin_cos();
     let (sin_theta_x, cos_theta_x) = theta_x.sin_cos();

@@ -1,6 +1,10 @@
 use nalgebra::Vector3;
 
-use crate::{dspbptk_building::{uuid::new_uuid, DspbptkBuildingData}, item::Item, toolkit::belt::connect_belts};
+use crate::{
+    dspbptk_building::{DspbptkBuildingData, uuid::new_uuid},
+    item::Item,
+    toolkit::belt::connect_belts,
+};
 
 // 模块尺寸即锅的尺寸，数据由src/bin/test_ray_receiver_size测出
 pub const GRID_A: f64 = 7.30726;
@@ -18,7 +22,7 @@ pub fn new(
     output_obj: &DspbptkBuildingData,
     output_to_slot: i8,
 ) -> Vec<DspbptkBuildingData> {
-    let (y_scale, sorter_yaw) = if input_obj.local_offset[1] > output_obj.local_offset[1] {
+    let (y_scale, sorter_yaw) = if input_obj.local_offset.y > output_obj.local_offset.y {
         (1.0_f64, 180.0_f64)
     } else {
         (-1.0_f64, 0.0_f64)
@@ -40,10 +44,10 @@ pub fn new(
         item_id: Item::极速传送带 as i16,
         model_index: BELT_MODEL,
         local_offset: Vector3::new(
-            receiver.local_offset[0],
-            // receiver.local_offset[1] + y_scale * ((GRID_A / 2.0) * (2.0 / 3.0)),
-            y_scale.mul_add((GRID_A / 2.0) * (2.0 / 3.0), receiver.local_offset[1]),
-            receiver.local_offset[2],
+            receiver.local_offset.x,
+            // receiver.local_offset.y + y_scale * ((GRID_A / 2.0) * (2.0 / 3.0)),
+            y_scale.mul_add((GRID_A / 2.0) * (2.0 / 3.0), receiver.local_offset.y),
+            receiver.local_offset.z,
         ),
         ..Default::default()
     };
@@ -53,10 +57,10 @@ pub fn new(
         item_id: Item::极速传送带 as i16,
         model_index: BELT_MODEL,
         local_offset: Vector3::new(
-            receiver.local_offset[0],
-            // receiver.local_offset[1] + y_scale * ((GRID_A / 2.0) * (1.0 / 3.0)),
-            y_scale.mul_add((GRID_A / 2.0) * (1.0 / 3.0), receiver.local_offset[1]),
-            receiver.local_offset[2],
+            receiver.local_offset.x,
+            // receiver.local_offset.y + y_scale * ((GRID_A / 2.0) * (1.0 / 3.0)),
+            y_scale.mul_add((GRID_A / 2.0) * (1.0 / 3.0), receiver.local_offset.y),
+            receiver.local_offset.z,
         ),
         ..Default::default()
     };
@@ -69,10 +73,10 @@ pub fn new(
         yaw: sorter_yaw,
         yaw2: sorter_yaw,
         local_offset: Vector3::new(
-            receiver.local_offset[0],
-            // receiver.local_offset[1] + y_scale * ((GRID_A / 2.0) - 0.25),
-            y_scale.mul_add((GRID_A / 2.0) - 0.25, receiver.local_offset[1]),
-            receiver.local_offset[2],
+            receiver.local_offset.x,
+            // receiver.local_offset.y + y_scale * ((GRID_A / 2.0) - 0.25),
+            y_scale.mul_add((GRID_A / 2.0) - 0.25, receiver.local_offset.y),
+            receiver.local_offset.z,
         ),
         local_offset_2: belt_lens_from_sorter.local_offset,
         temp_input_obj_idx: input_obj.uuid,
@@ -92,10 +96,10 @@ pub fn new(
         item_id: Item::极速传送带 as i16,
         model_index: BELT_MODEL,
         local_offset: Vector3::new(
-            receiver.local_offset[0],
-            // receiver.local_offset[1] - y_scale * ((GRID_A / 2.0) * (1.0 / 3.0)),
-            (-y_scale).mul_add((GRID_A / 2.0) * (1.0 / 3.0), receiver.local_offset[1]),
-            receiver.local_offset[2],
+            receiver.local_offset.x,
+            // receiver.local_offset.y - y_scale * ((GRID_A / 2.0) * (1.0 / 3.0)),
+            (-y_scale).mul_add((GRID_A / 2.0) * (1.0 / 3.0), receiver.local_offset.y),
+            receiver.local_offset.z,
         ),
         ..Default::default()
     };
@@ -105,10 +109,10 @@ pub fn new(
         item_id: Item::极速传送带 as i16,
         model_index: BELT_MODEL,
         local_offset: Vector3::new(
-            receiver.local_offset[0],
-            // receiver.local_offset[1] - y_scale * ((GRID_A / 2.0) * (2.0 / 3.0)),
-            (-y_scale).mul_add((GRID_A / 2.0) * (2.0 / 3.0), receiver.local_offset[1]),
-            receiver.local_offset[2],
+            receiver.local_offset.x,
+            // receiver.local_offset.y - y_scale * ((GRID_A / 2.0) * (2.0 / 3.0)),
+            (-y_scale).mul_add((GRID_A / 2.0) * (2.0 / 3.0), receiver.local_offset.y),
+            receiver.local_offset.z,
         ),
         ..Default::default()
     };

@@ -175,6 +175,7 @@ pub enum Item {
     沙土 = 1099,
 }
 
+// TODO 想想更好的写法，提供更强的静态保证
 impl Item {
     #[must_use]
     pub const fn model(&self) -> &[i16] {

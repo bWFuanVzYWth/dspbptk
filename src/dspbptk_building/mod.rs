@@ -1,7 +1,9 @@
 use nalgebra::Vector3;
 
 use crate::{
-    blueprint::content::building::{BuildingData}, dspbptk_building::uuid::{index_from_uuid, uuid_from_index}, error::DspbptkError
+    blueprint::content::building::BuildingData,
+    dspbptk_building::uuid::{index_try_from_uuid, uuid_try_from_index},
+    error::DspbptkError,
 };
 
 pub mod offset;
@@ -44,24 +46,24 @@ impl DspbptkBuildingData {
     #[expect(clippy::cast_possible_truncation)]
     pub fn to_building_data(&'_ self) -> Result<BuildingData, DspbptkError<'_>> {
         Ok(BuildingData {
-            index: index_from_uuid(self.uuid)?,
+            index: index_try_from_uuid(self.uuid)?,
             area_index: self.area_index,
-            local_offset_x: self.local_offset[0] as f32,
-            local_offset_y: self.local_offset[1] as f32,
-            local_offset_z: self.local_offset[2] as f32,
+            local_offset_x: self.local_offset.x as f32,
+            local_offset_y: self.local_offset.y as f32,
+            local_offset_z: self.local_offset.z as f32,
             yaw: self.yaw as f32,
             tilt: self.tilt as f32,
             pitch: self.pitch as f32,
-            local_offset_x2: self.local_offset_2[0] as f32,
-            local_offset_y2: self.local_offset_2[1] as f32,
-            local_offset_z2: self.local_offset_2[2] as f32,
+            local_offset_x2: self.local_offset_2.x as f32,
+            local_offset_y2: self.local_offset_2.y as f32,
+            local_offset_z2: self.local_offset_2.z as f32,
             yaw2: self.yaw2 as f32,
             tilt2: self.tilt2 as f32,
             pitch2: self.pitch2 as f32,
             item_id: self.item_id,
             model_index: self.model_index,
-            temp_output_obj_idx: index_from_uuid(self.temp_output_obj_idx)?,
-            temp_input_obj_idx: index_from_uuid(self.temp_input_obj_idx)?,
+            temp_output_obj_idx: index_try_from_uuid(self.temp_output_obj_idx)?,
+            temp_input_obj_idx: index_try_from_uuid(self.temp_input_obj_idx)?,
             output_to_slot: self.output_to_slot,
             input_from_slot: self.input_from_slot,
             output_from_slot: self.output_from_slot,
@@ -76,8 +78,6 @@ impl DspbptkBuildingData {
         })
     }
 }
-
-
 
 impl Default for DspbptkBuildingData {
     fn default() -> Self {
@@ -118,7 +118,7 @@ impl BuildingData {
     pub fn to_dspbptk_building_data(&'_ self) -> Result<DspbptkBuildingData, DspbptkError<'_>> {
         Ok(DspbptkBuildingData {
             // 转换主索引为UUID，可能返回NonStandardIndex错误
-            uuid: uuid_from_index(self.index)?,
+            uuid: uuid_try_from_index(self.index)?,
             area_index: self.area_index,
             // 转换局部偏移量为f64类型数组
             local_offset: Vector3::new(
@@ -143,8 +143,8 @@ impl BuildingData {
             item_id: self.item_id,
             model_index: self.model_index,
             // 转换输出/输入对象索引为UUID，可能返回NonStandardIndex错误
-            temp_output_obj_idx: uuid_from_index(self.temp_output_obj_idx)?,
-            temp_input_obj_idx: uuid_from_index(self.temp_input_obj_idx)?,
+            temp_output_obj_idx: uuid_try_from_index(self.temp_output_obj_idx)?,
+            temp_input_obj_idx: uuid_try_from_index(self.temp_input_obj_idx)?,
             output_to_slot: self.output_to_slot,
             input_from_slot: self.input_from_slot,
             output_from_slot: self.output_from_slot,
