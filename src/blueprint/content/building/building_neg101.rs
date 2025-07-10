@@ -330,40 +330,7 @@ mod test {
         let (remaining, data_test) = deserialization_version_neg101(&bin_test).finish().unwrap();
 
         assert!(remaining.is_empty());
-        assert_eq!(data_test.index, data_expected.index);
-        assert_eq!(data_test.area_index, data_expected.area_index);
-        assert!((data_test.local_offset_x - data_expected.local_offset_x).abs() < 1e-6);
-        assert!((data_test.local_offset_y - data_expected.local_offset_y).abs() < 1e-6);
-        assert!((data_test.local_offset_z - data_expected.local_offset_z).abs() < 1e-6);
-        assert!((data_test.local_offset_x2 - data_expected.local_offset_x2).abs() < 1e-6);
-        assert!((data_test.local_offset_y2 - data_expected.local_offset_y2).abs() < 1e-6);
-        assert!((data_test.local_offset_z2 - data_expected.local_offset_z2).abs() < 1e-6);
-        assert!((data_test.yaw - data_expected.yaw).abs() < 1e-6);
-        assert!((data_test.yaw2 - data_expected.yaw2).abs() < 1e-6);
-        assert!((data_test.pitch - data_expected.pitch).abs() < 1e-6);
-        assert!((data_test.pitch2 - data_expected.pitch2).abs() < 1e-6);
-        assert!((data_test.tilt - data_expected.tilt).abs() < 1e-6);
-        assert!((data_test.tilt2 - data_expected.tilt2).abs() < 1e-6);
-        assert_eq!(data_test.item_id, data_expected.item_id);
-        assert_eq!(data_test.model_index, data_expected.model_index);
-        assert_eq!(
-            data_test.temp_output_obj_idx,
-            data_expected.temp_output_obj_idx
-        );
-        assert_eq!(
-            data_test.temp_input_obj_idx,
-            data_expected.temp_input_obj_idx
-        );
-        assert_eq!(data_test.output_to_slot, data_expected.output_to_slot);
-        assert_eq!(data_test.input_from_slot, data_expected.input_from_slot);
-        assert_eq!(data_test.output_from_slot, data_expected.output_from_slot);
-        assert_eq!(data_test.input_to_slot, data_expected.input_to_slot);
-        assert_eq!(data_test.output_offset, data_expected.output_offset);
-        assert_eq!(data_test.input_offset, data_expected.input_offset);
-        assert_eq!(data_test.recipe_id, data_expected.recipe_id);
-        assert_eq!(data_test.filter_id, data_expected.filter_id);
-        assert_eq!(data_test.parameters_length, data_expected.parameters_length);
-        assert_eq!(data_test.parameters, data_expected.parameters);
+        assert_eq!(data_test, data_expected);
     }
 
     #[test]
@@ -453,40 +420,7 @@ mod test {
         let (remaining, data_test) = deserialization_version_neg101(&bin_test).finish().unwrap();
 
         assert!(remaining.is_empty());
-        assert_eq!(data_test.index, data_expected.index);
-        assert_eq!(data_test.area_index, data_expected.area_index);
-        assert!((data_test.local_offset_x - data_expected.local_offset_x).abs() < 1e-6);
-        assert!((data_test.local_offset_y - data_expected.local_offset_y).abs() < 1e-6);
-        assert!((data_test.local_offset_z - data_expected.local_offset_z).abs() < 1e-6);
-        assert!((data_test.local_offset_x2 - data_expected.local_offset_x2).abs() < 1e-6);
-        assert!((data_test.local_offset_y2 - data_expected.local_offset_y2).abs() < 1e-6);
-        assert!((data_test.local_offset_z2 - data_expected.local_offset_z2).abs() < 1e-6);
-        assert!((data_test.yaw - data_expected.yaw).abs() < 1e-6);
-        assert!((data_test.yaw2 - data_expected.yaw2).abs() < 1e-6);
-        assert!((data_test.pitch - data_expected.pitch).abs() < 1e-6);
-        assert!((data_test.pitch2 - data_expected.pitch2).abs() < 1e-6);
-        assert!((data_test.tilt - data_expected.tilt).abs() < 1e-6);
-        assert!((data_test.tilt2 - data_expected.tilt2).abs() < 1e-6);
-        assert_eq!(data_test.item_id, data_expected.item_id);
-        assert_eq!(data_test.model_index, data_expected.model_index);
-        assert_eq!(
-            data_test.temp_output_obj_idx,
-            data_expected.temp_output_obj_idx
-        );
-        assert_eq!(
-            data_test.temp_input_obj_idx,
-            data_expected.temp_input_obj_idx
-        );
-        assert_eq!(data_test.output_to_slot, data_expected.output_to_slot);
-        assert_eq!(data_test.input_from_slot, data_expected.input_from_slot);
-        assert_eq!(data_test.output_from_slot, data_expected.output_from_slot);
-        assert_eq!(data_test.input_to_slot, data_expected.input_to_slot);
-        assert_eq!(data_test.output_offset, data_expected.output_offset);
-        assert_eq!(data_test.input_offset, data_expected.input_offset);
-        assert_eq!(data_test.recipe_id, data_expected.recipe_id);
-        assert_eq!(data_test.filter_id, data_expected.filter_id);
-        assert_eq!(data_test.parameters_length, data_expected.parameters_length);
-        assert_eq!(data_test.parameters, data_expected.parameters);
+        assert_eq!(data_test, data_expected);
     }
 
     #[test]
@@ -580,39 +514,6 @@ mod test {
         let (remaining, data_test) = deserialization_version_neg101(&bin_test).finish().unwrap();
 
         assert!(remaining.is_empty());
-        assert_eq!(data_test.index, data_expected.index);
-        assert_eq!(data_test.area_index, data_expected.area_index);
-        assert!((data_test.local_offset_x - data_expected.local_offset_x).abs() < 1e-6);
-        assert!((data_test.local_offset_y - data_expected.local_offset_y).abs() < 1e-6);
-        assert!((data_test.local_offset_z - data_expected.local_offset_z).abs() < 1e-6);
-        assert!((data_test.local_offset_x2 - data_expected.local_offset_x2).abs() < 1e-6);
-        assert!((data_test.local_offset_y2 - data_expected.local_offset_y2).abs() < 1e-6);
-        assert!((data_test.local_offset_z2 - data_expected.local_offset_z2).abs() < 1e-6);
-        assert!((data_test.yaw - data_expected.yaw).abs() < 1e-6);
-        assert!((data_test.yaw2 - data_expected.yaw2).abs() < 1e-6);
-        assert!((data_test.pitch - data_expected.pitch).abs() < 1e-6);
-        assert!((data_test.pitch2 - data_expected.pitch2).abs() < 1e-6);
-        assert!((data_test.tilt - data_expected.tilt).abs() < 1e-6);
-        assert!((data_test.tilt2 - data_expected.tilt2).abs() < 1e-6);
-        assert_eq!(data_test.item_id, data_expected.item_id);
-        assert_eq!(data_test.model_index, data_expected.model_index);
-        assert_eq!(
-            data_test.temp_output_obj_idx,
-            data_expected.temp_output_obj_idx
-        );
-        assert_eq!(
-            data_test.temp_input_obj_idx,
-            data_expected.temp_input_obj_idx
-        );
-        assert_eq!(data_test.output_to_slot, data_expected.output_to_slot);
-        assert_eq!(data_test.input_from_slot, data_expected.input_from_slot);
-        assert_eq!(data_test.output_from_slot, data_expected.output_from_slot);
-        assert_eq!(data_test.input_to_slot, data_expected.input_to_slot);
-        assert_eq!(data_test.output_offset, data_expected.output_offset);
-        assert_eq!(data_test.input_offset, data_expected.input_offset);
-        assert_eq!(data_test.recipe_id, data_expected.recipe_id);
-        assert_eq!(data_test.filter_id, data_expected.filter_id);
-        assert_eq!(data_test.parameters_length, data_expected.parameters_length);
-        assert_eq!(data_test.parameters, data_expected.parameters);
+        assert_eq!(data_test, data_expected);
     }
 }

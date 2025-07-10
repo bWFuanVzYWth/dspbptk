@@ -1,8 +1,7 @@
 use nalgebra::Vector3;
 
 use crate::{
-    blueprint::content::building::{BuildingData, INDEX_NULL},
-    error::DspbptkError,
+    blueprint::content::building::{BuildingData}, dspbptk_building::uuid::{index_from_uuid, uuid_from_index}, error::DspbptkError
 };
 
 pub mod offset;

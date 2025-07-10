@@ -10,7 +10,7 @@ use building_neg101::{deserialization_version_neg101, serialization_version_neg1
 
 pub const INDEX_NULL: i32 = -1;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct BuildingData {
     pub index: i32,
     pub area_index: i8,
