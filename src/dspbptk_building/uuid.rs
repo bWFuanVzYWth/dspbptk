@@ -5,7 +5,7 @@ use crate::{blueprint::content::building::INDEX_NULL, error::DspbptkError};
 // FIXME 命名不太合理
 pub fn index_try_from_uuid<'a>(uuid: Option<u128>) -> Result<i32, DspbptkError<'a>> {
     uuid.map_or(Ok(INDEX_NULL), |num| {
-        i32::try_from(num).map_err(DspbptkError::NonStandardUuid)
+        i32::try_from(num).map_err(DspbptkError::TryFromUuidError)
     })
 }
 
@@ -14,7 +14,7 @@ pub fn uuid_try_from_index<'a>(index: i32) -> Result<Option<u128>, DspbptkError<
         Ok(None)
     } else {
         Ok(Some(
-            u128::try_from(index).map_err(DspbptkError::NonStandardIndex)?,
+            u128::try_from(index).map_err(DspbptkError::TryFromIndexError)?,
         ))
     }
 }
