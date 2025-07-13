@@ -14,8 +14,8 @@ use petgraph::{
 /// 注意传送带单独分组，并不与其它建筑保证`item_id`的顺序关系
 #[must_use]
 pub fn sort_buildings(buildings: &[BuildingData], reserved: bool) -> Vec<BuildingData> {
-    let buildings_num = buildings.len();
-    if buildings_num == 0 {
+    // 0. 空向量提前返回
+    if buildings.is_empty() {
         return Vec::new();
     }
 
@@ -27,7 +27,13 @@ pub fn sort_buildings(buildings: &[BuildingData], reserved: bool) -> Vec<Buildin
     let sorted_non_belt = stable_sort_non_belt(&non_belts);
 
     // 3. 合并阶段：合并排序结果
-    combine_sorted_results(sorted_belt, sorted_non_belt, reserved)
+    let mut sorted = combine_sorted_results(sorted_belt, sorted_non_belt);
+
+    if reserved {
+        sorted.reverse();
+    }
+
+    sorted
 }
 
 fn split_belt_and_non_belt(buildings: &[BuildingData]) -> (Vec<BuildingData>, Vec<BuildingData>) {
@@ -42,18 +48,13 @@ fn stable_sort_non_belt(non_belts: &[BuildingData]) -> Vec<BuildingData> {
 
     sorted.sort_by_cached_key(|building| {
         // 预计算排序键，实现Schwartzian transform优化
-        let int_key = (
+        (
             building.item_id,
             building.model_index,
             building.recipe_id,
             building.area_index,
-        );
-        let float_score = calculate_offset_score(building);
-
-        // 将浮点数转换为可排序的整数表示（处理NaN）
-        let float_key = float_score.to_bits();
-
-        (int_key, float_key)
+            calculate_offset_score(building).to_bits(),
+        )
     });
 
     sorted
@@ -71,15 +72,11 @@ fn calculate_offset_score(b: &BuildingData) -> f64 {
 fn combine_sorted_results(
     belt_buildings: Vec<BuildingData>,
     non_belt_buildings: Vec<BuildingData>,
-    reserved: bool,
 ) -> Vec<BuildingData> {
-    let mut result = Vec::with_capacity(belt_buildings.len() + non_belt_buildings.len());
-    result.extend(belt_buildings);
-    result.extend(non_belt_buildings);
-    if reserved {
-        result.reverse();
-    }
-    result
+    belt_buildings
+        .into_iter()
+        .chain(non_belt_buildings)
+        .collect::<Vec<_>>()
 }
 
 #[must_use]
