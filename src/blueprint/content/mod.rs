@@ -1,12 +1,10 @@
 pub mod area;
 pub mod building;
 
-use crate::error::{
-    DspbptkError,
-    DspbptkError::{BrokenBase64, BrokenContent, BrokenGzip, CanNotCompressGzip},
-    DspbptkWarn,
-    DspbptkWarn::{FewUnknownAfterContent, LotUnknownAfterContent},
-};
+use crate::{blueprint::content::building::BuildingDataVersion, error::{
+    DspbptkError::{self, BrokenBase64, BrokenContent, BrokenGzip, CanNotCompressGzip},
+    DspbptkWarn::{self, FewUnknownAfterContent, LotUnknownAfterContent},
+}};
 
 use nom::{
     IResult, Parser,
@@ -48,6 +46,7 @@ impl ContentData {
         Ok((content, warns))
     }
 
+    // TODO 性能优化，当前实现存在多次数组拓容。
     #[must_use]
     pub fn to_bin(&self) -> Vec<u8> {
         let mut bin = Vec::new();
@@ -65,7 +64,7 @@ impl ContentData {
         bin.extend_from_slice(&self.buildings_length.to_le_bytes());
         self.buildings
             .iter()
-            .for_each(|building_data| building::serialization(&mut bin, building_data));
+            .for_each(|building_data| building::serialization(&mut bin, building_data, &BuildingDataVersion::NEG101));
         bin
     }
 }

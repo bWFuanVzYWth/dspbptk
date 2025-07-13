@@ -8,7 +8,15 @@ use building_0::deserialization_version_0;
 use building_neg100::deserialization_version_neg100;
 use building_neg101::{deserialization_version_neg101, serialization_version_neg101};
 
+use crate::blueprint::content::building::{building_0::serialization_version_0, building_neg100::serialization_version_neg100};
+
 pub const INDEX_NULL: i32 = -1;
+
+pub enum BuildingDataVersion {
+    ZERO,
+    NEG100,
+    NEG101,
+}
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct BuildingData {
@@ -90,6 +98,10 @@ pub fn deserialization(bin: &[u8]) -> IResult<&[u8], BuildingData> {
     Ok((unknown, data))
 }
 
-pub fn serialization(bin: &mut Vec<u8>, data: &BuildingData) {
-    serialization_version_neg101(bin, data);
+pub fn serialization(bin: &mut Vec<u8>, data: &BuildingData, version: &BuildingDataVersion) {
+    match version {
+        BuildingDataVersion::ZERO => serialization_version_0(bin, data),
+        BuildingDataVersion::NEG100 => serialization_version_neg100(bin, data),
+        BuildingDataVersion::NEG101 => serialization_version_neg101(bin, data),
+    }
 }

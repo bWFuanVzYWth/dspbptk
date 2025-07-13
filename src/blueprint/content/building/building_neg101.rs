@@ -327,12 +327,9 @@ mod test {
             26, 0, 4, 0, 27, 0, 0, 0, 28, 0, 0, 0, 29, 0, 0, 0, 30, 0, 0, 0,
         ];
 
-        let (remaining, data_test) = deserialization_version_neg101(&bin_test)
-            .finish()
-            .expect("deserialization no finish.");
+        let test = deserialization_version_neg101(&bin_test).finish();
 
-        assert!(remaining.is_empty());
-        assert_eq!(data_test, data_expected);
+        assert_eq!(test, Ok(([].as_slice(), data_expected)));
     }
 
     #[test]
@@ -419,12 +416,9 @@ mod test {
             21, 22, 23, 24, 25, 0, 26, 0, 4, 0, 27, 0, 0, 0, 28, 0, 0, 0, 29, 0, 0, 0, 30, 0, 0, 0,
         ];
 
-        let (remaining, data_test) = deserialization_version_neg101(&bin_test)
-            .finish()
-            .expect("deserialization no finish.");
+        let test = deserialization_version_neg101(&bin_test).finish();
 
-        assert!(remaining.is_empty());
-        assert_eq!(data_test, data_expected);
+        assert_eq!(test, Ok(([].as_slice(), data_expected)));
     }
 
     #[test]
@@ -515,11 +509,8 @@ mod test {
             29, 0, 0, 0, 30, 0, 0, 0,
         ];
 
-        let (remaining, data_test) = deserialization_version_neg101(&bin_test)
-            .finish()
-            .expect("deserialization no finish.");
+        let test = deserialization_version_neg101(&bin_test).finish();
 
-        assert!(remaining.is_empty());
-        assert_eq!(data_test, data_expected);
+        assert_eq!(test, Ok(([].as_slice(), data_expected)));
     }
 }
