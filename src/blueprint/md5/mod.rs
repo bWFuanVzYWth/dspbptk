@@ -216,34 +216,22 @@ impl MD5 {
         let chunks = data.array_chunks::<64>();
         let remainder = chunks.remainder();
 
-        // 使用固定大小数组替代 Vec<u8>
-        let mut last = [0u8; 128];
         let remainder_len = remainder.len();
-
-        // 复制剩余数据并添加 0x80 标记
-        last[..remainder_len].copy_from_slice(remainder);
-        last[remainder_len] = 0x80;
-        let current_length = remainder_len + 1;
-
-        // 计算填充长度
-        let pad_len = (56 - (current_length % 64)) % 64;
-
-        // 无需显式填充 0x00（数组初始化为零）
-
-        // 添加位长度字段
+        let pad_len = (56 - ((remainder_len + 1) % 64)) % 64;
         let bit_len = data.len() * 8;
-        last[current_length + pad_len..current_length + pad_len + 8]
-            .copy_from_slice(&bit_len.to_le_bytes());
+        let bit_start = remainder_len + 1 + pad_len;
 
-        // 计算最终填充后的总长度
-        let filled_len = current_length + pad_len + 8;
+        let last: [u8; 128] = std::array::from_fn(|idx| match idx {
+            i if i < remainder_len => remainder[i],
+            i if i == remainder_len => 0x80,
+            i if i >= bit_start && i < bit_start + 8 => bit_len.to_le_bytes()[i - bit_start],
+            _ => 0,
+        });
 
-        // 处理所有块
-        for chunk in chunks.chain(last[..filled_len].array_chunks::<64>()) {
+        for chunk in chunks.chain(last[..bit_start + 8].array_chunks::<64>()) {
             self.update_block(chunk);
         }
 
-        // 构造输出
         std::array::from_fn(|i| {
             let word_index = i / 4;
             let byte_index = i % 4;
