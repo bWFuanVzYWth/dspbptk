@@ -66,7 +66,7 @@ impl ContentData {
             .for_each(|area_data| area::serialization(&mut bin, area_data));
         bin.extend_from_slice(&self.buildings_length.to_le_bytes());
         self.buildings.iter().for_each(|building_data| {
-            building::serialization(&mut bin, building_data, &BuildingDataVersion::NEG101)
+            building::serialization(&mut bin, building_data, &BuildingDataVersion::NEG101);
         });
         bin
     }
