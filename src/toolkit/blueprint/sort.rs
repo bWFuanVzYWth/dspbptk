@@ -91,9 +91,7 @@ pub fn fix_buildings_index(buildings: Vec<BuildingData>) -> Vec<BuildingData> {
     buildings
         .into_iter()
         .map(|building| BuildingData {
-            index: *lut
-                .get(&building.index)
-                .unwrap_or(&building::INDEX_NULL),
+            index: *lut.get(&building.index).unwrap_or(&building::INDEX_NULL),
             temp_output_obj_idx: lut
                 .get(&building.temp_output_obj_idx)
                 .copied()
@@ -212,7 +210,7 @@ fn build_graph(buildings: &[BuildingData]) -> Graph<usize, usize> {
 /// 优化强连通分量（SCC）中的建筑布局顺序
 ///
 /// # 输入要求
-/// * 所有节点的出度必须为1，这对传送带来说自然成立
+/// * 输入必须为SCC，并且每个节点出度 <= 1
 ///
 /// # 参数
 /// * `scc` - SCC中的节点索引列表
@@ -228,9 +226,6 @@ fn build_graph(buildings: &[BuildingData]) -> Graph<usize, usize> {
 ///
 /// 复杂度: O(n)
 fn optimize_scc(scc: &[NodeIndex], buildings: &[BuildingData]) -> Vec<BuildingData> {
-    let scc_size = scc.len();
-
-    // 利用SCC特性：所有节点强连通，无需处理孤立节点
     // 创建节点索引映射表: 建筑物ID -> SCC中的位置
     let node_index_map: HashMap<i32, usize> = scc
         .iter()
@@ -238,37 +233,17 @@ fn optimize_scc(scc: &[NodeIndex], buildings: &[BuildingData]) -> Vec<BuildingDa
         .map(|(idx, node)| (buildings[node.index()].index, idx))
         .collect();
 
-    // 构建节点链表关系
-    let mut next_node = vec![None; scc_size];
-    for (i, &node) in scc.iter().enumerate() {
-            let output = buildings[node.index()].temp_output_obj_idx;
+    // 输入应已经保证可以选择第一个传送带作为起点
+    std::iter::successors(Some(0), |&i| {
+        let current_node = scc[i];
+        let output = buildings[current_node.index()].temp_output_obj_idx;
 
-        if output != building::INDEX_NULL {
-            // 通过哈希表直接查找目标节点位置
-            if let Some(&j) = node_index_map.get(&output) {
-                next_node[i] = Some(j);
-            }
+        if output == building::INDEX_NULL {
+            None
+        } else {
+            node_index_map.get(&output).copied()
         }
-    }
-
-    // 保证至少有一个起点（SCC特性：可从任意节点遍历整个分量）
-    let mut visited = vec![false; scc_size];
-    let mut result = Vec::with_capacity(scc_size);
-
-    // 找到第一个可用起点
-    for start in 0..scc_size {
-        if !visited[start] {
-            let mut curr = start;
-            while !visited[curr] {
-                visited[curr] = true;
-        result.push(buildings[scc[curr].index()].clone());
-                curr = match next_node[curr] {
-                    Some(n) => n,
-                    None => break,
-                };
-            }
-        }
-    }
-
-    result
+    })
+    .map(|i| buildings[scc[i].index()].clone())
+    .collect()
 }
