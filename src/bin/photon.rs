@@ -3,7 +3,9 @@ use nalgebra::Vector3;
 
 use dspbptk::{
     blueprint::{content::ContentData, header::HeaderData},
-    dspbptk_building::{DspbptkBuildingData, fix_dspbptk_buildings_index, uuid::some_new_uuid as new_some_uuid},
+    dspbptk_building::{
+        DspbptkBuildingData, fix_dspbptk_buildings_index, uuid::some_new_uuid as new_some_uuid,
+    },
     error::DspbptkError::{self, UnexpectBuildingsCount},
     io::{BlueprintKind, FileType},
     item::Item,
