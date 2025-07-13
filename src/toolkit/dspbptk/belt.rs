@@ -1,57 +1,42 @@
-use std::collections::VecDeque;
-
 use crate::dspbptk_building::DspbptkBuildingData;
 
 /// 把vec中的传送带节点连接成一条整体，注意这个函数并不检查建筑是否为传送带
 #[must_use]
 pub fn connect_belts(
-    belts: Vec<DspbptkBuildingData>,
+    belts: &[DspbptkBuildingData],
     temp_input_obj_idx: Option<u128>,
     input_from_slot: i8,
     temp_output_obj_idx: Option<u128>,
     output_to_slot: i8,
 ) -> Vec<DspbptkBuildingData> {
-    let mut queue = VecDeque::from(belts);
-    let mut result = Vec::with_capacity(queue.len()); // 预分配容量
-
-    // 处理第一个节点
-    if let Some(belt) = queue.pop_front() {
-        let (next_output_obj, next_output_slot) =
-            compute_next(temp_output_obj_idx, output_to_slot, &queue);
-        let first = DspbptkBuildingData {
-            temp_input_obj_idx,
-            input_from_slot,
-            input_to_slot: 1,
-            temp_output_obj_idx: next_output_obj,
-            output_to_slot: next_output_slot,
-            ..belt
-        };
-        result.push(first);
+    if belts.is_empty() {
+        return vec![];
     }
 
-    // 处理其余节点
-    while let Some(belt) = queue.pop_front() {
-        let (next_output_obj, next_output_slot) =
-            compute_next(temp_output_obj_idx, output_to_slot, &queue);
-        let modified = DspbptkBuildingData {
-            temp_output_obj_idx: next_output_obj,
-            output_to_slot: next_output_slot,
-            ..belt
-        };
-        result.push(modified);
-    }
+    let next_info = belts
+        .iter()
+        .skip(1)
+        .map(|b| (b.uuid, 1))
+        .chain(std::iter::once((temp_output_obj_idx, output_to_slot)));
 
-    result
-}
+    let last_info =
+        std::iter::once((temp_input_obj_idx, input_from_slot)).chain(std::iter::repeat((
+            DspbptkBuildingData::default().temp_input_obj_idx,
+            DspbptkBuildingData::default().input_from_slot,
+        )));
 
-fn compute_next(
-    temp_output_obj_idx: Option<u128>,
-    output_to_slot: i8,
-    queue: &VecDeque<DspbptkBuildingData>,
-) -> (Option<u128>, i8) {
-    queue
-        .front()
-        .map_or((temp_output_obj_idx, output_to_slot), |next_belt| {
-            (next_belt.uuid, 1)
-        })
+    next_info
+        .zip(last_info)
+        .map(
+            |((temp_output_obj_idx, output_to_slot), (temp_input_obj_idx, input_from_slot))| {
+                DspbptkBuildingData {
+                    temp_input_obj_idx,
+                    input_from_slot,
+                    temp_output_obj_idx,
+                    output_to_slot,
+                    ..DspbptkBuildingData::default()
+                }
+            },
+        )
+        .collect::<Vec<_>>()
 }
