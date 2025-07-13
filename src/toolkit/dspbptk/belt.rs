@@ -29,16 +29,20 @@ pub fn connect_belts(
         )),
     );
 
-    next_info
-        .zip(last_info)
+    last_info
+        .zip(next_info)
+        .zip(belts)
         .map(
-            |((temp_output_obj_idx, output_to_slot), (temp_input_obj_idx, input_from_slot))| {
+            |(
+                ((temp_input_obj_idx, input_from_slot), (temp_output_obj_idx, output_to_slot)),
+                belt,
+            )| {
                 DspbptkBuildingData {
                     temp_output_obj_idx,
                     temp_input_obj_idx,
                     output_to_slot,
                     input_from_slot,
-                    ..DspbptkBuildingData::default()
+                    ..belt.clone()
                 }
             },
         )
