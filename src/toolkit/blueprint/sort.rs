@@ -241,8 +241,7 @@ fn optimize_scc_layout(scc: &[NodeIndex], buildings: &[BuildingData]) -> Vec<Bui
     // 构建节点链表关系
     let mut next_node = vec![None; scc_size];
     for (i, &node) in scc.iter().enumerate() {
-        let node_idx = node.index();
-        let output = buildings[node_idx].temp_output_obj_idx;
+        let output = buildings[node.index()].temp_output_obj_idx;
 
         if output != building::INDEX_NULL {
             // 通过哈希表直接查找目标节点位置

@@ -217,7 +217,7 @@ impl MD5 {
         let remainder = chunks.remainder();
 
         let remainder_len = remainder.len();
-        let pad_len = (56 - ((remainder_len + 1) % 64)) % 64;
+        let pad_len = (55 - remainder_len) % 64;
         let bit_len = data.len() * 8;
         let bit_start = remainder_len + 1 + pad_len;
 
