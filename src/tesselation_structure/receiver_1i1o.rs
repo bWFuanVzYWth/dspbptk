@@ -88,7 +88,7 @@ pub fn new(
     };
 
     let belts_lens = vec![belt_lens_from_sorter, belt_lens_into_receiver];
-    let belts_lens = connect_belts(belts_lens, None, 0, receiver.uuid, 0);
+    let belts_lens = connect_belts(&belts_lens, None, 0, receiver.uuid, 0);
 
     // 光子带
     let belt_photons_from_receiver = DspbptkBuildingData {
@@ -119,7 +119,7 @@ pub fn new(
 
     let belts_photons = vec![belt_photons_from_receiver, belt_photons_output];
     let belts_photons = connect_belts(
-        belts_photons,
+        &belts_photons,
         receiver.uuid,
         1,
         output_obj.uuid,

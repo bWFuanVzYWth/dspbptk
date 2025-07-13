@@ -176,7 +176,7 @@ fn layout_to_buildings(rows: &[Row]) -> Vec<DspbptkBuildingData> {
         .iter()
         .map(|row| {
             let row_of_belt = main_belts(row);
-            connect_belts(row_of_belt, None, 0, None, 0)
+            connect_belts(&row_of_belt, None, 0, None, 0)
         })
         .collect::<Vec<_>>();
 
