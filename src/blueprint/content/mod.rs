@@ -1,10 +1,13 @@
 pub mod area;
 pub mod building;
 
-use crate::{blueprint::content::building::BuildingDataVersion, error::{
-    DspbptkError::{self, BrokenBase64, BrokenContent, BrokenGzip, CanNotCompressGzip},
-    DspbptkWarn::{self, FewUnknownAfterContent, LotUnknownAfterContent},
-}};
+use crate::{
+    blueprint::content::building::BuildingDataVersion,
+    error::{
+        DspbptkError::{self, BrokenBase64, BrokenContent, BrokenGzip, CanNotCompressGzip},
+        DspbptkWarn::{self, FewUnknownAfterContent, LotUnknownAfterContent},
+    },
+};
 
 use nom::{
     IResult, Parser,
@@ -62,9 +65,9 @@ impl ContentData {
             .iter()
             .for_each(|area_data| area::serialization(&mut bin, area_data));
         bin.extend_from_slice(&self.buildings_length.to_le_bytes());
-        self.buildings
-            .iter()
-            .for_each(|building_data| building::serialization(&mut bin, building_data, &BuildingDataVersion::NEG101));
+        self.buildings.iter().for_each(|building_data| {
+            building::serialization(&mut bin, building_data, &BuildingDataVersion::NEG101)
+        });
         bin
     }
 }

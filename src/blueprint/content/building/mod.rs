@@ -8,7 +8,9 @@ use building_0::deserialization_version_0;
 use building_neg100::deserialization_version_neg100;
 use building_neg101::{deserialization_version_neg101, serialization_version_neg101};
 
-use crate::blueprint::content::building::{building_0::serialization_version_0, building_neg100::serialization_version_neg100};
+use crate::blueprint::content::building::{
+    building_0::serialization_version_0, building_neg100::serialization_version_neg100,
+};
 
 pub const INDEX_NULL: i32 = -1;
 
