@@ -14,7 +14,7 @@ use petgraph::{
 /// 注意传送带单独分组，并不与其它建筑保证`item_id`的顺序关系
 #[must_use]
 pub fn sort_buildings(buildings: &[BuildingData], reserved: bool) -> Vec<BuildingData> {
-    // 0. 空向量提前返回
+    // 0. 空建筑列表提前返回
     if buildings.is_empty() {
         return Vec::new();
     }
@@ -29,6 +29,7 @@ pub fn sort_buildings(buildings: &[BuildingData], reserved: bool) -> Vec<Buildin
     // 3. 合并阶段：合并排序结果
     let mut sorted = combine_sorted_results(sorted_belt, sorted_non_belt);
 
+    // 4. 游戏内的建造顺序与蓝图顺序相反，故提供选项是否翻转
     if reserved {
         sorted.reverse();
     }
@@ -81,9 +82,7 @@ fn combine_sorted_results(
 
 #[must_use]
 pub fn fix_buildings_index(buildings: Vec<BuildingData>) -> Vec<BuildingData> {
-    use std::collections::HashMap;
-
-    let index_lut: HashMap<_, _> = buildings
+    let lut: HashMap<_, _> = buildings
         .iter()
         .zip(0..=i32::MAX)
         .map(|(building, index)| (building.index, index))
@@ -92,14 +91,14 @@ pub fn fix_buildings_index(buildings: Vec<BuildingData>) -> Vec<BuildingData> {
     buildings
         .into_iter()
         .map(|building| BuildingData {
-            index: *index_lut
+            index: *lut
                 .get(&building.index)
                 .unwrap_or(&building::INDEX_NULL),
-            temp_output_obj_idx: index_lut
+            temp_output_obj_idx: lut
                 .get(&building.temp_output_obj_idx)
                 .copied()
                 .unwrap_or(building::INDEX_NULL),
-            temp_input_obj_idx: index_lut
+            temp_input_obj_idx: lut
                 .get(&building.temp_input_obj_idx)
                 .copied()
                 .unwrap_or(building::INDEX_NULL),
@@ -132,32 +131,36 @@ pub fn topological_sort_belt(buildings: &[BuildingData]) -> Vec<BuildingData> {
 
     // 2. 构建缩点后的DAG
     let mut dag = Graph::<usize, usize>::new();
-    let mut scc_hashmap = HashMap::<NodeIndex, usize>::new();
 
     // 3. 为每个SCC创建DAG节点（直接使用SCC索引作为节点标识）
-    for (i, scc) in sccs.iter().enumerate() {
+    for _ in &sccs {
         dag.add_node(1);
-        for &node in scc {
-            scc_hashmap.insert(node, i);
-        }
     }
+    let dag_node_to_ssc = sccs
+        .iter()
+        .enumerate()
+        .flat_map(|(i, scc)| scc.iter().map(move |&node| (node, i)))
+        .collect::<HashMap<NodeIndex, usize>>();
 
     // 4. 添加DAG中的边（过滤重复边）
-    let mut edge_set = HashSet::new();
-    for edge_ref in graph.edge_references() {
-        let source = edge_ref.source();
-        let target = edge_ref.target();
+    let edge_keys: HashSet<_> = graph
+        .edge_references()
+        .filter_map(|edge_ref| {
+            let source = edge_ref.source();
+            let target = edge_ref.target();
 
-        // 获取源和目标的SCC编号
-        if let (Some(scc_source), Some(scc_target)) =
-            (scc_hashmap.get(&source), scc_hashmap.get(&target))
-            && scc_source != scc_target
-        {
-            let edge_key = (*scc_source, *scc_target);
-            if edge_set.insert(edge_key) {
-                dag.add_edge(NodeIndex::new(*scc_source), NodeIndex::new(*scc_target), 1);
+            let scc_source = dag_node_to_ssc.get(&source)?;
+            let scc_target = dag_node_to_ssc.get(&target)?;
+
+            if scc_source == scc_target {
+                None
+            } else {
+                Some((*scc_source, *scc_target))
             }
-        }
+        })
+        .collect();
+    for (scc_source, scc_target) in edge_keys {
+        dag.add_edge(NodeIndex::new(scc_source), NodeIndex::new(scc_target), 1);
     }
 
     // 5. 对DAG进行拓扑排序
@@ -165,17 +168,13 @@ pub fn topological_sort_belt(buildings: &[BuildingData]) -> Vec<BuildingData> {
         petgraph::algo::toposort(&dag, None).expect("unreachable: cycle detected in DAG.");
 
     // 6. 按照拓扑序展开SCC
-    let mut result = Vec::with_capacity(buildings.len());
-    for &dag_node_idx in &dag_order {
-        // 通过反向查找表获取对应的SCC索引
-        let scc = &sccs[dag_node_idx.index()];
-        // 6.1. 对每个SCC内部进行局部排序（线性链优化）
-        let scc_nodes = optimize_scc_layout(scc, buildings);
-        // 6.2. 保持SCC内部节点的相对顺序（可扩展为更复杂的优化策略）
-        result.extend(scc_nodes);
-    }
-
-    result
+    dag_order
+        .iter()
+        .flat_map(|&dag_node_idx| {
+            let scc = &sccs[dag_node_idx.index()];
+            optimize_scc(scc, buildings)
+        })
+        .collect()
 }
 
 /// 构建建筑依赖关系图
@@ -188,21 +187,22 @@ pub fn topological_sort_belt(buildings: &[BuildingData]) -> Vec<BuildingData> {
 fn build_graph(buildings: &[BuildingData]) -> Graph<usize, usize> {
     let mut graph: Graph<usize, usize> = Graph::new();
 
-    // 合并两个查找表为单一结构
-    let mut index_to_node = HashMap::new();
-    // 直接按building.index存储对应的NodeIndex
-    for building in buildings {
-        let node_idx = graph.add_node(1);
-        index_to_node.insert(building.index, node_idx);
-    }
+    // 创建节点
+    let index_to_node = buildings
+        .iter()
+        .map(|building| {
+            let node_index = graph.add_node(1);
+            (building.index, node_index)
+        })
+        .collect::<HashMap<_, _>>();
 
-    // 一次查找完成边的建立
+    // 创建边
     for building in buildings {
         if building.temp_output_obj_idx != building::INDEX_NULL
-            && let Some(&edge_to) = index_to_node.get(&building.temp_output_obj_idx)
             && let Some(edge_from) = index_to_node.get(&building.index)
+            && let Some(edge_to) = index_to_node.get(&building.temp_output_obj_idx)
         {
-            graph.add_edge(*edge_from, edge_to, 1);
+            graph.add_edge(*edge_from, *edge_to, 1);
         }
     }
 
@@ -210,6 +210,9 @@ fn build_graph(buildings: &[BuildingData]) -> Graph<usize, usize> {
 }
 
 /// 优化强连通分量（SCC）中的建筑布局顺序
+///
+/// # 输入要求
+/// * 所有节点的出度必须为1，这对传送带来说自然成立
 ///
 /// # 参数
 /// * `scc` - SCC中的节点索引列表
@@ -224,7 +227,7 @@ fn build_graph(buildings: &[BuildingData]) -> Graph<usize, usize> {
 /// 3. 按链表顺序收集结果
 ///
 /// 复杂度: O(n)
-fn optimize_scc_layout(scc: &[NodeIndex], buildings: &[BuildingData]) -> Vec<BuildingData> {
+fn optimize_scc(scc: &[NodeIndex], buildings: &[BuildingData]) -> Vec<BuildingData> {
     let scc_size = scc.len();
 
     // 利用SCC特性：所有节点强连通，无需处理孤立节点
@@ -238,7 +241,7 @@ fn optimize_scc_layout(scc: &[NodeIndex], buildings: &[BuildingData]) -> Vec<Bui
     // 构建节点链表关系
     let mut next_node = vec![None; scc_size];
     for (i, &node) in scc.iter().enumerate() {
-        let output = buildings[node.index()].temp_output_obj_idx;
+            let output = buildings[node.index()].temp_output_obj_idx;
 
         if output != building::INDEX_NULL {
             // 通过哈希表直接查找目标节点位置
@@ -258,7 +261,7 @@ fn optimize_scc_layout(scc: &[NodeIndex], buildings: &[BuildingData]) -> Vec<Bui
             let mut curr = start;
             while !visited[curr] {
                 visited[curr] = true;
-                result.push(buildings[scc[curr].index()].clone());
+        result.push(buildings[scc[curr].index()].clone());
                 curr = match next_node[curr] {
                     Some(n) => n,
                     None => break,
