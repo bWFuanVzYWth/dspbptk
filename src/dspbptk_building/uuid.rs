@@ -25,6 +25,11 @@ pub fn uuid_try_from_index<'a>(index: i32) -> Result<Option<u128>, DspbptkError<
 }
 
 #[must_use]
-pub fn new_uuid() -> Option<u128> {
+pub fn new_uuid() -> u128 {
+    Uuid::new_v4().to_u128_le()
+}
+
+#[must_use]
+pub fn some_new_uuid() -> Option<u128> {
     Some(Uuid::new_v4().to_u128_le())
 }

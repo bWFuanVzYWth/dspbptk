@@ -1,6 +1,6 @@
 use dspbptk::{
     blueprint::{content::ContentData, header::HeaderData},
-    dspbptk_building::{DspbptkBuildingData, fix_dspbptk_buildings_index, uuid::new_uuid},
+    dspbptk_building::{DspbptkBuildingData, fix_dspbptk_buildings_index, uuid::some_new_uuid},
     error::DspbptkError::{self},
     io::{BlueprintKind, FileType},
     item::Item,
@@ -9,7 +9,7 @@ use nalgebra::Vector3;
 
 fn new_receiver(local_offset: Vector3<f64>) -> DspbptkBuildingData {
     DspbptkBuildingData {
-        uuid: new_uuid(),
+        uuid: some_new_uuid(),
         item_id: Item::射线接收站 as i16,
         model_index: Item::射线接收站.model()[0],
         local_offset,

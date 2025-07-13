@@ -3,7 +3,7 @@ use nalgebra::Vector3;
 
 use dspbptk::{
     blueprint::{content::ContentData, header::HeaderData},
-    dspbptk_building::{DspbptkBuildingData, fix_dspbptk_buildings_index, uuid::new_uuid},
+    dspbptk_building::{DspbptkBuildingData, fix_dspbptk_buildings_index, uuid::some_new_uuid as new_some_uuid},
     error::DspbptkError::{self, UnexpectBuildingsCount},
     io::{BlueprintKind, FileType},
     item::Item,
@@ -157,7 +157,7 @@ fn main_belts(row: &Row) -> Vec<DspbptkBuildingData> {
 
     (0..=belts_count)
         .map(|i| DspbptkBuildingData {
-            uuid: new_uuid(),
+            uuid: new_some_uuid(),
             item_id: Item::极速传送带 as i16,
             model_index: Item::极速传送带.model()[0],
             local_offset: Vector3::new(

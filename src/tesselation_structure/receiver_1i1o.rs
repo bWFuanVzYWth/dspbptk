@@ -1,7 +1,7 @@
 use nalgebra::Vector3;
 
 use crate::{
-    dspbptk_building::{DspbptkBuildingData, uuid::new_uuid},
+    dspbptk_building::{DspbptkBuildingData, uuid::some_new_uuid},
     item::Item,
     toolkit::dspbptk::belt::connect_belts,
 };
@@ -30,7 +30,7 @@ pub fn new(
 
     // 光子锅
     let receiver = DspbptkBuildingData {
-        uuid: new_uuid(),
+        uuid: some_new_uuid(),
         item_id: Item::射线接收站 as i16,
         model_index: RECEIVER_MODEL,
         local_offset,
@@ -40,7 +40,7 @@ pub fn new(
 
     // 透镜带
     let belt_lens_from_sorter = DspbptkBuildingData {
-        uuid: new_uuid(),
+        uuid: some_new_uuid(),
         item_id: Item::极速传送带 as i16,
         model_index: BELT_MODEL,
         local_offset: Vector3::new(
@@ -53,7 +53,7 @@ pub fn new(
     };
 
     let belt_lens_into_receiver = DspbptkBuildingData {
-        uuid: new_uuid(),
+        uuid: some_new_uuid(),
         item_id: Item::极速传送带 as i16,
         model_index: BELT_MODEL,
         local_offset: Vector3::new(
@@ -67,7 +67,7 @@ pub fn new(
 
     // 分流透镜的黄爪
     let sorter_lens_input = DspbptkBuildingData {
-        uuid: new_uuid(),
+        uuid: some_new_uuid(),
         item_id: Item::分拣器 as i16,
         model_index: SORTER_MODEL,
         yaw: sorter_yaw,
@@ -92,7 +92,7 @@ pub fn new(
 
     // 光子带
     let belt_photons_from_receiver = DspbptkBuildingData {
-        uuid: new_uuid(),
+        uuid: some_new_uuid(),
         item_id: Item::极速传送带 as i16,
         model_index: BELT_MODEL,
         local_offset: Vector3::new(
@@ -105,7 +105,7 @@ pub fn new(
     };
 
     let belt_photons_output = DspbptkBuildingData {
-        uuid: new_uuid(),
+        uuid: some_new_uuid(),
         item_id: Item::极速传送带 as i16,
         model_index: BELT_MODEL,
         local_offset: Vector3::new(
