@@ -192,9 +192,9 @@ const fn configure_zopfli_options(args: &GlobalArgs) -> zopfli::Options {
     }
 }
 
-fn handle_xyzn(global: &GlobalArgs, x: f64, y: f64, z: f64, n: u32) {
+fn handle_liner_pattern(global: &GlobalArgs, x: f64, y: f64, z: f64, n: u32) {
     println!(
-        "Received xyzn command with values: {}, {}, {}, {}",
+        "Received liner_pattern command with values: {}, {}, {}, {}",
         x, y, z, n
     );
     println!("Input: {:?}", global.input);
@@ -248,7 +248,7 @@ struct ProcessArgs {
 }
 
 #[derive(Parser, Debug)]
-struct XyznArgs {
+struct LinerPatternArgs {
     #[clap(flatten)]
     global: GlobalArgs,
 
@@ -271,7 +271,7 @@ enum SubCommand {
     Process(ProcessArgs),
 
     /// New command that takes four f64 values
-    Xyzn(XyznArgs),
+    LinerPattern(LinerPatternArgs),
 }
 
 #[derive(Parser, Debug)]
@@ -296,8 +296,8 @@ fn main() {
         SubCommand::Process(ProcessArgs { global }) => {
             process_workflow(&global);
         }
-        SubCommand::Xyzn(XyznArgs { global, x,y,z,n }) => {
-            handle_xyzn(&global, x,y,z,n);
+        SubCommand::LinerPattern(LinerPatternArgs { global, x, y, z, n }) => {
+            handle_liner_pattern(&global, x, y, z, n);
         }
     }
 }
