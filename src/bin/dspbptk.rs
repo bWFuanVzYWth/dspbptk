@@ -192,9 +192,7 @@ const fn configure_zopfli_options(args: &Args) -> zopfli::Options {
     }
 }
 
-fn handle_liner_pattern(x: f64, y: f64, z: f64, n: u32) {
-
-}
+fn handle_liner_pattern(x: f64, y: f64, z: f64, n: u32) {}
 
 #[derive(Parser, Debug)]
 struct ProcessArgs {
@@ -204,16 +202,9 @@ struct ProcessArgs {
 
 #[derive(Parser, Debug)]
 struct LinerPatternArgs {
-    #[clap(short, value_name = "FLOAT")]
     x: f64,
-
-    #[clap(short, value_name = "FLOAT")]
     y: f64,
-
-    #[clap(short, value_name = "FLOAT")]
     z: f64,
-
-    #[clap(short, value_name = "INTEGER")]
     n: u32,
 }
 
@@ -282,7 +273,7 @@ fn main() {
             process_workflow(&args);
         }
         Some(SubCommand::LinerPattern(LinerPatternArgs { x, y, z, n })) => {
-            handle_liner_pattern( x, y, z, n);
+            handle_liner_pattern(x, y, z, n);
         }
     }
 }
