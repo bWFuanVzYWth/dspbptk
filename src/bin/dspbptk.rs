@@ -230,7 +230,7 @@ enum SubCommand {
 )]
 struct Args {
     /// Input from file/dir. (*.txt *.content dir/)
-    #[clap(value_name = "INPUT", global = true)]
+    #[clap(value_name = "INPUT")]
     input: PathBuf,
 
     /// Output to file/dir. (*.* dir/)
