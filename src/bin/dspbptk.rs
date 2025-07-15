@@ -137,7 +137,7 @@ fn process_one_file(
     // TODO 数据统计
 }
 
-fn process_workflow(args: &Args) {
+fn process_workflow(args: &GlobalArgs) {
     let zopfli_options = configure_zopfli_options(args);
     let path_in = &args.input;
     let path_out = args.output.as_deref().unwrap_or(path_in);
@@ -171,7 +171,7 @@ fn process_workflow(args: &Args) {
     // TODO 数据统计
 }
 
-const fn configure_zopfli_options(args: &Args) -> zopfli::Options {
+const fn configure_zopfli_options(args: &GlobalArgs) -> zopfli::Options {
     // 参数的正确性必须由用户保证，如果参数无效则拒绝处理，然后立即退出程序
     let iteration_count = args
         .iteration_count
@@ -192,28 +192,32 @@ const fn configure_zopfli_options(args: &Args) -> zopfli::Options {
     }
 }
 
-#[derive(Parser, Debug)]
-#[command(
-    version = "dspbptk0.2.0-dsp0.10.31.24632",
-    author = "bWFuanVzYWth",
-    about = "Dyson Sphere Program Blueprint Toolkit"
-)]
-struct Args {
-    // TODO 蓝图分析命令：分析蓝图文件，输出一个结构化信息展示蓝图的一些信息
-    // TODO 批量删除（对文件操作）蓝图中沙盒模式下的物流塔物品锁
-    // TODO 根据传送带标记和自动判断的传送带方向，添加额外的传送带建筑，生成垂直带线头，然后删除已处理的标记
-    // TODO 经度锁：解锁/上锁
+fn handle_xyzn(global: &GlobalArgs, x: f64, y: f64, z: f64, n: u32) {
+    println!(
+        "Received xyzn command with values: {}, {}, {}, {}",
+        x, y, z, n
+    );
+    println!("Input: {:?}", global.input);
+    if let Some(ref output) = global.output {
+        println!("Output: {:?}", output);
+    }
+    if let Some(ref ty) = global.type_output {
+        println!("Type output: {}", ty);
+    }
+}
 
-    // TODO 多文件同时输入
+#[derive(Parser, Debug, Clone)]
+struct GlobalArgs {
     /// Input from file/dir. (*.txt *.content dir/)
-    input: std::path::PathBuf,
+    #[clap(value_name = "INPUT")]
+    input: PathBuf,
 
     /// Output to file/dir. (*.* dir/)
-    #[clap(long, short)]
-    output: Option<std::path::PathBuf>,
+    #[clap(long, short, value_name = "OUTPUT")]
+    output: Option<PathBuf>,
 
     /// Output type: txt, content.
-    #[clap(long, short, default_value = "txt")]
+    #[clap(long, short, default_value = "txt", value_name = "TYPE")]
     type_output: Option<String>,
 
     /// Round `local_offset` to 1/300 may make blueprint smaller. Lossy.
@@ -225,16 +229,60 @@ struct Args {
     no_sorting_buildings: bool,
 
     /// Compress arguments: zopfli `iteration_count`.
-    #[clap(long, default_value = "16")]
+    #[clap(long, default_value = "16", value_name = "COUNT")]
     iteration_count: Option<u64>,
 
     /// Compress arguments: zopfli `iterations_without_improvement`.
-    #[clap(long, default_value = "18446744073709551615")]
+    #[clap(long, default_value = "18446744073709551615", value_name = "COUNT")]
     iterations_without_improvement: Option<u64>,
 
     /// Compress arguments: zopfli `maximum_block_splits`.
-    #[clap(long, default_value = "0")]
+    #[clap(long, default_value = "0", value_name = "COUNT")]
     maximum_block_splits: Option<u16>,
+}
+
+#[derive(Parser, Debug)]
+struct ProcessArgs {
+    #[clap(flatten)]
+    global: GlobalArgs,
+}
+
+#[derive(Parser, Debug)]
+struct XyznArgs {
+    #[clap(flatten)]
+    global: GlobalArgs,
+
+    #[clap(short, value_name = "FLOAT")]
+    x: f64,
+
+    #[clap(short, value_name = "FLOAT")]
+    y: f64,
+
+    #[clap(short, value_name = "FLOAT")]
+    z: f64,
+
+    #[clap(short, value_name = "INTEGER")]
+    n: u32,
+}
+
+#[derive(Parser, Debug)]
+enum SubCommand {
+    /// Process blueprint files
+    Process(ProcessArgs),
+
+    /// New command that takes four f64 values
+    Xyzn(XyznArgs),
+}
+
+#[derive(Parser, Debug)]
+#[command(
+    version = "dspbptk0.2.0-dsp0.10.31.24632",
+    author = "bWFuanVzYWth",
+    about = "Dyson Sphere Program Blueprint Toolkit"
+)]
+struct Args {
+    #[command(subcommand)]
+    subcommand: SubCommand,
 }
 
 fn main() {
@@ -244,5 +292,12 @@ fn main() {
     eprintln!("https://github.com/bWFuanVzYWth/dspbptk");
     let args = Args::parse();
 
-    process_workflow(&args);
+    match args.subcommand {
+        SubCommand::Process(ProcessArgs { global }) => {
+            process_workflow(&global);
+        }
+        SubCommand::Xyzn(XyznArgs { global, x,y,z,n }) => {
+            handle_xyzn(&global, x,y,z,n);
+        }
+    }
 }
