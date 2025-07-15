@@ -137,7 +137,7 @@ fn process_one_file(
     // TODO 数据统计
 }
 
-fn process_workflow(args: &GlobalArgs) {
+fn process_workflow(args: &Args) {
     let zopfli_options = configure_zopfli_options(args);
     let path_in = &args.input;
     let path_out = args.output.as_deref().unwrap_or(path_in);
@@ -171,7 +171,7 @@ fn process_workflow(args: &GlobalArgs) {
     // TODO 数据统计
 }
 
-const fn configure_zopfli_options(args: &GlobalArgs) -> zopfli::Options {
+const fn configure_zopfli_options(args: &Args) -> zopfli::Options {
     // 参数的正确性必须由用户保证，如果参数无效则拒绝处理，然后立即退出程序
     let iteration_count = args
         .iteration_count
@@ -192,66 +192,18 @@ const fn configure_zopfli_options(args: &GlobalArgs) -> zopfli::Options {
     }
 }
 
-fn handle_liner_pattern(global: &GlobalArgs, x: f64, y: f64, z: f64, n: u32) {
-    println!(
-        "Received liner_pattern command with values: {}, {}, {}, {}",
-        x, y, z, n
-    );
-    println!("Input: {:?}", global.input);
-    if let Some(ref output) = global.output {
-        println!("Output: {:?}", output);
-    }
-    if let Some(ref ty) = global.type_output {
-        println!("Type output: {}", ty);
-    }
-}
+fn handle_liner_pattern(x: f64, y: f64, z: f64, n: u32) {
 
-#[derive(Parser, Debug, Clone)]
-struct GlobalArgs {
-    /// Input from file/dir. (*.txt *.content dir/)
-    #[clap(value_name = "INPUT")]
-    input: PathBuf,
-
-    /// Output to file/dir. (*.* dir/)
-    #[clap(long, short, value_name = "OUTPUT")]
-    output: Option<PathBuf>,
-
-    /// Output type: txt, content.
-    #[clap(long, short, default_value = "txt", value_name = "TYPE")]
-    type_output: Option<String>,
-
-    /// Round `local_offset` to 1/300 may make blueprint smaller. Lossy.
-    #[clap(long, short)]
-    rounding_local_offset: bool,
-
-    /// Sorting buildings may make blueprint smaller. Lossless.
-    #[clap(long)]
-    no_sorting_buildings: bool,
-
-    /// Compress arguments: zopfli `iteration_count`.
-    #[clap(long, default_value = "16", value_name = "COUNT")]
-    iteration_count: Option<u64>,
-
-    /// Compress arguments: zopfli `iterations_without_improvement`.
-    #[clap(long, default_value = "18446744073709551615", value_name = "COUNT")]
-    iterations_without_improvement: Option<u64>,
-
-    /// Compress arguments: zopfli `maximum_block_splits`.
-    #[clap(long, default_value = "0", value_name = "COUNT")]
-    maximum_block_splits: Option<u16>,
 }
 
 #[derive(Parser, Debug)]
 struct ProcessArgs {
     #[clap(flatten)]
-    global: GlobalArgs,
+    global: Args,
 }
 
 #[derive(Parser, Debug)]
 struct LinerPatternArgs {
-    #[clap(flatten)]
-    global: GlobalArgs,
-
     #[clap(short, value_name = "FLOAT")]
     x: f64,
 
@@ -267,10 +219,6 @@ struct LinerPatternArgs {
 
 #[derive(Parser, Debug)]
 enum SubCommand {
-    /// Process blueprint files
-    Process(ProcessArgs),
-
-    /// New command that takes four f64 values
     LinerPattern(LinerPatternArgs),
 }
 
@@ -281,8 +229,45 @@ enum SubCommand {
     about = "Dyson Sphere Program Blueprint Toolkit"
 )]
 struct Args {
+    /// Input from file/dir. (*.txt *.content dir/)
+    #[clap(value_name = "INPUT", global = true)]
+    input: PathBuf,
+
+    /// Output to file/dir. (*.* dir/)
+    #[clap(long, short, value_name = "OUTPUT", global = true)]
+    output: Option<PathBuf>,
+
+    /// Output type: txt, content.
+    #[clap(long, short, default_value = "txt", value_name = "TYPE", global = true)]
+    type_output: Option<String>,
+
+    /// Round `local_offset` to 1/300 may make blueprint smaller. Lossy.
+    #[clap(long, short, global = true)]
+    rounding_local_offset: bool,
+
+    /// Sorting buildings may make blueprint smaller. Lossless.
+    #[clap(long, global = true)]
+    no_sorting_buildings: bool,
+
+    /// Compress arguments: zopfli `iteration_count`.
+    #[clap(long, default_value = "16", value_name = "COUNT", global = true)]
+    iteration_count: Option<u64>,
+
+    /// Compress arguments: zopfli `iterations_without_improvement`.
+    #[clap(
+        long,
+        default_value = "18446744073709551615",
+        value_name = "COUNT",
+        global = true
+    )]
+    iterations_without_improvement: Option<u64>,
+
+    /// Compress arguments: zopfli `maximum_block_splits`.
+    #[clap(long, default_value = "0", value_name = "COUNT", global = true)]
+    maximum_block_splits: Option<u16>,
+
     #[command(subcommand)]
-    subcommand: SubCommand,
+    subcommand: Option<SubCommand>,
 }
 
 fn main() {
@@ -293,11 +278,11 @@ fn main() {
     let args = Args::parse();
 
     match args.subcommand {
-        SubCommand::Process(ProcessArgs { global }) => {
-            process_workflow(&global);
+        None => {
+            process_workflow(&args);
         }
-        SubCommand::LinerPattern(LinerPatternArgs { global, x, y, z, n }) => {
-            handle_liner_pattern(&global, x, y, z, n);
+        Some(SubCommand::LinerPattern(LinerPatternArgs { x, y, z, n })) => {
+            handle_liner_pattern( x, y, z, n);
         }
     }
 }
