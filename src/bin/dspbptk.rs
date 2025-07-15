@@ -137,33 +137,6 @@ fn process_one_file(
     // TODO 数据统计
 }
 
-fn process_all_files(
-    files: &[PathBuf],
-    path_in: &Path,
-    path_out: &Path,
-    zopfli_options: &zopfli::Options,
-    output_type: &FileType,
-    sorting_buildings: bool,
-    rounding_local_offset: bool,
-) {
-    let _result: Vec<Option<()>> = files
-        .par_iter()
-        .map(|file_path_in| {
-            process_one_file(
-                file_path_in,
-                path_in,
-                path_out,
-                zopfli_options,
-                output_type,
-                sorting_buildings,
-                rounding_local_offset,
-            )
-        })
-        .collect();
-
-    // TODO 数据统计
-}
-
 fn process_workflow(args: &Args) {
     let zopfli_options = configure_zopfli_options(args);
     let path_in = &args.input;
@@ -180,15 +153,22 @@ fn process_workflow(args: &Args) {
     let sorting_buildings = !args.no_sorting_buildings;
     let rounding_local_offset = args.rounding_local_offset;
 
-    process_all_files(
-        &files,
-        path_in,
-        path_out,
-        &zopfli_options,
-        &output_type,
-        sorting_buildings,
-        rounding_local_offset,
-    );
+    let _result: Vec<Option<()>> = files
+        .par_iter()
+        .map(|file_path_in| {
+            process_one_file(
+                file_path_in,
+                path_in,
+                path_out,
+                &zopfli_options,
+                &output_type,
+                sorting_buildings,
+                rounding_local_offset,
+            )
+        })
+        .collect();
+
+    // TODO 数据统计
 }
 
 const fn configure_zopfli_options(args: &Args) -> zopfli::Options {
