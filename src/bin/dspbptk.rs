@@ -4,7 +4,10 @@ static GLOBAL: mimalloc::MiMalloc = mimalloc::MiMalloc;
 use std::path::{Path, PathBuf};
 
 use clap::Parser;
-use dspbptk::toolkit::blueprint::sort::{fix_buildings_index, sort_buildings};
+use dspbptk::{
+    dspbptk_building::fix_dspbptk_buildings_index,
+    toolkit::blueprint::sort::{fix_buildings_index, sort_buildings},
+};
 use log::{error, warn};
 use nalgebra::Vector3;
 use rayon::prelude::*;
@@ -65,12 +68,17 @@ impl DspbptkMap for LinerPatternArgs {
             .map(|building| building.to_dspbptk_building_data().unwrap())
             .collect::<Vec<_>>();
         let basis_vector = Vector3::<f64>::new(self.x, self.y, self.z);
-        let dspbptk_buildings_out = linear_pattern(&dspbptk_buildings_in, &basis_vector, self.n);
+        let dspbptk_buildings_out = fix_dspbptk_buildings_index(linear_pattern(
+            &dspbptk_buildings_in,
+            &basis_vector,
+            self.n,
+        ));
         let buildings_out = dspbptk_buildings_out
             .iter()
             .map(|building| building.to_building_data().unwrap())
             .collect::<Vec<_>>();
         let new_content = ContentData {
+            buildings_length: u32::try_from(buildings_out.len()).unwrap(),
             buildings: buildings_out,
             ..content_in.clone()
         };
@@ -84,9 +92,14 @@ fn process_middle_layer(
     content_data_in: ContentData,
     sorting_buildings: bool,
     rounding_local_offset: bool,
+    sub_command: &Option<SubCommand>,
 ) -> (HeaderData, ContentData) {
-    let header_data_out = header_data_in;
-    let mut content_data_out = content_data_in;
+    let (header_data_out, mut content_data_out) = match sub_command {
+        Some(SubCommand::LinerPattern(liner_pattern_args)) => {
+            liner_pattern_args.apply(&header_data_in, &content_data_in)
+        }
+        None => (header_data_in, content_data_in),
+    };
 
     if rounding_local_offset {
         content_data_out.buildings.iter_mut().for_each(|building| {
@@ -110,6 +123,7 @@ fn process_one_file(
     output_type: &FileType,
     sorting_buildings: bool,
     rounding_local_offset: bool,
+    sub_command: &Option<SubCommand>,
 ) -> Option<()> {
     let blueprint_kind_in = match dspbptk::io::read_file(file_path_in) {
         Ok(result) => result,
@@ -140,6 +154,7 @@ fn process_one_file(
         content_data_in,
         sorting_buildings,
         rounding_local_offset,
+        sub_command,
     );
     let blueprint_kind_out = match io::process_back_end(
         &header_data_out,
@@ -167,8 +182,6 @@ fn process_one_file(
 }
 
 fn process_workflow(args: &Args) {
-    use crate::SubCommand::LinerPattern;
-
     let zopfli_options = configure_zopfli_options(args);
     let path_in = &args.input;
     let path_out = args.output.as_deref().unwrap_or(path_in);
@@ -184,19 +197,6 @@ fn process_workflow(args: &Args) {
     let sorting_buildings = !args.no_sorting_buildings;
     let rounding_local_offset = args.rounding_local_offset;
 
-    // TODO 简化写法，移动到中间层
-    // let func: fn(&HeaderData, &ContentData) -> (HeaderData, ContentData) = match &args.subcommand {
-    //     Some(LinerPattern(args)) => {
-    //         let args = args.clone();
-    //         |header: &HeaderData, content: &ContentData| -> (HeaderData, ContentData) {
-    //             args.apply(header, content)
-    //         }
-    //     }
-    //     None => |header: &HeaderData, content: &ContentData| -> (HeaderData, ContentData) {
-    //         (header.clone(), content.clone())
-    //     },
-    // };
-
     let _result: Vec<Option<()>> = files
         .par_iter()
         .map(|file_path_in| {
@@ -208,6 +208,7 @@ fn process_workflow(args: &Args) {
                 &output_type,
                 sorting_buildings,
                 rounding_local_offset,
+                &args.subcommand,
             )
         })
         .collect();
@@ -236,8 +237,6 @@ const fn configure_zopfli_options(args: &Args) -> zopfli::Options {
     }
 }
 
-fn handle_liner_pattern(x: f64, y: f64, z: f64, n: u32) {}
-
 #[derive(Parser, Debug)]
 struct ProcessArgs {
     #[clap(flatten)]
@@ -246,9 +245,16 @@ struct ProcessArgs {
 
 #[derive(Parser, Debug, Clone)]
 struct LinerPatternArgs {
+    #[clap(index = 1)]
     x: f64,
+
+    #[clap(index = 2)]
     y: f64,
+
+    #[clap(index = 3)]
     z: f64,
+
+    #[clap(index = 4)]
     n: u32,
 }
 
