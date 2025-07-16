@@ -45,7 +45,7 @@ fn generate_output_path(
 
     let stripped_path = relative_path
         .strip_prefix(root_path_in)
-        .expect("unreachable: can not process file path");
+        .unwrap_or_else(|_| panic!("invalid path: {}", relative_path.display()));
 
     if stripped_path == Path::new("") {
         root_path_out.to_path_buf().with_extension(extension)
@@ -115,6 +115,8 @@ fn process_middle_layer(
     (header_data_out, content_data_out)
 }
 
+// TODO 改成参数结构体
+// TODO 返回处理是否成功
 fn process_one_file(
     file_path_in: &Path,
     path_in: &Path,
@@ -217,7 +219,7 @@ fn process_workflow(args: &Args) {
 }
 
 const fn configure_zopfli_options(args: &Args) -> zopfli::Options {
-    // 参数的正确性必须由用户保证，如果参数无效则拒绝处理，然后立即退出程序
+    // FIXME 在命令行中校验，而不是事后再panic
     let iteration_count = args
         .iteration_count
         .expect("arg error: unknown iteration_count");
