@@ -9,6 +9,8 @@ pub struct Row {
     pub n: i64, // 这一行建筑的数量
 }
 
+// TODO 密铺排列计算
+
 // TODO 重构，为不同的模块impl对应的方法
 // 根据下一行模块尺寸计算中心y，使得模块的最低点高于edge_y
 #[must_use]

@@ -260,6 +260,7 @@ struct LinearPatternArgs {
     n: u32,
 }
 
+// TODO 给命令加上简介
 #[derive(Parser, Debug)]
 enum SubCommand {
     LinearPattern(LinearPatternArgs),

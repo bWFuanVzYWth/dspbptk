@@ -5,6 +5,8 @@ use nalgebra::Vector3;
 pub const EARTH_R: f64 = 200.0;
 pub const HALF_EQUATORIAL_GRID: f64 = 500.0;
 
+// TODO 建筑旋转后的角度修复
+
 // 将方向向量转换为局部偏移
 #[must_use]
 pub fn direction_to_local_offset(direction: &Vector3<f64>, z: f64) -> Vector3<f64> {
