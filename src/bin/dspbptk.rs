@@ -6,6 +6,7 @@ use std::path::{Path, PathBuf};
 use clap::Parser;
 use dspbptk::toolkit::blueprint::sort::{fix_buildings_index, sort_buildings};
 use log::{error, warn};
+use nalgebra::Vector3;
 use rayon::prelude::*;
 use walkdir::WalkDir;
 
@@ -47,6 +48,34 @@ fn generate_output_path(
         root_path_out.to_path_buf().with_extension(extension)
     } else {
         root_path_out.join(stripped_path).with_extension(extension)
+    }
+}
+
+pub trait DspbptkMap {
+    fn apply(&self, header: &HeaderData, content: &ContentData) -> (HeaderData, ContentData);
+}
+
+impl DspbptkMap for LinerPatternArgs {
+    fn apply(&self, header: &HeaderData, content_in: &ContentData) -> (HeaderData, ContentData) {
+        use dspbptk::toolkit::dspbptk::offset::linear_pattern;
+
+        let dspbptk_buildings_in = content_in
+            .buildings
+            .iter()
+            .map(|building| building.to_dspbptk_building_data().unwrap())
+            .collect::<Vec<_>>();
+        let basis_vector = Vector3::<f64>::new(self.x, self.y, self.z);
+        let dspbptk_buildings_out = linear_pattern(&dspbptk_buildings_in, &basis_vector, self.n);
+        let buildings_out = dspbptk_buildings_out
+            .iter()
+            .map(|building| building.to_building_data().unwrap())
+            .collect::<Vec<_>>();
+        let new_content = ContentData {
+            buildings: buildings_out,
+            ..content_in.clone()
+        };
+
+        (header.clone(), new_content)
     }
 }
 
@@ -138,6 +167,8 @@ fn process_one_file(
 }
 
 fn process_workflow(args: &Args) {
+    use crate::SubCommand::LinerPattern;
+
     let zopfli_options = configure_zopfli_options(args);
     let path_in = &args.input;
     let path_out = args.output.as_deref().unwrap_or(path_in);
@@ -152,6 +183,19 @@ fn process_workflow(args: &Args) {
 
     let sorting_buildings = !args.no_sorting_buildings;
     let rounding_local_offset = args.rounding_local_offset;
+
+    // TODO 简化写法，移动到中间层
+    // let func: fn(&HeaderData, &ContentData) -> (HeaderData, ContentData) = match &args.subcommand {
+    //     Some(LinerPattern(args)) => {
+    //         let args = args.clone();
+    //         |header: &HeaderData, content: &ContentData| -> (HeaderData, ContentData) {
+    //             args.apply(header, content)
+    //         }
+    //     }
+    //     None => |header: &HeaderData, content: &ContentData| -> (HeaderData, ContentData) {
+    //         (header.clone(), content.clone())
+    //     },
+    // };
 
     let _result: Vec<Option<()>> = files
         .par_iter()
@@ -200,7 +244,7 @@ struct ProcessArgs {
     global: Args,
 }
 
-#[derive(Parser, Debug)]
+#[derive(Parser, Debug, Clone)]
 struct LinerPatternArgs {
     x: f64,
     y: f64,
@@ -268,12 +312,5 @@ fn main() {
     eprintln!("https://github.com/bWFuanVzYWth/dspbptk");
     let args = Args::parse();
 
-    match args.subcommand {
-        None => {
-            process_workflow(&args);
-        }
-        Some(SubCommand::LinerPattern(LinerPatternArgs { x, y, z, n })) => {
-            handle_liner_pattern(x, y, z, n);
-        }
-    }
+    process_workflow(&args);
 }

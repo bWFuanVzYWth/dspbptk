@@ -32,7 +32,7 @@ impl DspbptkBuildingData {
 #[must_use]
 pub fn linear_pattern(
     module: &[DspbptkBuildingData],
-    basis_vector: Vector3<f64>,
+    basis_vector: &Vector3<f64>,
     count: u32,
 ) -> Vec<DspbptkBuildingData> {
     (0..count)
