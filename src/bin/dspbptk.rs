@@ -58,7 +58,7 @@ pub trait DspbptkMap {
     fn apply(&self, header: &HeaderData, content: &ContentData) -> (HeaderData, ContentData);
 }
 
-impl DspbptkMap for LinerPatternArgs {
+impl DspbptkMap for LinearPatternArgs {
     fn apply(&self, header: &HeaderData, content_in: &ContentData) -> (HeaderData, ContentData) {
         use dspbptk::toolkit::dspbptk::offset::linear_pattern;
 
@@ -95,8 +95,8 @@ fn process_middle_layer(
     sub_command: &Option<SubCommand>,
 ) -> (HeaderData, ContentData) {
     let (header_data_out, mut content_data_out) = match sub_command {
-        Some(SubCommand::LinerPattern(liner_pattern_args)) => {
-            liner_pattern_args.apply(&header_data_in, &content_data_in)
+        Some(SubCommand::LinearPattern(linear_pattern_args)) => {
+            linear_pattern_args.apply(&header_data_in, &content_data_in)
         }
         None => (header_data_in, content_data_in),
     };
@@ -244,7 +244,7 @@ struct ProcessArgs {
 }
 
 #[derive(Parser, Debug, Clone)]
-struct LinerPatternArgs {
+struct LinearPatternArgs {
     #[clap(index = 1)]
     x: f64,
 
@@ -260,7 +260,7 @@ struct LinerPatternArgs {
 
 #[derive(Parser, Debug)]
 enum SubCommand {
-    LinerPattern(LinerPatternArgs),
+    LinearPattern(LinearPatternArgs),
 }
 
 #[derive(Parser, Debug)]
