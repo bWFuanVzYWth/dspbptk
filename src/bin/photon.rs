@@ -4,17 +4,17 @@ use nalgebra::Vector3;
 use dspbptk::{
     blueprint::{content::ContentData, header::HeaderData},
     dspbptk_building::{
-        DspbptkBuildingData, fix_dspbptk_buildings_index, uuid::some_new_uuid as new_some_uuid,
+        fix_dspbptk_buildings_index, uuid::some_new_uuid as new_some_uuid, DspbptkBuildingData
     },
     error::DspbptkError::{self, UnexpectBuildingsCount},
-    io::{BlueprintKind, FileType},
+    io::{BlueprintKind, FileType, LegalFileType},
     item::Item,
     tesselation_structure::receiver_1i1o,
     toolkit::{
         dspbptk::{
             belt::connect_belts,
             coordinate_transformation::local_offset_to_direction,
-            tesselation::{Row, calculate_next_y},
+            tesselation::{calculate_next_y, Row},
         },
         unit_conversion::{arc_from_grid, grid_from_arc},
     },
@@ -228,7 +228,7 @@ fn main() -> Result<(), DspbptkError<'static>> {
     };
 
     if let BlueprintKind::Txt(blueprint) =
-        dspbptk::io::process_back_end(&header_data, &content_data, &zopfli_options, &FileType::Txt)?
+        dspbptk::io::process_back_end(&header_data, &content_data, &zopfli_options, &LegalFileType::Txt)?
     {
         // cargo run --bin photon --release > "C:\Users\%USERNAME%\Documents\Dyson Sphere Program\Blueprint\receiver2920.txt"
         print!("{blueprint}");

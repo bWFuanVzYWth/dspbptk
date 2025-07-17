@@ -6,6 +6,7 @@ use std::path::{Path, PathBuf};
 use clap::Parser;
 use dspbptk::{
     dspbptk_building::fix_dspbptk_buildings_index,
+    io::LegalFileType,
     toolkit::blueprint::sort::{fix_buildings_index, sort_buildings},
 };
 use log::{error, warn};
@@ -24,7 +25,7 @@ fn collect_files(path_in: &Path) -> Vec<PathBuf> {
             let entry_path = entry.path();
             matches!(
                 dspbptk::io::classify_file_type(entry_path),
-                FileType::Txt | FileType::Content
+                FileType::Blueprint(_)
             )
         })
         .map(walkdir::DirEntry::into_path)
@@ -35,12 +36,11 @@ fn generate_output_path(
     root_path_in: &Path,
     root_path_out: &Path,
     relative_path: &Path,
-    file_type: &FileType,
+    file_type: &LegalFileType,
 ) -> PathBuf {
     let extension = match file_type {
-        FileType::Txt => "txt",
-        FileType::Content => "content",
-        _ => panic!("Unsupported file type"),
+        LegalFileType::Txt => "txt",
+        LegalFileType::Content => "content",
     };
 
     let stripped_path = relative_path
@@ -122,7 +122,7 @@ fn process_one_file(
     path_in: &Path,
     path_out: &Path,
     zopfli_options: &zopfli::Options,
-    output_type: &FileType,
+    output_type: &LegalFileType,
     sorting_buildings: bool,
     rounding_local_offset: bool,
     sub_command: &Option<SubCommand>,
@@ -190,10 +190,9 @@ fn process_workflow(args: &Args) {
 
     let files = collect_files(path_in);
 
-    let output_type = match args.type_output.as_deref() {
-        Some("txt") => FileType::Txt,
-        Some("content") => FileType::Content,
-        _ => panic!("Unsupported file type"),
+    let output_type = match &args.type_output {
+        Some(blueprint_type) => blueprint_type,
+        None => &LegalFileType::Txt,
     };
 
     let sorting_buildings = !args.no_sorting_buildings;
@@ -207,7 +206,7 @@ fn process_workflow(args: &Args) {
                 path_in,
                 path_out,
                 &zopfli_options,
-                &output_type,
+                output_type,
                 sorting_buildings,
                 rounding_local_offset,
                 &args.subcommand,
@@ -283,7 +282,7 @@ struct Args {
 
     /// Output type: txt, content.
     #[clap(long, short, default_value = "txt", value_name = "TYPE", global = true)]
-    type_output: Option<String>,
+    type_output: Option<LegalFileType>,
 
     /// Round `local_offset` to 1/300 may make blueprint smaller. Lossy.
     #[clap(long, short, global = true)]

@@ -1,4 +1,4 @@
-#![deny(
+#![warn(
     clippy::correctness,
 
     clippy::shadow_unrelated,

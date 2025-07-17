@@ -1,5 +1,7 @@
 use std::path::{Path, PathBuf};
 
+use clap::ValueEnum;
+
 use crate::{
     blueprint::{
         self,
@@ -17,11 +19,17 @@ pub enum BlueprintKind {
     Content(Vec<u8>),
 }
 
-pub enum FileType {
-    Unknown,
-    Other,
+#[derive(ValueEnum, Clone, Debug)]
+pub enum LegalFileType {
     Txt,
     Content,
+}
+
+// TODO 细分合法格式和非法格式
+pub enum FileType {
+    Blueprint(LegalFileType),
+    Unknown,
+    Other,
 }
 
 /// # Errors
@@ -39,8 +47,8 @@ pub fn classify_file_type(entry: &Path) -> FileType {
     entry
         .extension()
         .map_or(FileType::Unknown, |extension| match extension.to_str() {
-            Some("txt") => FileType::Txt,
-            Some("content") => FileType::Content,
+            Some("txt") => FileType::Blueprint(LegalFileType::Txt),
+            Some("content") => FileType::Blueprint(LegalFileType::Content),
             _ => FileType::Other,
         })
 }
@@ -58,11 +66,11 @@ fn read_blueprint_file(path: &'_ Path) -> Result<String, DspbptkError<'_>> {
 /// * 文件的后缀名不受支持
 pub fn read_file(path: &'_ Path) -> Result<BlueprintKind, DspbptkError<'_>> {
     match classify_file_type(path) {
-        FileType::Txt => {
+        FileType::Blueprint(LegalFileType::Txt) => {
             let blueprint_string = read_blueprint_file(path)?;
             Ok(BlueprintKind::Txt(blueprint_string))
         }
-        FileType::Content => {
+        FileType::Blueprint(LegalFileType::Content) => {
             let content_bin = read_content_file(path)?;
             Ok(BlueprintKind::Content(content_bin))
         }
@@ -140,10 +148,10 @@ pub fn process_back_end<'a>(
     header_data: &HeaderData,
     content_data: &ContentData,
     zopfli_options: &zopfli::Options,
-    output_type: &FileType,
+    output_type: &LegalFileType,
 ) -> Result<BlueprintKind, DspbptkError<'a>> {
     match output_type {
-        FileType::Txt => {
+        LegalFileType::Txt => {
             let header_string = header::serialization(header_data);
             let content_string = string_from_data(content_data, zopfli_options)?;
             Ok(BlueprintKind::Txt(blueprint::serialization(
@@ -151,7 +159,6 @@ pub fn process_back_end<'a>(
                 &content_string,
             )))
         }
-        FileType::Content => Ok(BlueprintKind::Content(content_data.to_bin())),
-        _ => Err(UnknownFileType),
+        LegalFileType::Content => Ok(BlueprintKind::Content(content_data.to_bin())),
     }
 }

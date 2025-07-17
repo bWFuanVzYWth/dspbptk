@@ -1,7 +1,7 @@
 use dspbptk::{
     blueprint::{content::ContentData, header::HeaderData},
     error::DspbptkError,
-    io::{BlueprintKind, FileType},
+    io::{BlueprintKind, FileType, LegalFileType},
 };
 
 fn main() -> Result<(), DspbptkError<'static>> {
@@ -10,7 +10,7 @@ fn main() -> Result<(), DspbptkError<'static>> {
     let content_data = ContentData::default();
 
     if let BlueprintKind::Txt(blueprint) =
-        dspbptk::io::process_back_end(&header_data, &content_data, &zopfli_options, &FileType::Txt)?
+        dspbptk::io::process_back_end(&header_data, &content_data, &zopfli_options, &LegalFileType::Txt)?
     {
         print!("{blueprint}");
     }
