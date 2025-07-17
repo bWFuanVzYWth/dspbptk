@@ -2,7 +2,7 @@
 
 ## 简介 · About
 
-《戴森球计划》中的蓝图工具集
+《戴森球计划》中的蓝图处理库，和基于此开发的蓝图工具
 
 * 内存安全的蓝图解析/编码库，可以在0.03s内解析一张18万建筑的全球白糖蓝图
 * 蓝图无损压缩，可手动启用有损压缩换取更小的文件体积
@@ -11,17 +11,9 @@
 
 ## 参考 Acknowledgements
 
-* MD5f: https://github.com/Wesmania/dspbp
+* MD5f: <https://github.com/Wesmania/dspbp>
 
----
-
-# dspbptk.exe
-
-## 简介 · About
-
-* 基于此框架开发的蓝图工具APP
-
-## 注意 · Warning
+## 注意 · Warnings
 
 * 如果不设置输出路径，默认将覆写原始蓝图，没有二次确认
 * 输出文件时不会对比输入文件的体积
@@ -30,7 +22,7 @@
 
 通过以下命令查看使用帮助：
 
-```
+```cmd
 dspbptk help
 ```
 
