@@ -1,7 +1,10 @@
 #[global_allocator]
 static GLOBAL: mimalloc::MiMalloc = mimalloc::MiMalloc;
 
-use std::path::{Path, PathBuf};
+use std::{
+    num::NonZero,
+    path::{Path, PathBuf},
+};
 
 use clap::Parser;
 use dspbptk::{
@@ -213,11 +216,6 @@ fn process_workflow(args: &Args) {
 
     let files = collect_files(path_in);
 
-    let output_type = match &args.type_output {
-        Some(blueprint_type) => blueprint_type,
-        None => &LegalFileType::Txt,
-    };
-
     let sorting_buildings = !args.no_sorting_buildings;
     let rounding_local_offset = args.rounding_local_offset;
 
@@ -229,7 +227,7 @@ fn process_workflow(args: &Args) {
                 path_in,
                 path_out,
                 &zopfli_options,
-                output_type,
+                &args.type_output,
                 sorting_buildings,
                 rounding_local_offset,
                 &args.subcommand,
@@ -241,22 +239,13 @@ fn process_workflow(args: &Args) {
 }
 
 const fn configure_zopfli_options(args: &Args) -> zopfli::Options {
-    // FIXME 在命令行中校验，而不是事后再panic
-    let iteration_count = args
-        .iteration_count
-        .expect("arg error: unknown iteration_count");
-    let iterations_without_improvement = args
-        .iterations_without_improvement
-        .expect("arg error: unknown iterations_without_improvement");
-    let maximum_block_splits = args
-        .maximum_block_splits
-        .expect("arg error: unknown maximum_block_splits");
+    let iteration_count = args.iteration_count;
+    let iterations_without_improvement = args.iterations_without_improvement;
+    let maximum_block_splits = args.maximum_block_splits;
 
     zopfli::Options {
-        iteration_count: std::num::NonZero::new(iteration_count)
-            .expect("arg error: iteration_count must > 0"),
-        iterations_without_improvement: std::num::NonZero::new(iterations_without_improvement)
-            .expect("arg error: iterations_without_improvement must > 0"),
+        iteration_count,
+        iterations_without_improvement,
         maximum_block_splits,
     }
 }
@@ -288,10 +277,12 @@ struct OffsetArgs {
     z: f64,
 }
 
-// TODO 给命令加上简介
 #[derive(Parser, Debug)]
 enum SubCommand {
+    /// Linear pattern blueprint with vector XYZ and count N
     LinearPattern(LinearPatternArgs),
+
+    /// Offset blueprint with vector XYZ
     Offset(OffsetArgs),
 }
 
@@ -306,38 +297,38 @@ struct Args {
     #[clap(value_name = "INPUT")]
     input: PathBuf,
 
-    /// Output to file/dir. (*.* dir/)
-    #[clap(long, short, value_name = "OUTPUT", global = true)]
+    /// Output to file/dir (*.* dir/)
+    #[clap(long, short, value_name = "OUTPUT")]
     output: Option<PathBuf>,
 
-    /// Output type: txt, content.
-    #[clap(long, short, default_value = "txt", value_name = "TYPE", global = true)]
-    type_output: Option<LegalFileType>,
+    /// Output type: txt, content
+    #[clap(long, short, default_value = "txt", value_name = "TYPE")]
+    type_output: LegalFileType,
 
     /// Round `local_offset` to 1/300 may make blueprint smaller. Lossy.
-    #[clap(long, short, global = true)]
+    #[clap(long, short)]
     rounding_local_offset: bool,
 
     /// Sorting buildings may make blueprint smaller. Lossless.
-    #[clap(long, global = true)]
+    #[clap(long)]
     no_sorting_buildings: bool,
 
-    /// Compress arguments: zopfli `iteration_count`.
-    #[clap(long, default_value = "16", value_name = "COUNT", global = true)]
-    iteration_count: Option<u64>,
+    /// Compress arguments: zopfli `iteration_count`
+    #[clap(long, default_value = "16", value_name = "COUNT")]
+    iteration_count: NonZero<u64>,
 
-    /// Compress arguments: zopfli `iterations_without_improvement`.
+    /// Compress arguments: zopfli `iterations_without_improvement`
     #[clap(
         long,
         default_value = "18446744073709551615",
         value_name = "COUNT",
         global = true
     )]
-    iterations_without_improvement: Option<u64>,
+    iterations_without_improvement: NonZero<u64>,
 
-    /// Compress arguments: zopfli `maximum_block_splits`.
-    #[clap(long, default_value = "0", value_name = "COUNT", global = true)]
-    maximum_block_splits: Option<u16>,
+    /// Compress arguments: zopfli `maximum_block_splits`
+    #[clap(long, default_value = "0", value_name = "COUNT")]
+    maximum_block_splits: u16,
 
     #[command(subcommand)]
     subcommand: Option<SubCommand>,
