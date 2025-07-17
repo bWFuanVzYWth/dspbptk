@@ -62,8 +62,6 @@ strum_macros = "0.27.1"
 mimalloc = "0.1.47"
 # graph
 petgraph = "0.8.2"
-# lazy static
-lazy_static = "1.5.0"
 
 [profile.release]
 codegen-units = 1

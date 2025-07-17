@@ -1,4 +1,3 @@
-use lazy_static::lazy_static;
 use nalgebra::Vector3;
 
 use dspbptk::{
@@ -13,7 +12,7 @@ use dspbptk::{
     toolkit::{
         dspbptk::{
             belt::connect_belts, coordinate_transformation::local_offset_to_direction,
-            tesselation::calculate_next_y,
+            tesselation::Module,
         },
         unit_conversion::{arc_from_grid, grid_from_arc},
     },
@@ -42,17 +41,9 @@ const ARC_B: f64 = arc_from_grid(GRID_B);
 const HALF_ARC_A: f64 = arc_from_grid(HALF_GRID_A);
 const HALF_ARC_B: f64 = arc_from_grid(HALF_GRID_B);
 
-lazy_static! {
-    static ref half_arc_b_tan: f64 = HALF_ARC_B.tan();
-    static ref half_arc_a_tan: f64 = HALF_ARC_A.tan();
-    static ref half_arc_b_tan_pow2: f64 = half_arc_b_tan.powi(2);
-    static ref half_arc_a_tan_pow2: f64 = half_arc_a_tan.powi(2);
-    static ref norm_sq: f64 = *half_arc_b_tan_pow2 + *half_arc_a_tan_pow2 + 1.0;
-    static ref scale: f64 = (1.0 - (*half_arc_b_tan_pow2 / *norm_sq)).sqrt();
-    static ref theta_down: f64 = ((*half_arc_a_tan / norm_sq.sqrt()).sin() / *scale).asin();
-}
-
 fn calculate_layout() -> Vec<Row> {
+    let module = Module::new(GRID_A, GRID_B);
+
     let mut rows = Vec::new();
 
     // 生成贴着赤道的一圈
@@ -71,16 +62,11 @@ fn calculate_layout() -> Vec<Row> {
 
         let row_next = if (row_try_offset.y + ARC_B / 2.0).cos() < row_try_offset.n as f64 * ARC_A {
             // 如果直接偏移太挤了
-            let Some(y_fixed) =
-                calculate_next_y(rows.last().unwrap().y + HALF_ARC_A, *scale, *theta_down)
-            else {
+            let Some(y_fixed) = module.calculate_next_y(rows.last().unwrap().y + HALF_ARC_A) else {
                 break;
             };
             let n = ((y_fixed + HALF_ARC_B).cos() * (TAU / ARC_A)).floor() as i64;
-            Row {
-                y: y_fixed,
-                n,
-            }
+            Row { y: y_fixed, n }
         } else {
             // 如果直接偏移放得下
             if row_try_offset.y > TAU {
