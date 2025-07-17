@@ -2,7 +2,7 @@ use dspbptk::{
     blueprint::{content::ContentData, header::HeaderData},
     dspbptk_building::{DspbptkBuildingData, fix_dspbptk_buildings_index, uuid::some_new_uuid},
     error::DspbptkError::{self},
-    io::{BlueprintKind, LegalFileType},
+    io::{BlueprintKind, LegalBlueprintFileType},
     item::Item,
 };
 use nalgebra::Vector3;
@@ -56,8 +56,8 @@ fn main() -> Result<(), DspbptkError<'static>> {
     let content_data = ContentData {
         buildings_length: u32::try_from(buildings.len()).unwrap(),
         buildings: buildings
-            .iter()
-            .map(|dspbptk_building| dspbptk_building.to_building_data().unwrap())
+            .into_iter()
+            .map(|dspbptk_building| dspbptk_building.as_building_data().unwrap())
             .collect(),
         ..Default::default()
     };
@@ -68,7 +68,7 @@ fn main() -> Result<(), DspbptkError<'static>> {
         &header_data,
         &content_data,
         &zopfli_options,
-        &LegalFileType::Txt,
+        &LegalBlueprintFileType::Txt,
     )? {
         print!("{blueprint}");
     }

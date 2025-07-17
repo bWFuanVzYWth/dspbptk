@@ -1,7 +1,7 @@
 use dspbptk::{
     blueprint::{content::ContentData, header::HeaderData},
     error::DspbptkError,
-    io::{BlueprintKind, LegalFileType},
+    io::{BlueprintKind, LegalBlueprintFileType},
 };
 
 fn main() -> Result<(), DspbptkError<'static>> {
@@ -13,7 +13,7 @@ fn main() -> Result<(), DspbptkError<'static>> {
         &header_data,
         &content_data,
         &zopfli_options,
-        &LegalFileType::Txt,
+        &LegalBlueprintFileType::Txt,
     )? {
         print!("{blueprint}");
     }

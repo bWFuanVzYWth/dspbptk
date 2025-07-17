@@ -13,7 +13,7 @@ use petgraph::{
 /// 如果是其它建筑则依次按照`item_id`、`model_index`、`recipe_id`、`area_index`、`local_offset`进行排序(稳定)，其它建筑放在建筑列表后面。\
 /// 注意传送带单独分组，并不与其它建筑保证`item_id`的顺序关系
 #[must_use]
-pub fn sort_buildings(buildings: &[BuildingData], reserved: bool) -> Vec<BuildingData> {
+pub fn sort_buildings(buildings: Vec<BuildingData>, reserved: bool) -> Vec<BuildingData> {
     // 0. 空建筑列表提前返回
     if buildings.is_empty() {
         return Vec::new();
@@ -37,10 +37,9 @@ pub fn sort_buildings(buildings: &[BuildingData], reserved: bool) -> Vec<Buildin
     sorted
 }
 
-fn split_belt_and_non_belt(buildings: &[BuildingData]) -> (Vec<BuildingData>, Vec<BuildingData>) {
+fn split_belt_and_non_belt(buildings: Vec<BuildingData>) -> (Vec<BuildingData>, Vec<BuildingData>) {
     buildings
-        .iter()
-        .cloned()
+        .into_iter()
         .partition(|building| (2001..=2009).contains(&building.item_id))
 }
 

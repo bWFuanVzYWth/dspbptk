@@ -9,7 +9,7 @@ use std::{
 use clap::Parser;
 use dspbptk::{
     dspbptk_building::fix_dspbptk_buildings_index,
-    io::LegalFileType,
+    io::LegalBlueprintFileType,
     toolkit::blueprint::sort::{fix_buildings_index, sort_buildings},
 };
 use log::{error, warn};
@@ -39,11 +39,11 @@ fn generate_output_path(
     root_path_in: &Path,
     root_path_out: &Path,
     relative_path: &Path,
-    file_type: &LegalFileType,
+    file_type: &LegalBlueprintFileType,
 ) -> PathBuf {
     let extension = match file_type {
-        LegalFileType::Txt => "txt",
-        LegalFileType::Content => "content",
+        LegalBlueprintFileType::Txt => "txt",
+        LegalBlueprintFileType::Content => "content",
     };
 
     let stripped_path = relative_path
@@ -58,11 +58,11 @@ fn generate_output_path(
 }
 
 impl LinearPatternArgs {
-    fn apply(&self, header: &HeaderData, content_in: &ContentData) -> (HeaderData, ContentData) {
+    fn apply(&self, content_in: ContentData) -> ContentData {
         let dspbptk_buildings_in = content_in
             .buildings
-            .iter()
-            .map(|building| building.to_dspbptk_building_data().unwrap())
+            .into_iter()
+            .map(|building| building.as_dspbptk_building_data().unwrap())
             .collect::<Vec<_>>();
         let basis_vector = Vector3::<f64>::new(self.x, self.y, self.z);
         let dspbptk_buildings_out =
@@ -72,41 +72,39 @@ impl LinearPatternArgs {
                 self.n,
             ));
         let buildings_out = dspbptk_buildings_out
-            .iter()
-            .map(|building| building.to_building_data().unwrap())
+            .into_iter()
+            .map(|building| building.as_building_data().unwrap())
             .collect::<Vec<_>>();
-        let new_content = ContentData {
+
+        ContentData {
             buildings_length: u32::try_from(buildings_out.len()).unwrap(),
             buildings: buildings_out,
-            ..content_in.clone()
-        };
-
-        (header.clone(), new_content)
+            ..content_in
+        }
     }
 }
 
 impl OffsetArgs {
-    fn apply(&self, header: &HeaderData, content_in: &ContentData) -> (HeaderData, ContentData) {
+    fn apply(&self, content_in: ContentData) -> ContentData {
         let dspbptk_buildings_in = content_in
             .buildings
-            .iter()
-            .map(|building| building.to_dspbptk_building_data().unwrap())
+            .into_iter()
+            .map(|building| building.as_dspbptk_building_data().unwrap())
             .collect::<Vec<_>>();
         let basis_vector = Vector3::<f64>::new(self.x, self.y, self.z);
         let dspbptk_buildings_out = fix_dspbptk_buildings_index(
-            dspbptk::toolkit::dspbptk::offset::offset(&dspbptk_buildings_in, &basis_vector),
+            dspbptk::toolkit::dspbptk::offset::offset(dspbptk_buildings_in, &basis_vector),
         );
         let buildings_out = dspbptk_buildings_out
-            .iter()
-            .map(|building| building.to_building_data().unwrap())
+            .into_iter()
+            .map(|building| building.as_building_data().unwrap())
             .collect::<Vec<_>>();
-        let new_content = ContentData {
+
+        ContentData {
             buildings_length: u32::try_from(buildings_out.len()).unwrap(),
             buildings: buildings_out,
-            ..content_in.clone()
-        };
-
-        (header.clone(), new_content)
+            ..content_in
+        }
     }
 }
 
@@ -119,10 +117,10 @@ fn process_middle_layer(
 ) -> (HeaderData, ContentData) {
     let (header_data_out, mut content_data_out) = match sub_command {
         Some(SubCommand::LinearPattern(linear_pattern_args)) => {
-            linear_pattern_args.apply(&header_data_in, &content_data_in)
+            (header_data_in, linear_pattern_args.apply(content_data_in))
         }
         Some(SubCommand::Offset(offset_args)) => {
-            offset_args.apply(&header_data_in, &content_data_in)
+            (header_data_in, offset_args.apply(content_data_in))
         }
         None => (header_data_in, content_data_in),
     };
@@ -134,7 +132,7 @@ fn process_middle_layer(
     }
 
     if sorting_buildings {
-        content_data_out.buildings = sort_buildings(&content_data_out.buildings, true);
+        content_data_out.buildings = sort_buildings(content_data_out.buildings, true);
         content_data_out.buildings = fix_buildings_index(content_data_out.buildings);
     }
 
@@ -146,7 +144,7 @@ fn process_one_file(
     file_path_in: &Path,
     file_path_out: &Path,
     zopfli_options: &zopfli::Options,
-    output_type: &LegalFileType,
+    output_type: &LegalBlueprintFileType,
     sorting_buildings: bool,
     rounding_local_offset: bool,
     sub_command: &Option<SubCommand>,
@@ -302,7 +300,7 @@ struct Args {
 
     /// Output type: txt, content
     #[clap(long, short, default_value = "txt", value_name = "TYPE")]
-    type_output: LegalFileType,
+    type_output: LegalBlueprintFileType,
 
     /// Round `local_offset` to 1/300 may make blueprint smaller. Lossy.
     #[clap(long, short)]

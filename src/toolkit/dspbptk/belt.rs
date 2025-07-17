@@ -10,7 +10,7 @@ pub fn connect_belts(
     module_output_to_slot: i8,
 ) -> Vec<DspbptkBuildingData> {
     if belts.is_empty() {
-        return vec![];
+        return Vec::new();
     }
 
     let next_info = belts

@@ -7,7 +7,7 @@ use dspbptk::{
         DspbptkBuildingData, fix_dspbptk_buildings_index, uuid::some_new_uuid as new_some_uuid,
     },
     error::DspbptkError::{self, UnexpectBuildingsCount},
-    io::{BlueprintKind, LegalFileType},
+    io::{BlueprintKind, LegalBlueprintFileType},
     item::Item,
     tesselation_structure::receiver_1i1o,
     toolkit::{
@@ -221,8 +221,8 @@ fn main() -> Result<(), DspbptkError<'static>> {
     let content_data = ContentData {
         buildings_length: u32::try_from(buildings.len()).map_err(UnexpectBuildingsCount)?,
         buildings: buildings
-            .iter()
-            .map(|dspbptk_building| dspbptk_building.to_building_data().unwrap())
+            .into_iter()
+            .map(|dspbptk_building| dspbptk_building.as_building_data().unwrap())
             .collect(),
         ..Default::default()
     };
@@ -231,7 +231,7 @@ fn main() -> Result<(), DspbptkError<'static>> {
         &header_data,
         &content_data,
         &zopfli_options,
-        &LegalFileType::Txt,
+        &LegalBlueprintFileType::Txt,
     )? {
         // cargo run --bin photon --release > "C:\Users\%USERNAME%\Documents\Dyson Sphere Program\Blueprint\receiver2920.txt"
         print!("{blueprint}");

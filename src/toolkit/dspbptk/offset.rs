@@ -4,7 +4,7 @@ use crate::dspbptk_building::{DspbptkBuildingData, uuid::new_uuid};
 
 impl DspbptkBuildingData {
     #[must_use]
-    pub fn clone_offset(&self, offset: &Vector3<f64>, index_offset: u128) -> Self {
+    pub fn offset(self, offset: &Vector3<f64>, index_offset: u128) -> Self {
         Self {
             uuid: self.uuid.map(|uuid| uuid.wrapping_add(index_offset)),
             local_offset: self.local_offset + offset,
@@ -15,27 +15,27 @@ impl DspbptkBuildingData {
             temp_input_obj_idx: self
                 .temp_input_obj_idx
                 .map(|uuid| uuid.wrapping_add(index_offset)),
-            ..self.clone()
+            ..self
         }
     }
 }
 
 #[must_use]
 pub fn offset(
-    module: &[DspbptkBuildingData],
+    module: Vec<DspbptkBuildingData>,
     basis_vector: &Vector3<f64>,
 ) -> Vec<DspbptkBuildingData> {
     let index_offset = new_uuid();
     module
-        .iter()
-        .map(move |building| building.clone_offset(basis_vector, index_offset))
+        .into_iter()
+        .map(move |building| building.offset(basis_vector, index_offset))
         .collect()
 }
 
 /// 生成线性阵列的建筑模块实例
 ///
 /// # 参数
-/// * `module` - 基础建筑模块的数据数组，每个元素代表一个模块
+/// * `module` - 基础建筑模块的数据数组
 /// * `basis_vector` - 线性排列的基向量，决定排列方向和单步长度
 /// * `count` - 需要生成的实例数量
 ///
@@ -53,7 +53,7 @@ pub fn linear_pattern(
             let index_offset = new_uuid();
             module
                 .iter()
-                .map(move |building| building.clone_offset(&offset, index_offset))
+                .map(move |building| building.clone().offset(&offset, index_offset))
         })
         .collect()
 }
