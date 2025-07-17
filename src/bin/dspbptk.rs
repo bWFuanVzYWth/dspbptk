@@ -311,7 +311,7 @@ struct Args {
     no_sorting_buildings: bool,
 
     /// Compress arguments: zopfli `iteration_count`
-    #[clap(long, default_value = "16", value_name = "COUNT")]
+    #[clap(long, default_value = "15", value_name = "COUNT")]
     iteration_count: NonZero<u64>,
 
     /// Compress arguments: zopfli `iterations_without_improvement`
@@ -324,7 +324,7 @@ struct Args {
     iterations_without_improvement: NonZero<u64>,
 
     /// Compress arguments: zopfli `maximum_block_splits`
-    #[clap(long, default_value = "0", value_name = "COUNT")]
+    #[clap(long, default_value = "15", value_name = "COUNT")]
     maximum_block_splits: u16,
 
     #[command(subcommand)]
