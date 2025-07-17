@@ -12,13 +12,19 @@ use dspbptk::{
     tesselation_structure::receiver_1i1o,
     toolkit::{
         dspbptk::{
-            belt::connect_belts,
-            coordinate_transformation::local_offset_to_direction,
-            tesselation::{Row, calculate_next_y},
+            belt::connect_belts, coordinate_transformation::local_offset_to_direction,
+            tesselation::calculate_next_y,
         },
         unit_conversion::{arc_from_grid, grid_from_arc},
     },
 };
+
+// FIXME 改用tesselation::Row
+#[derive(Debug)]
+struct Row {
+    pub y: f64, // 这一行建筑坐标的中心
+    pub n: i64, // 这一行建筑的数量
+}
 
 use std::f64::consts::TAU;
 
@@ -51,7 +57,6 @@ fn calculate_layout() -> Vec<Row> {
 
     // 生成贴着赤道的一圈
     let row_0 = Row {
-        t: Item::射线接收站,
         y: HALF_ARC_A,
         n: (TAU / ARC_A).floor() as i64,
     };
@@ -60,7 +65,6 @@ fn calculate_layout() -> Vec<Row> {
     loop {
         // 尝试直接偏移一行
         let row_try_offset = Row {
-            t: Item::射线接收站,
             y: rows.last().unwrap().y + ARC_A,
             n: rows.last().unwrap().n,
         };
@@ -74,7 +78,6 @@ fn calculate_layout() -> Vec<Row> {
             };
             let n = ((y_fixed + HALF_ARC_B).cos() * (TAU / ARC_A)).floor() as i64;
             Row {
-                t: Item::射线接收站,
                 y: y_fixed,
                 n,
             }

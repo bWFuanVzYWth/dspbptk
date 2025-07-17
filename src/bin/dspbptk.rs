@@ -283,7 +283,6 @@ enum SubCommand {
     Offset(OffsetArgs),
 }
 
-// FIXME 这里的version没法自动更新
 #[derive(Parser, Debug)]
 #[command(
     version = env!("CARGO_PKG_VERSION"),

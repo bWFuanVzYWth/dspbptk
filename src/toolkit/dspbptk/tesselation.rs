@@ -1,12 +1,16 @@
 use std::f64::consts::FRAC_PI_2;
 
-use crate::item::Item;
+use nalgebra::Vector3;
+
+use crate::dspbptk_building::DspbptkBuildingData;
 
 #[derive(Debug)]
-pub struct Row {
-    pub t: Item,
-    pub y: f64, // 这一行建筑坐标的中心
-    pub n: i64, // 这一行建筑的数量
+struct Row {
+    pub t: fn(&Vector3<f64>) -> Vec<DspbptkBuildingData>,
+    pub y: f64,   // 这一行模块的锚点坐标y
+    pub n: usize, // 这一行模块的数量
+
+    total_score: f64, // 当前排列的总分
 }
 
 // TODO 密铺排列计算
