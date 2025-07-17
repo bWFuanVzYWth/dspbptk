@@ -79,11 +79,11 @@ fn combine_sorted_results(
 
 #[must_use]
 pub fn fix_buildings_index(buildings: Vec<BuildingData>) -> Vec<BuildingData> {
-    let lut: HashMap<_, _> = buildings
+    let lut = buildings
         .iter()
         .zip(0..=i32::MAX)
         .map(|(building, index)| (building.index, index))
-        .collect();
+        .collect::<HashMap<_, _>>();
 
     buildings
         .into_iter()
@@ -135,10 +135,10 @@ pub fn topological_sort_belt(buildings: &[BuildingData]) -> Vec<BuildingData> {
         .iter()
         .enumerate()
         .flat_map(|(i, scc)| scc.iter().map(move |&node| (node, i)))
-        .collect::<HashMap<NodeIndex, usize>>();
+        .collect::<HashMap<_, _>>();
 
     // 4. 添加DAG中的边（过滤重复边）
-    let edge_keys: HashSet<_> = graph
+    let edge_keys = graph
         .edge_references()
         .filter_map(|edge_ref| {
             let source = edge_ref.source();
@@ -153,7 +153,7 @@ pub fn topological_sort_belt(buildings: &[BuildingData]) -> Vec<BuildingData> {
                 Some((*scc_source, *scc_target))
             }
         })
-        .collect();
+        .collect::<HashSet<_>>();
     for (scc_source, scc_target) in edge_keys {
         dag.add_edge(NodeIndex::new(scc_source), NodeIndex::new(scc_target), 1);
     }
@@ -224,11 +224,11 @@ fn build_graph(buildings: &[BuildingData]) -> Graph<usize, usize> {
 /// 复杂度: O(n)
 fn optimize_scc(scc: &[NodeIndex], buildings: &[BuildingData]) -> Vec<BuildingData> {
     // 创建节点索引映射表: 建筑物ID -> SCC中的位置
-    let node_index_map: HashMap<i32, usize> = scc
+    let node_index_map = scc
         .iter()
         .enumerate()
         .map(|(idx, node)| (buildings[node.index()].index, idx))
-        .collect();
+        .collect::<HashMap<_, _>>();
 
     // 输入应已经保证可以选择第一个传送带作为起点
     std::iter::successors(Some(0), |&i| {

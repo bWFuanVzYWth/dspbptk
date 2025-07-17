@@ -163,11 +163,11 @@ pub fn fix_dspbptk_buildings_index(
 ) -> Vec<DspbptkBuildingData> {
     use std::collections::HashMap;
 
-    let uuid_lut: HashMap<_, _> = buildings
+    let uuid_lut = buildings
         .iter()
         .enumerate()
         .map(|(uuid, building)| (building.uuid, Some(uuid as u128)))
-        .collect();
+        .collect::<HashMap<_, _>>();
 
     buildings
         .into_iter()
