@@ -141,12 +141,10 @@ fn process_middle_layer(
     (header_data_out, content_data_out)
 }
 
-// TODO 改成参数结构体
 // TODO 返回处理是否成功
 fn process_one_file(
     file_path_in: &Path,
-    path_in: &Path,
-    path_out: &Path,
+    file_path_out: &Path,
     zopfli_options: &zopfli::Options,
     output_type: &LegalFileType,
     sorting_buildings: bool,
@@ -197,8 +195,7 @@ fn process_one_file(
         }
     };
 
-    let file_path_out = generate_output_path(path_in, path_out, file_path_in, output_type);
-    match dspbptk::io::write_file(&file_path_out, blueprint_kind_out) {
+    match dspbptk::io::write_file(&file_path_out.to_path_buf(), blueprint_kind_out) {
         Ok(()) => Some(()),
         Err(e) => {
             error!("\"{}\": {:?}", file_path_in.display(), e);
@@ -222,10 +219,12 @@ fn process_workflow(args: &Args) {
     let _result: Vec<Option<()>> = files
         .par_iter()
         .map(|file_path_in| {
+            let file_path_out =
+                generate_output_path(path_in, path_out, file_path_in, &args.type_output);
+
             process_one_file(
                 file_path_in,
-                path_in,
-                path_out,
+                &file_path_out,
                 &zopfli_options,
                 &args.type_output,
                 sorting_buildings,
