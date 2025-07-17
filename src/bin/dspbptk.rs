@@ -303,7 +303,7 @@ struct Args {
     type_output: LegalBlueprintFileType,
 
     /// Round `local_offset` to 1/300 may make blueprint smaller. Lossy.
-    #[clap(long, short)]
+    #[clap(long)]
     rounding_local_offset: bool,
 
     /// Sorting buildings may make blueprint smaller. Lossless.
