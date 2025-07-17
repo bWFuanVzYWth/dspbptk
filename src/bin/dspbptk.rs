@@ -283,11 +283,12 @@ enum SubCommand {
     Offset(OffsetArgs),
 }
 
+// FIXME 这里的version没法自动更新
 #[derive(Parser, Debug)]
 #[command(
-    version = "dspbptk0.2.0-dsp0.10.31.24632",
-    author = "bWFuanVzYWth",
-    about = "Dyson Sphere Program Blueprint Toolkit"
+    version = env!("CARGO_PKG_VERSION"),
+    author = env!("CARGO_PKG_AUTHORS"),
+    about = env!("CARGO_PKG_DESCRIPTION")
 )]
 struct Args {
     /// Input from file/dir. (*.txt *.content dir/)

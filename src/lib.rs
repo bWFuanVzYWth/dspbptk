@@ -23,8 +23,9 @@
 
     clippy::nursery,
 
+    clippy::cargo,
+
     // clippy::restriction,
-    // clippy::cargo,
 )]
 #![feature(array_chunks)]
 

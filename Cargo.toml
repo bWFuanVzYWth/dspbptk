@@ -4,13 +4,19 @@ cargo-features = ["profile-rustflags"]
 name = "dspbptk"
 keywords = ["dspbptk", "dsp"]
 authors = ["bWFuanVzYWth"]
-version = "0.1.0"
+version = "0.5.0"
 edition = "2024"
 readme = "readme.md"
 description = "Dyson Sphere Program Blueprint Toolkit"
 repository = "https://github.com/bWFuanVzYWth/dspbptk"
 license = "MIT"
 default-run = "dspbptk"
+categories = [
+    "game-development",
+    "command-line-utilities",
+    "parsing",
+    "algorithms",
+]
 
 [lib]
 name = "dspbptk"
