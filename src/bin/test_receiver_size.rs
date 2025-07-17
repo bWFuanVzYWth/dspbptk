@@ -1,8 +1,8 @@
 use dspbptk::{
     blueprint::{content::ContentData, header::HeaderData},
-    dspbptk_building::{fix_dspbptk_buildings_index, uuid::some_new_uuid, DspbptkBuildingData},
+    dspbptk_building::{DspbptkBuildingData, fix_dspbptk_buildings_index, uuid::some_new_uuid},
     error::DspbptkError::{self},
-    io::{BlueprintKind, FileType, LegalFileType},
+    io::{BlueprintKind, LegalFileType},
     item::Item,
 };
 use nalgebra::Vector3;
@@ -64,9 +64,12 @@ fn main() -> Result<(), DspbptkError<'static>> {
 
     println!("{content_data:#?}");
 
-    if let BlueprintKind::Txt(blueprint) =
-        dspbptk::io::process_back_end(&header_data, &content_data, &zopfli_options, &LegalFileType::Txt)?
-    {
+    if let BlueprintKind::Txt(blueprint) = dspbptk::io::process_back_end(
+        &header_data,
+        &content_data,
+        &zopfli_options,
+        &LegalFileType::Txt,
+    )? {
         print!("{blueprint}");
     }
 

@@ -25,7 +25,6 @@ pub enum LegalFileType {
     Content,
 }
 
-// TODO 细分合法格式和非法格式
 pub enum FileType {
     Blueprint(LegalFileType),
     Unknown,

@@ -24,7 +24,7 @@ pub fn sort_buildings(buildings: &[BuildingData], reserved: bool) -> Vec<Buildin
 
     // 2. 排序阶段：传送带和非传送带独立排序
     let sorted_belt = topological_sort_belt(&belts);
-    let sorted_non_belt = stable_sort_non_belt(&non_belts);
+    let sorted_non_belt = stable_sort_non_belt(non_belts);
 
     // 3. 合并阶段：合并排序结果
     let mut sorted = combine_sorted_results(sorted_belt, sorted_non_belt);
@@ -44,10 +44,8 @@ fn split_belt_and_non_belt(buildings: &[BuildingData]) -> (Vec<BuildingData>, Ve
         .partition(|building| (2001..=2009).contains(&building.item_id))
 }
 
-fn stable_sort_non_belt(non_belts: &[BuildingData]) -> Vec<BuildingData> {
-    let mut sorted = non_belts.to_vec();
-
-    sorted.sort_by_cached_key(|building| {
+fn stable_sort_non_belt(mut buildings: Vec<BuildingData>) -> Vec<BuildingData> {
+    buildings.sort_by_cached_key(|building| {
         // 预计算排序键，实现Schwartzian transform优化
         (
             building.item_id,
@@ -58,7 +56,7 @@ fn stable_sort_non_belt(non_belts: &[BuildingData]) -> Vec<BuildingData> {
         )
     });
 
-    sorted
+    buildings
 }
 
 fn calculate_offset_score(b: &BuildingData) -> f64 {

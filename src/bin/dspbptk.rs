@@ -54,11 +54,7 @@ fn generate_output_path(
     }
 }
 
-pub trait DspbptkMap {
-    fn apply(&self, header: &HeaderData, content: &ContentData) -> (HeaderData, ContentData);
-}
-
-impl DspbptkMap for LinearPatternArgs {
+impl LinearPatternArgs {
     fn apply(&self, header: &HeaderData, content_in: &ContentData) -> (HeaderData, ContentData) {
         use dspbptk::toolkit::dspbptk::offset::linear_pattern;
 
