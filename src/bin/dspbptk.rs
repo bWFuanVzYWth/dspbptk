@@ -56,19 +56,43 @@ fn generate_output_path(
 
 impl LinearPatternArgs {
     fn apply(&self, header: &HeaderData, content_in: &ContentData) -> (HeaderData, ContentData) {
-        use dspbptk::toolkit::dspbptk::offset::linear_pattern;
-
         let dspbptk_buildings_in = content_in
             .buildings
             .iter()
             .map(|building| building.to_dspbptk_building_data().unwrap())
             .collect::<Vec<_>>();
         let basis_vector = Vector3::<f64>::new(self.x, self.y, self.z);
-        let dspbptk_buildings_out = fix_dspbptk_buildings_index(linear_pattern(
-            &dspbptk_buildings_in,
-            &basis_vector,
-            self.n,
-        ));
+        let dspbptk_buildings_out =
+            fix_dspbptk_buildings_index(dspbptk::toolkit::dspbptk::offset::linear_pattern(
+                &dspbptk_buildings_in,
+                &basis_vector,
+                self.n,
+            ));
+        let buildings_out = dspbptk_buildings_out
+            .iter()
+            .map(|building| building.to_building_data().unwrap())
+            .collect::<Vec<_>>();
+        let new_content = ContentData {
+            buildings_length: u32::try_from(buildings_out.len()).unwrap(),
+            buildings: buildings_out,
+            ..content_in.clone()
+        };
+
+        (header.clone(), new_content)
+    }
+}
+
+impl OffsetArgs {
+    fn apply(&self, header: &HeaderData, content_in: &ContentData) -> (HeaderData, ContentData) {
+        let dspbptk_buildings_in = content_in
+            .buildings
+            .iter()
+            .map(|building| building.to_dspbptk_building_data().unwrap())
+            .collect::<Vec<_>>();
+        let basis_vector = Vector3::<f64>::new(self.x, self.y, self.z);
+        let dspbptk_buildings_out = fix_dspbptk_buildings_index(
+            dspbptk::toolkit::dspbptk::offset::offset(&dspbptk_buildings_in, &basis_vector),
+        );
         let buildings_out = dspbptk_buildings_out
             .iter()
             .map(|building| building.to_building_data().unwrap())
@@ -93,6 +117,9 @@ fn process_middle_layer(
     let (header_data_out, mut content_data_out) = match sub_command {
         Some(SubCommand::LinearPattern(linear_pattern_args)) => {
             linear_pattern_args.apply(&header_data_in, &content_data_in)
+        }
+        Some(SubCommand::Offset(offset_args)) => {
+            offset_args.apply(&header_data_in, &content_data_in)
         }
         None => (header_data_in, content_data_in),
     };
@@ -234,12 +261,6 @@ const fn configure_zopfli_options(args: &Args) -> zopfli::Options {
     }
 }
 
-#[derive(Parser, Debug)]
-struct ProcessArgs {
-    #[clap(flatten)]
-    global: Args,
-}
-
 #[derive(Parser, Debug, Clone)]
 struct LinearPatternArgs {
     #[clap(index = 1)]
@@ -255,10 +276,23 @@ struct LinearPatternArgs {
     n: u32,
 }
 
+#[derive(Parser, Debug, Clone)]
+struct OffsetArgs {
+    #[clap(index = 1)]
+    x: f64,
+
+    #[clap(index = 2)]
+    y: f64,
+
+    #[clap(index = 3)]
+    z: f64,
+}
+
 // TODO 给命令加上简介
 #[derive(Parser, Debug)]
 enum SubCommand {
     LinearPattern(LinearPatternArgs),
+    Offset(OffsetArgs),
 }
 
 #[derive(Parser, Debug)]
