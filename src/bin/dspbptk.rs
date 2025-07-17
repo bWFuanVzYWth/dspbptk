@@ -294,24 +294,27 @@ struct Args {
     #[clap(value_name = "INPUT")]
     input: PathBuf,
 
+    #[command(subcommand)]
+    subcommand: Option<SubCommand>,
+
     /// Output to file/dir (*.* dir/)
-    #[clap(long, short, value_name = "OUTPUT")]
+    #[clap(long, short, value_name = "OUTPUT", global = true)]
     output: Option<PathBuf>,
 
     /// Output type: txt, content
-    #[clap(long, short, default_value = "txt", value_name = "TYPE")]
+    #[clap(long, short, default_value = "txt", value_name = "TYPE", global = true)]
     type_output: LegalBlueprintFileType,
 
     /// Round `local_offset` to 1/300 may make blueprint smaller. Lossy.
-    #[clap(long)]
+    #[clap(long, global = true)]
     rounding_local_offset: bool,
 
     /// Sorting buildings may make blueprint smaller. Lossless.
-    #[clap(long)]
+    #[clap(long, global = true)]
     no_sorting_buildings: bool,
 
     /// Compress arguments: zopfli `iteration_count`
-    #[clap(long, default_value = "15", value_name = "COUNT")]
+    #[clap(long, default_value = "15", value_name = "COUNT", global = true)]
     iteration_count: NonZero<u64>,
 
     /// Compress arguments: zopfli `iterations_without_improvement`
@@ -324,11 +327,8 @@ struct Args {
     iterations_without_improvement: NonZero<u64>,
 
     /// Compress arguments: zopfli `maximum_block_splits`
-    #[clap(long, default_value = "15", value_name = "COUNT")]
+    #[clap(long, default_value = "15", value_name = "COUNT", global = true)]
     maximum_block_splits: u16,
-
-    #[command(subcommand)]
-    subcommand: Option<SubCommand>,
 }
 
 fn main() {
