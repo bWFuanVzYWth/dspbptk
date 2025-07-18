@@ -1,4 +1,8 @@
+use std::cmp::Ordering;
+use std::collections::BinaryHeap;
 use std::f64::consts::FRAC_PI_2;
+
+use arrayvec::ArrayVec;
 
 use crate::toolkit::unit_conversion::arc_from_grid;
 
@@ -59,17 +63,28 @@ impl Module {
     }
 }
 
-#[must_use]
-pub fn calculate_next_y(edge_y: f64, module: &Module) -> Option<f64> {
-    let z_max_of_this_row = edge_y.sin();
-    let theta_up_sin = z_max_of_this_row / module.scale;
-    if theta_up_sin >= 1.0 {
-        return None;
-    }
-    let theta_up = theta_up_sin.asin();
-    if theta_up >= FRAC_PI_2 {
-        return None;
-    }
-    Some(theta_up + module.theta_down)
+struct Node {
+    code: ArrayVec<u8, 44>,
+    score: f64,
+    y_max: f64,
 }
 
+impl Ord for Node {
+    fn cmp(&self, other: &Self) -> Ordering {
+        self.score.total_cmp(&other.score)
+    }
+}
+
+impl PartialOrd for Node {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+impl Eq for Node {}
+
+impl PartialEq for Node {
+    fn eq(&self, other: &Self) -> bool {
+        self.cmp(other) == Ordering::Equal
+    }
+}
