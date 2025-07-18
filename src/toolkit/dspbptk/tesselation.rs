@@ -72,3 +72,4 @@ pub fn calculate_next_y(edge_y: f64, module: &Module) -> Option<f64> {
     }
     Some(theta_up + module.theta_down)
 }
+

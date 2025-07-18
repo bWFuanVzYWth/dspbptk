@@ -3,7 +3,7 @@ use nalgebra::Vector3;
 use dspbptk::{
     blueprint::{content::ContentData, header::HeaderData},
     dspbptk_building::{
-        DspbptkBuildingData, fix_dspbptk_buildings_index, uuid::some_new_uuid as new_some_uuid,
+        fix_dspbptk_buildings_index, uuid::some_new_uuid as new_some_uuid, DspbptkBuildingData
     },
     error::DspbptkError::{self, UnexpectBuildingsCount},
     io::{BlueprintKind, LegalBlueprintFileType},
@@ -11,10 +11,10 @@ use dspbptk::{
     tesselation_structure::receiver_1i1o,
     toolkit::{
         dspbptk::{
-            belt::connect_belts, coordinate_transformation::local_offset_to_direction,
+            belt::connect_belts,
             tesselation::Module,
         },
-        unit_conversion::{arc_from_grid, grid_from_arc},
+        unit_conversion::{arc_from_grid, grid_from_arc, local_offset_to_direction},
     },
 };
 
