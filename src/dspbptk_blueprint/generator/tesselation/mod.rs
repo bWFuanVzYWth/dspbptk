@@ -101,7 +101,7 @@ impl Node {
     //     new
     // }
 
-    pub fn score(modules: ModuleArray) -> f64 {
+    pub fn score(modules: &ModuleArray) -> f64 {
         0.0
     }
 }

@@ -1,16 +1,9 @@
-use std::path::{Path, PathBuf};
-
-use clap::ValueEnum;
-
 use crate::{
     blueprint::{
         self, codec,
         data::{content::Content, header::Header},
     },
-    error::{
-        DspbptkError::{self, CanNotReadFile, CanNotWriteFile, UnknownFileType},
-        DspbptkWarn,
-    },
+    error::{DspbptkError, DspbptkWarn},
     workflow::{BlueprintKind, LegalBlueprintFileType},
 };
 

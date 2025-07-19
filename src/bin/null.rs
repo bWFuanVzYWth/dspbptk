@@ -1,7 +1,7 @@
 use dspbptk::{
     blueprint::data::{content::Content, header::Header},
     error::DspbptkError,
-    workflow::{process, BlueprintKind, LegalBlueprintFileType},
+    workflow::{BlueprintKind, LegalBlueprintFileType, process},
 };
 
 fn main() -> Result<(), DspbptkError> {
