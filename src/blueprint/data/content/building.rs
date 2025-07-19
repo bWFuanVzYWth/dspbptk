@@ -1,8 +1,6 @@
 use num_enum::IntoPrimitive;
 use strum_macros::EnumIter;
 
-pub const INDEX_NULL: i32 = -1;
-
 #[derive(IntoPrimitive, EnumIter)]
 #[repr(i32)]
 pub enum Version {
@@ -43,10 +41,14 @@ pub struct Building {
     pub parameters: Vec<i32>,
 }
 
+impl Building {
+    pub const INDEX_NULL: i32 = -1;
+}
+
 impl Default for Building {
     fn default() -> Self {
         Self {
-            index: INDEX_NULL,
+            index: Self::INDEX_NULL,
             area_index: 0,
             local_offset_x: 0.0,
             local_offset_y: 0.0,
@@ -62,8 +64,8 @@ impl Default for Building {
             pitch2: 0.0,
             item_id: 0,
             model_index: 0,
-            temp_output_obj_idx: INDEX_NULL,
-            temp_input_obj_idx: INDEX_NULL,
+            temp_output_obj_idx: Self::INDEX_NULL,
+            temp_input_obj_idx: Self::INDEX_NULL,
             output_to_slot: 0,
             input_from_slot: 0,
             output_from_slot: 0,

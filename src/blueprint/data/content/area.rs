@@ -1,5 +1,3 @@
-pub const INDEX_NULL: i8 = -1;
-
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub struct Area {
     pub index: i8,
@@ -12,11 +10,15 @@ pub struct Area {
     pub height: i16,
 }
 
+impl Area {
+    pub const INDEX_NULL: i8 = -1;
+}
+
 impl Default for Area {
     fn default() -> Self {
         Self {
             index: 0,
-            parent_index: INDEX_NULL,
+            parent_index: Self::INDEX_NULL,
             tropic_anchor: 0,
             area_segments: 200, // Magic Number
             anchor_local_offset_x: 0,

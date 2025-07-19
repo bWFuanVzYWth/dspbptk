@@ -1,7 +1,7 @@
 pub mod area;
 pub mod building;
 
-use crate::blueprint::data::content::area::Area;
+use crate::blueprint::Area;
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Content {

@@ -5,7 +5,7 @@ use petgraph::{
     visit::EdgeRef,
 };
 
-use crate::blueprint::data::content::building::{self, Building};
+use crate::blueprint::Building;
 
 /// 对建筑进行排序。
 ///
@@ -168,7 +168,7 @@ fn build_graph(buildings: &[Building]) -> Graph<usize, usize> {
 
     // 创建边
     for building in buildings {
-        if building.temp_output_obj_idx != building::INDEX_NULL
+        if building.temp_output_obj_idx != Building::INDEX_NULL
             && let Some(edge_from) = index_to_node.get(&building.index)
             && let Some(edge_to) = index_to_node.get(&building.temp_output_obj_idx)
         {
@@ -210,7 +210,7 @@ fn optimize_scc(scc: &[NodeIndex], buildings: &[Building]) -> Vec<Building> {
         let current_node = scc[i];
         let output = buildings[current_node.index()].temp_output_obj_idx;
 
-        if output == building::INDEX_NULL {
+        if output == Building::INDEX_NULL {
             None
         } else {
             node_index_map.get(&output).copied()
