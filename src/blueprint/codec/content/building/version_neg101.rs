@@ -20,8 +20,7 @@ pub type F32x12 = (f32, f32, f32, f32, f32, f32, f32, f32, f32, f32, f32, f32);
 pub fn deserialization_version_neg101(bin: &[u8]) -> IResult<&[u8], Building> {
     let unknown = bin;
 
-    let (unknown, _version) =
-        tag(i32::from(Version::Neg101).to_le_bytes().as_slice())(unknown)?;
+    let (unknown, _version) = tag(i32::from(Version::Neg101).to_le_bytes().as_slice())(unknown)?;
     let (unknown, index) = le_i32(unknown)?;
     let (unknown, item_id) = le_i16(unknown)?;
     let (unknown, model_index) = le_i16(unknown)?;

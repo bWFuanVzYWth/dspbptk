@@ -51,7 +51,7 @@ fn parse_non_finish(string: &'_ str) -> IResult<&'_ str, Blueprint<'_>> {
 pub fn parse(string: &'_ str) -> Result<(Blueprint<'_>, Vec<DspbptkWarn>), DspbptkError> {
     let (unknown, data) = parse_non_finish(string)
         .finish()
-        .map_err(|e| BrokenBlueprint(e.to_owned().into()))?;
+        .map_err(|e| BrokenBlueprint(e.clone().into()))?;
     let unknown_length = unknown.len();
     let warns = match unknown.len() {
         10.. => vec![LotUnknownAfterBlueprint(unknown_length)],

@@ -3,14 +3,14 @@ use nalgebra::Vector3;
 use dspbptk::{
     blueprint::data::{content::Content, header::Header},
     dspbptk_blueprint::{
-        convert::fix_dspbptk_buildings_index, data::Building, uuid::some_new_uuid as new_some_uuid
+        convert::fix_dspbptk_buildings_index, data::Building, uuid::some_new_uuid as new_some_uuid,
     },
     editor::{
         dspbptk::belt::connect_belts,
         unit_conversion::{arc_from_grid, grid_from_arc, local_offset_to_direction},
     },
     error::DspbptkError::{self, UnexpectBuildingsCount},
-    generator::tesselation::{module::receiver_1i1o, Module},
+    generator::tesselation::{Module, module::receiver_1i1o},
     io::{BlueprintKind, LegalBlueprintFileType},
     item::Item,
 };
@@ -78,10 +78,7 @@ fn calculate_layout() -> Vec<Row> {
     rows
 }
 
-fn find_nearest(
-    buildings: &[Building],
-    reference_local_offset: Vector3<f64>,
-) -> &Building {
+fn find_nearest(buildings: &[Building], reference_local_offset: Vector3<f64>) -> &Building {
     buildings
         .iter()
         .max_by(|a, b| {

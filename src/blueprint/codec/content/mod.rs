@@ -23,7 +23,7 @@ impl Content {
         use nom::Finish;
         let (unknown, content) = deserialization_non_finish(bin)
             .finish()
-            .map_err(|e| BrokenContent(e.to_owned().into()))?;
+            .map_err(|e| BrokenContent(e.clone().into()))?;
         let unknown_length = content.unknown.len();
         let warns = match unknown_length {
             10.. => vec![LotUnknownAfterContent(unknown_length)],

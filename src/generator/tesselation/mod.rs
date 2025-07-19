@@ -1,5 +1,4 @@
 use std::cmp::Ordering;
-use std::collections::BinaryHeap;
 use std::f64::consts::FRAC_PI_2;
 
 use arrayvec::ArrayVec;

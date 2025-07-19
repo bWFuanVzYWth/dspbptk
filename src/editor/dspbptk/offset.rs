@@ -21,10 +21,7 @@ impl Building {
 }
 
 #[must_use]
-pub fn offset(
-    module: Vec<Building>,
-    basis_vector: &Vector3<f64>,
-) -> Vec<Building> {
+pub fn offset(module: Vec<Building>, basis_vector: &Vector3<f64>) -> Vec<Building> {
     let index_offset = new_uuid();
     module
         .into_iter()

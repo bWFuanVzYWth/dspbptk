@@ -11,8 +11,7 @@ use crate::blueprint::data::content::building::{Building, Version};
 pub fn deserialization_version_neg100(bin: &[u8]) -> IResult<&[u8], Building> {
     let unknown = bin;
 
-    let (unknown, _version) =
-        tag(i32::from(Version::Neg100).to_le_bytes().as_slice())(unknown)?;
+    let (unknown, _version) = tag(i32::from(Version::Neg100).to_le_bytes().as_slice())(unknown)?;
     let (unknown, index) = le_i32(unknown)?;
     let (unknown, area_index) = le_i8(unknown)?;
     let (unknown, local_offset_x) = le_f32(unknown)?;
