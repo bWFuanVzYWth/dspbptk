@@ -4,7 +4,7 @@ use nom::{
     number::complete::{le_f32, le_i8, le_i16, le_i32, le_u16},
 };
 
-use super::BuildingData;
+use crate::blueprint::data::content::building::BuildingData;
 
 #[expect(clippy::similar_names)]
 pub fn deserialization_version_0(bin: &[u8]) -> IResult<&[u8], BuildingData> {

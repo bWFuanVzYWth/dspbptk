@@ -5,8 +5,9 @@ use nom::{
     number::complete::{le_f32, le_i8, le_i16, le_i32, le_u16},
 };
 
-use super::BuildingData;
+use crate::blueprint::data::content::building::BuildingData;
 
+// FIXME 这种硬编码常量应该放在这里吗？
 const NEG_100: i32 = -100; // 9C FF FF FF
 
 #[expect(clippy::similar_names)]

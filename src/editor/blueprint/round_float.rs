@@ -1,4 +1,4 @@
-use crate::blueprint::content::building::BuildingData;
+use crate::blueprint::data::content::building::BuildingData;
 
 impl BuildingData {
     pub fn round_float(&mut self) {

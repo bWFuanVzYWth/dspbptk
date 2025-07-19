@@ -1,5 +1,5 @@
 use dspbptk::{
-    blueprint::{content::ContentData, header::HeaderData},
+    blueprint::data::{content::ContentData, header::HeaderData},
     error::DspbptkError,
     io::{BlueprintKind, LegalBlueprintFileType},
 };

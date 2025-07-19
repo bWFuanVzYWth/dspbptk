@@ -17,8 +17,8 @@ use nalgebra::Vector3;
 use rayon::prelude::*;
 use walkdir::WalkDir;
 
-use dspbptk::blueprint::content::ContentData;
-use dspbptk::blueprint::header::HeaderData;
+use dspbptk::blueprint::data::content::ContentData;
+use dspbptk::blueprint::data::header::HeaderData;
 use dspbptk::io::{self, FileType};
 fn collect_files(path_in: &Path) -> Vec<PathBuf> {
     WalkDir::new(path_in)

@@ -5,10 +5,12 @@ use nom::{
     number::complete::{le_f32, le_i8, le_i16, le_i32, le_u16},
 };
 
-use super::BuildingData;
+use crate::blueprint::data::content::building::BuildingData;
 
+// FIXME 这种硬编码常量应该放在这里吗？
 pub const NEG_101: i32 = -101; // 9B FF FF FF
 
+// FIXME 这种硬编码常量应该放在这里吗？
 const BELT_LOW: i16 = 2001;
 const BELT_HIGH: i16 = 2009;
 const SORTER_LOW: i16 = 2011;

@@ -1,7 +1,7 @@
 use nalgebra::Vector3;
 
 use crate::{
-    blueprint::content::building::BuildingData,
+    blueprint::data::content::building::BuildingData,
     dspbptk_building::uuid::{index_try_from_uuid, uuid_try_from_index},
     error::DspbptkError,
 };

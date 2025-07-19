@@ -4,9 +4,11 @@ use clap::ValueEnum;
 
 use crate::{
     blueprint::{
-        self,
-        content::{self, ContentData, string_from_data},
-        header::{self, HeaderData},
+        codec,
+        data::{
+            content::{self, ContentData},
+            header::{self, HeaderData},
+        },
     },
     error::{
         DspbptkError::{self, CanNotReadFile, CanNotWriteFile, UnknownFileType},
@@ -112,11 +114,11 @@ pub fn process_front_end<'a>(
         BlueprintKind::Txt(blueprint_string) => {
             // let start = std::time::Instant::now();
 
-            let (blueprint_data, warns_blueprint) = blueprint::parse(blueprint_string)?;
-            content::bin_from_string(blueprint_content_bin, blueprint_data.content)?;
+            let (blueprint_data, warns_blueprint) = codec::parse(blueprint_string)?;
+            codec::content::bin_from_string(blueprint_content_bin, blueprint_data.content)?;
             let (content_data, warns_content) =
                 ContentData::from_bin(blueprint_content_bin.as_slice())?;
-            let (header_data, warns_header) = header::parse(blueprint_data.header)?;
+            let (header_data, warns_header) = codec::header::parse(blueprint_data.header)?;
 
             // log::info!("parse in {:?} sec.", start.elapsed());
 
@@ -151,9 +153,9 @@ pub fn process_back_end<'a>(
 ) -> Result<BlueprintKind, DspbptkError<'a>> {
     match output_type {
         LegalBlueprintFileType::Txt => {
-            let header_string = header::serialization(header_data);
-            let content_string = string_from_data(content_data, zopfli_options)?;
-            Ok(BlueprintKind::Txt(blueprint::serialization(
+            let header_string = codec::header::serialization(header_data);
+            let content_string = codec::content::string_from_data(content_data, zopfli_options)?;
+            Ok(BlueprintKind::Txt(codec::serialization(
                 &header_string,
                 &content_string,
             )))

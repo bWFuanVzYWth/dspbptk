@@ -1,6 +1,6 @@
 use std::collections::{HashMap, HashSet};
 
-use crate::blueprint::content::building::{self, BuildingData};
+use crate::blueprint::data::content::building::{self, BuildingData};
 
 use petgraph::{
     graph::{Graph, NodeIndex},

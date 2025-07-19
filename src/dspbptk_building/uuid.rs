@@ -1,6 +1,6 @@
 use uuid::Uuid;
 
-use crate::{blueprint::content::building::INDEX_NULL, error::DspbptkError};
+use crate::{blueprint::data::content::building::INDEX_NULL, error::DspbptkError};
 
 /// # Errors
 /// 可能的原因：
