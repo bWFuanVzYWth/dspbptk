@@ -33,7 +33,7 @@ pub enum FileType {
 /// # Errors
 /// 可能的原因：
 /// 无法为将要输出的文件创建父文件夹，一般是权限之类的问题
-pub fn create_father_dir(path: &Path) -> Result<(), DspbptkError<'_>> {
+pub fn create_father_dir(path: &Path) -> Result<(), DspbptkError> {
     let parent = path
         .parent()
         .map_or_else(|| PathBuf::from("."), std::path::Path::to_path_buf);
@@ -54,14 +54,14 @@ pub fn classify_file_type(entry: &Path) -> FileType {
         })
 }
 
-fn read_content_file(path: &Path) -> Result<Vec<u8>, DspbptkError<'_>> {
+fn read_content_file(path: &Path) -> Result<Vec<u8>, DspbptkError> {
     std::fs::read(path).map_err(|e| CanNotReadFile {
         path: path.to_path_buf(),
         source: e,
     })
 }
 
-fn read_blueprint_file(path: &Path) -> Result<String, DspbptkError<'_>> {
+fn read_blueprint_file(path: &Path) -> Result<String, DspbptkError> {
     std::fs::read_to_string(path).map_err(|e| CanNotReadFile {
         path: path.to_path_buf(),
         source: e,
@@ -71,7 +71,7 @@ fn read_blueprint_file(path: &Path) -> Result<String, DspbptkError<'_>> {
 /// # Errors
 /// 可能的原因：
 /// * 文件的后缀名不受支持
-pub fn read_file(path: &Path) -> Result<BlueprintKind, DspbptkError<'_>> {
+pub fn read_file(path: &Path) -> Result<BlueprintKind, DspbptkError> {
     match classify_file_type(path) {
         FileType::Blueprint(LegalBlueprintFileType::Txt) => {
             let blueprint_string = read_blueprint_file(path)?;
@@ -85,7 +85,7 @@ pub fn read_file(path: &Path) -> Result<BlueprintKind, DspbptkError<'_>> {
     }
 }
 
-fn write_blueprint_file(path: &Path, blueprint: String) -> Result<(), DspbptkError<'_>> {
+fn write_blueprint_file(path: &Path, blueprint: String) -> Result<(), DspbptkError> {
     create_father_dir(path)?;
     std::fs::write(path, blueprint).map_err(|e| CanNotWriteFile {
         path: path.to_path_buf(),
@@ -93,7 +93,7 @@ fn write_blueprint_file(path: &Path, blueprint: String) -> Result<(), DspbptkErr
     })
 }
 
-fn write_content_file(path: &Path, content: Vec<u8>) -> Result<(), DspbptkError<'_>> {
+fn write_content_file(path: &Path, content: Vec<u8>) -> Result<(), DspbptkError> {
     create_father_dir(path)?;
     std::fs::write(path, content).map_err(|e| CanNotWriteFile {
         path: path.to_path_buf(),
@@ -104,27 +104,27 @@ fn write_content_file(path: &Path, content: Vec<u8>) -> Result<(), DspbptkError<
 /// # Errors
 /// 可能的错误：
 /// * 无法为待写入硬盘的文件创建文件夹，一般是权限之类的问题
-pub fn write_file(path: &Path, blueprint_kind: BlueprintKind) -> Result<(), DspbptkError<'_>> {
+pub fn write_file(path: &Path, blueprint_kind: BlueprintKind) -> Result<(), DspbptkError> {
     match blueprint_kind {
         BlueprintKind::Txt(blueprint) => write_blueprint_file(path, blueprint),
         BlueprintKind::Content(content) => write_content_file(path, content),
     }
 }
 
+// FIXME 这里的blueprint_content_bin很丑
 /// 蓝图工具的前端，可读取并解码多种格式的蓝图数据
 ///
 /// # Errors
 /// 所有读取或解码时发生的错误在此汇总
-pub fn process_front_end<'a>(
-    blueprint: &'a BlueprintKind,
-    blueprint_content_bin: &'a mut Vec<u8>,
-) -> Result<(Header, Content, Vec<DspbptkWarn>), DspbptkError<'a>> {
+pub fn process_front_end(
+    blueprint: &BlueprintKind,
+) -> Result<(Header, Content, Vec<DspbptkWarn>), DspbptkError> {
     match blueprint {
         BlueprintKind::Txt(blueprint_string) => {
             // let start = std::time::Instant::now();
 
             let (blueprint_data, warns_blueprint) = codec::parse(blueprint_string)?;
-            codec::content::bin_from_string(blueprint_content_bin, blueprint_data.content)?;
+            let blueprint_content_bin = codec::content::bin_from_string(blueprint_data.content)?;
             let (content_data, warns_content) =
                 Content::from_bin(blueprint_content_bin.as_slice())?;
             let (header_data, warns_header) = codec::header::parse(blueprint_data.header)?;
@@ -154,12 +154,12 @@ pub fn process_front_end<'a>(
 ///
 /// # Errors
 /// 所有编码或输出时发生的错误在此汇总
-pub fn process_back_end<'a>(
+pub fn process_back_end(
     header_data: &Header,
     content_data: &Content,
     zopfli_options: &zopfli::Options,
     output_type: &LegalBlueprintFileType,
-) -> Result<BlueprintKind, DspbptkError<'a>> {
+) -> Result<BlueprintKind, DspbptkError> {
     match output_type {
         LegalBlueprintFileType::Txt => {
             let header_string = codec::header::serialization(header_data);

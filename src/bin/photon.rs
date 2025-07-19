@@ -191,7 +191,7 @@ fn layout_to_buildings(rows: &[Row]) -> Vec<Building> {
     fix_dspbptk_buildings_index(all_buildings)
 }
 
-fn main() -> Result<(), DspbptkError<'static>> {
+fn main() -> Result<(), DspbptkError> {
     use env_logger::Env;
     env_logger::Builder::from_env(Env::default().default_filter_or("info")).init();
 

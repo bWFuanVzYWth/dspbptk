@@ -1,7 +1,7 @@
 use thiserror::Error;
 
 #[derive(Error, Debug)]
-pub enum DspbptkError<'a> {
+pub enum DspbptkError {
     #[error("can not read file: {path:?}, because {source}")]
     CanNotReadFile {
         path: std::path::PathBuf,
@@ -19,11 +19,11 @@ pub enum DspbptkError<'a> {
     #[error("broken gzip: {0}")]
     BrokenGzip(std::io::Error),
     #[error("broken blueprint")]
-    BrokenBlueprint(nom::error::Error<&'a str>),
+    BrokenBlueprint(nom::error::Error<String>),
     #[error("broken header")]
-    BrokenHeader(nom::error::Error<&'a str>),
+    BrokenHeader(nom::error::Error<String>),
     #[error("broken content")]
-    BrokenContent(nom::error::Error<&'a [u8]>),
+    BrokenContent(nom::error::Error<Vec<u8>>),
     #[error("can not compress gzip: {0}")]
     CanNotCompressGzip(std::io::Error),
     #[error("unexpect buildings count: {0}")]

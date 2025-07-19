@@ -8,7 +8,9 @@ use std::{
 
 use clap::Parser;
 use dspbptk::{
-    blueprint::editor::sort::{fix_buildings_index, sort_buildings}, dspbptk_blueprint::convert::fix_dspbptk_buildings_index, io::LegalBlueprintFileType
+    blueprint::editor::sort::{fix_buildings_index, sort_buildings},
+    dspbptk_blueprint::convert::fix_dspbptk_buildings_index,
+    io::LegalBlueprintFileType,
 };
 use log::{error, warn};
 use nalgebra::Vector3;
@@ -155,21 +157,18 @@ fn process_one_file(
         }
     };
 
-    let mut content_bin_in = Vec::new();
-
-    let (header_data_in, content_data_in) =
-        match io::process_front_end(&blueprint_kind_in, &mut content_bin_in) {
-            Ok((header_data_in, content_data_in, warns_front_end)) => {
-                for warn in warns_front_end {
-                    warn!("\"{}\": {:?}", file_path_in.display(), warn);
-                }
-                (header_data_in, content_data_in)
+    let (header_data_in, content_data_in) = match io::process_front_end(&blueprint_kind_in) {
+        Ok((header_data_in, content_data_in, warns_front_end)) => {
+            for warn in warns_front_end {
+                warn!("\"{}\": {:?}", file_path_in.display(), warn);
             }
-            Err(e) => {
-                error!("\"{}\": {:?}", file_path_in.display(), e);
-                return None;
-            }
-        };
+            (header_data_in, content_data_in)
+        }
+        Err(e) => {
+            error!("\"{}\": {:?}", file_path_in.display(), e);
+            return None;
+        }
+    };
 
     let (header_data_out, content_data_out) = process_middle_layer(
         header_data_in,
@@ -191,7 +190,7 @@ fn process_one_file(
         }
     };
 
-    match dspbptk::io::write_file(&file_path_out.to_path_buf(), blueprint_kind_out) {
+    match dspbptk::io::write_file(file_path_out, blueprint_kind_out) {
         Ok(()) => Some(()),
         Err(e) => {
             error!("\"{}\": {:?}", file_path_in.display(), e);

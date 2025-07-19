@@ -20,7 +20,7 @@ fn new_receiver(local_offset: Vector3<f64>) -> Building {
     }
 }
 
-fn main() -> Result<(), DspbptkError<'static>> {
+fn main() -> Result<(), DspbptkError> {
     let header_data = Header::default();
     let zopfli_options = zopfli::Options::default();
 

@@ -52,9 +52,9 @@ impl super::data::Building {
     /// * uuid无法转换为index。一般是uuid的数字太大超过了i32的范围，而这又往往是忘记了调用`fix_dspbptk_buildings_index`引起的
     /// * `parameters.len()`太长。如果报这个错说明参数列表真的太长了。原版蓝图不可能出现这个报错。
     #[expect(clippy::cast_possible_truncation)]
-    pub fn as_building_data<'a>(
+    pub fn as_building_data(
         self,
-    ) -> Result<blueprint::data::content::building::Building, DspbptkError<'a>> {
+    ) -> Result<blueprint::data::content::building::Building, DspbptkError> {
         Ok(blueprint::data::content::building::Building {
             index: index_try_from_uuid(self.uuid)?,
             area_index: self.area_index,
@@ -95,7 +95,7 @@ impl blueprint::data::content::building::Building {
     /// # Errors
     /// 可能的原因：
     /// * index无法转换为uuid，一般是出现了负数index。原版蓝图不可能出现这个报错。
-    pub fn as_dspbptk_building_data<'a>(self) -> Result<super::data::Building, DspbptkError<'a>> {
+    pub fn as_dspbptk_building_data(self) -> Result<super::data::Building, DspbptkError> {
         Ok(super::data::Building {
             // 转换主索引为UUID，可能返回NonStandardIndex错误
             uuid: uuid_try_from_index(self.index)?,

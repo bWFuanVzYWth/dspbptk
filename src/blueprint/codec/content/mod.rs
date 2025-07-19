@@ -19,11 +19,11 @@ impl Content {
     /// # Errors
     /// 可能的原因：
     /// * content编码错误，或者编码不受支持
-    pub fn from_bin(bin: &'_ [u8]) -> Result<(Self, Vec<DspbptkWarn>), DspbptkError<'_>> {
+    pub fn from_bin(bin: &'_ [u8]) -> Result<(Self, Vec<DspbptkWarn>), DspbptkError> {
         use nom::Finish;
         let (unknown, content) = deserialization_non_finish(bin)
             .finish()
-            .map_err(BrokenContent)?;
+            .map_err(|e| BrokenContent(e.to_owned().into()))?;
         let unknown_length = content.unknown.len();
         let warns = match unknown_length {
             10.. => vec![LotUnknownAfterContent(unknown_length)],
@@ -92,7 +92,7 @@ fn deserialization_non_finish(bin: &[u8]) -> IResult<&[u8], Content> {
     ))
 }
 
-fn gzip_from_string(string: &'_ str) -> Result<Vec<u8>, DspbptkError<'_>> {
+fn gzip_from_string(string: &'_ str) -> Result<Vec<u8>, DspbptkError> {
     use base64::prelude::*;
     match BASE64_STANDARD.decode(string) {
         Ok(bin) => Ok(bin),
@@ -105,28 +105,26 @@ fn string_from_gzip(gzip: &[u8]) -> String {
     BASE64_STANDARD.encode(gzip)
 }
 
-fn bin_from_gzip<'a>(bin: &mut Vec<u8>, gzip: &[u8]) -> Result<(), DspbptkError<'a>> {
+fn bin_from_gzip(gzip: &[u8]) -> Result<Vec<u8>, DspbptkError> {
     use flate2::read::GzDecoder;
     use std::io::Read;
+    let mut bin = Vec::new();
     let mut decoder = GzDecoder::new(gzip);
-    decoder.read_to_end(bin).map_err(BrokenGzip)?;
-    Ok(())
+    decoder.read_to_end(&mut bin).map_err(BrokenGzip)?;
+    Ok(bin)
 }
 
-fn compress_gzip_zopfli<'a>(
+fn compress_gzip_zopfli(
     bin: &[u8],
     zopfli_options: &zopfli::Options,
-) -> Result<Vec<u8>, DspbptkError<'a>> {
+) -> Result<Vec<u8>, DspbptkError> {
     let mut gzip = Vec::new();
     zopfli::compress(*zopfli_options, zopfli::Format::Gzip, bin, &mut gzip)
         .map_err(CanNotCompressGzip)?;
     Ok(gzip)
 }
 
-fn gzip_from_bin<'a>(
-    bin: &[u8],
-    zopfli_options: &zopfli::Options,
-) -> Result<Vec<u8>, DspbptkError<'a>> {
+fn gzip_from_bin(bin: &[u8], zopfli_options: &zopfli::Options) -> Result<Vec<u8>, DspbptkError> {
     compress_gzip_zopfli(bin, zopfli_options)
 }
 
@@ -134,22 +132,18 @@ fn gzip_from_bin<'a>(
 /// 可能的原因：
 /// * base64解码错误，说明数据已损坏
 /// * gzip解压错误，说明数据已损坏
-pub fn bin_from_string<'a>(
-    content_bin: &mut Vec<u8>,
-    string: &'a str,
-) -> Result<(), DspbptkError<'a>> {
+pub fn bin_from_string(string: &str) -> Result<Vec<u8>, DspbptkError> {
     let gzip = gzip_from_string(string)?;
-    bin_from_gzip(content_bin, &gzip)?;
-    Ok(())
+    bin_from_gzip(&gzip)
 }
 
 /// # Errors
 /// 可能的原因：
 /// * gzip压缩错误，这个错误通常不该出现，万一真炸了得去看zopfli的文档
-pub fn string_from_data<'a>(
+pub fn string_from_data(
     data: &Content,
     zopfli_options: &zopfli::Options,
-) -> Result<String, DspbptkError<'a>> {
+) -> Result<String, DspbptkError> {
     let bin = data.to_bin();
     let gzip = gzip_from_bin(&bin, zopfli_options)?;
     Ok(string_from_gzip(&gzip))

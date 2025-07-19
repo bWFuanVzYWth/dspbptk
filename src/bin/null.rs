@@ -4,7 +4,7 @@ use dspbptk::{
     io::{BlueprintKind, LegalBlueprintFileType},
 };
 
-fn main() -> Result<(), DspbptkError<'static>> {
+fn main() -> Result<(), DspbptkError> {
     let zopfli_options = zopfli::Options::default();
     let header_data = Header::default();
     let content_data = Content::default();

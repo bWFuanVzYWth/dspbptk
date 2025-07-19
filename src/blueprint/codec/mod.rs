@@ -48,8 +48,10 @@ fn parse_non_finish(string: &'_ str) -> IResult<&'_ str, Blueprint<'_>> {
 /// # Errors
 /// 可能的原因：
 /// * 蓝图已损坏，或者编码不受支持
-pub fn parse(string: &'_ str) -> Result<(Blueprint<'_>, Vec<DspbptkWarn>), DspbptkError<'_>> {
-    let (unknown, data) = parse_non_finish(string).finish().map_err(BrokenBlueprint)?;
+pub fn parse(string: &'_ str) -> Result<(Blueprint<'_>, Vec<DspbptkWarn>), DspbptkError> {
+    let (unknown, data) = parse_non_finish(string)
+        .finish()
+        .map_err(|e| BrokenBlueprint(e.to_owned().into()))?;
     let unknown_length = unknown.len();
     let warns = match unknown.len() {
         10.. => vec![LotUnknownAfterBlueprint(unknown_length)],
