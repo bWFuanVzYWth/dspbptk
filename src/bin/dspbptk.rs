@@ -11,7 +11,11 @@ use dspbptk::{
     self,
     blueprint::Content,
     dspbptk_blueprint::editor::offset::{self, linear_pattern},
-    io::{self, DspbptkMap, FileType, LegalBlueprintFileType, process_middle_layer},
+    workflow::{
+        self, FileType, LegalBlueprintFileType,
+        io::{classify_file_type, read_file, write_file},
+        process::{process_back_end, process_front_end, process_middle_layer},
+    },
 };
 use log::{error, warn};
 use nalgebra::Vector3;
@@ -24,10 +28,7 @@ fn collect_files(path_in: &Path) -> Vec<PathBuf> {
         .filter_map(std::result::Result::ok)
         .filter(|entry| {
             let entry_path = entry.path();
-            matches!(
-                dspbptk::io::classify_file_type(entry_path),
-                FileType::Blueprint(_)
-            )
+            matches!(classify_file_type(entry_path), FileType::Blueprint(_))
         })
         .map(walkdir::DirEntry::into_path)
         .collect()
@@ -55,7 +56,7 @@ fn generate_output_path(
     }
 }
 
-impl DspbptkMap for SubCommand {
+impl workflow::process::DspbptkMap for SubCommand {
     fn apply(&self, content_in: Content) -> Content {
         let dspbptk_buildings_in = content_in
             .buildings
@@ -108,7 +109,7 @@ fn process_one_file(
     rounding_local_offset: bool,
     sub_command: &Option<SubCommand>,
 ) -> Option<()> {
-    let blueprint_kind_in = match dspbptk::io::read_file(file_path_in) {
+    let blueprint_kind_in = match read_file(file_path_in) {
         Ok(result) => result,
         Err(e) => {
             error!("\"{}\": {:?}", file_path_in.display(), e);
@@ -116,7 +117,7 @@ fn process_one_file(
         }
     };
 
-    let (header_data_in, content_data_in) = match io::process_front_end(&blueprint_kind_in) {
+    let (header_data_in, content_data_in) = match process_front_end(&blueprint_kind_in) {
         Ok((header_data_in, content_data_in, warns_front_end)) => {
             for warn in warns_front_end {
                 warn!("\"{}\": {:?}", file_path_in.display(), warn);
@@ -135,13 +136,13 @@ fn process_one_file(
             content_data_in,
             sorting_buildings,
             rounding_local_offset,
-            command.clone(),
+            command,
         )
     } else {
         (header_data_in, content_data_in)
     };
 
-    let blueprint_kind_out = match io::process_back_end(
+    let blueprint_kind_out = match process_back_end(
         &header_data_out,
         &content_data_out,
         zopfli_options,
@@ -154,7 +155,7 @@ fn process_one_file(
         }
     };
 
-    match dspbptk::io::write_file(file_path_out, blueprint_kind_out) {
+    match write_file(file_path_out, blueprint_kind_out) {
         Ok(()) => Some(()),
         Err(e) => {
             error!("\"{}\": {:?}", file_path_in.display(), e);

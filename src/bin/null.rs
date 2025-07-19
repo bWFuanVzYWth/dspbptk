@@ -1,7 +1,7 @@
 use dspbptk::{
     blueprint::data::{content::Content, header::Header},
     error::DspbptkError,
-    io::{BlueprintKind, LegalBlueprintFileType},
+    workflow::{process, BlueprintKind, LegalBlueprintFileType},
 };
 
 fn main() -> Result<(), DspbptkError> {
@@ -9,7 +9,7 @@ fn main() -> Result<(), DspbptkError> {
     let header_data = Header::default();
     let content_data = Content::default();
 
-    if let BlueprintKind::Txt(blueprint) = dspbptk::io::process_back_end(
+    if let BlueprintKind::Txt(blueprint) = process::process_back_end(
         &header_data,
         &content_data,
         &zopfli_options,

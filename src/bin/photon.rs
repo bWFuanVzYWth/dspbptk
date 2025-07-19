@@ -10,9 +10,9 @@ use dspbptk::{
         uuid::some_new_uuid as new_some_uuid,
     },
     error::DspbptkError::{self, UnexpectBuildingsCount},
-    io::{BlueprintKind, LegalBlueprintFileType},
     item::Item,
     planet::unit_conversion::{arc_from_grid, grid_from_arc, local_offset_to_direction},
+    workflow::{BlueprintKind, LegalBlueprintFileType, process::process_back_end},
 };
 
 // FIXME 改用tesselation::Row
@@ -210,7 +210,7 @@ fn main() -> Result<(), DspbptkError> {
         ..Default::default()
     };
 
-    if let BlueprintKind::Txt(blueprint) = dspbptk::io::process_back_end(
+    if let BlueprintKind::Txt(blueprint) = process_back_end(
         &header_data,
         &content_data,
         &zopfli_options,
