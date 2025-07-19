@@ -91,7 +91,7 @@ pub fn serialization(data: &Header) -> String {
 
 #[cfg(test)]
 mod test {
-    use crate::blueprint::data::header::Header;
+    use crate::blueprint::Header;
     use super::*;
 
     #[test]

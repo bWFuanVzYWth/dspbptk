@@ -1,11 +1,9 @@
-use std::cmp::Ordering;
-use std::f64::consts::FRAC_PI_2;
-
-use arrayvec::ArrayVec;
+pub mod module;
 
 use crate::planet::unit_conversion::arc_from_grid;
-
-pub mod module;
+use arrayvec::ArrayVec;
+use std::cmp::Ordering;
+use std::f64::consts::FRAC_PI_2;
 
 const MAX_ROW_COUNT: usize = 44;
 type ModuleArray = ArrayVec<u8, MAX_ROW_COUNT>;

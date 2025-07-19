@@ -1,18 +1,16 @@
 #[global_allocator]
 static GLOBAL: mimalloc::MiMalloc = mimalloc::MiMalloc;
 
-use std::{
-    num::NonZero,
-    path::{Path, PathBuf},
-};
-
 use clap::Parser;
 use dspbptk::{
     self,
     blueprint::Content,
-    dspbptk_blueprint::editor::{
-        fix_uuid::fix_dspbptk_buildings_index,
-        offset::{self, linear_pattern},
+    dspbptk_blueprint::{
+        Building,
+        editor::{
+            fix_uuid::fix_dspbptk_buildings_index,
+            offset::{self, linear_pattern},
+        },
     },
     workflow::{
         self, FileType, LegalBlueprintFileType,
@@ -23,6 +21,10 @@ use dspbptk::{
 use log::{error, warn};
 use nalgebra::Vector3;
 use rayon::prelude::*;
+use std::{
+    num::NonZero,
+    path::{Path, PathBuf},
+};
 use walkdir::WalkDir;
 
 fn collect_files(path_in: &Path) -> Vec<PathBuf> {
@@ -64,7 +66,7 @@ impl workflow::process::DspbptkMap for SubCommand {
         let dspbptk_buildings_in = content_in
             .buildings
             .into_iter()
-            .map(|building| dspbptk::dspbptk_blueprint::Building::try_from(building).unwrap())
+            .map(|building| Building::try_from(building).unwrap())
             .collect::<Vec<_>>();
 
         let dspbptk_buildings_out = fix_dspbptk_buildings_index(match self {
@@ -290,8 +292,7 @@ struct Args {
 }
 
 fn main() {
-    use env_logger::Env;
-    env_logger::Builder::from_env(Env::default().default_filter_or("info")).init();
+    env_logger::Builder::from_env(env_logger::Env::default().default_filter_or("info")).init();
 
     eprintln!("https://github.com/bWFuanVzYWth/dspbptk");
     let args = Args::parse();

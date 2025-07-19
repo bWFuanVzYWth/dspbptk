@@ -1,5 +1,3 @@
-use nalgebra::Vector3;
-
 use dspbptk::{
     blueprint::data::{content::Content, header::Header},
     dspbptk_blueprint::{
@@ -13,6 +11,8 @@ use dspbptk::{
     planet::unit_conversion::{arc_from_grid, grid_from_arc, local_offset_to_direction},
     workflow::{BlueprintKind, LegalBlueprintFileType, process::process_back_end},
 };
+use nalgebra::Vector3;
+use std::{cmp::Ordering::Equal, f64::consts::TAU};
 
 // FIXME 改用tesselation::Row
 #[derive(Debug)]
@@ -20,8 +20,6 @@ struct Row {
     pub y: f64, // 这一行建筑坐标的中心
     pub n: i64, // 这一行建筑的数量
 }
-
-use std::f64::consts::TAU;
 
 // 当error=0时，期望输出2920锅；然后在锅不减少的情况下试出最大的error(0.00019, 0.00020)
 // 考虑行星尺寸与IEEE754标准，至少要让ERROR > 2^-15 (约0.00003)
@@ -86,9 +84,7 @@ fn find_nearest(buildings: &[Building], reference_local_offset: Vector3<f64>) ->
             let b_direction = local_offset_to_direction(b.local_offset);
             let cos_arc_a = ref_direction.dot(&a_direction);
             let cos_arc_b = ref_direction.dot(&b_direction);
-            cos_arc_a
-                .partial_cmp(&cos_arc_b)
-                .unwrap_or(std::cmp::Ordering::Equal)
+            cos_arc_a.partial_cmp(&cos_arc_b).unwrap_or(Equal)
         })
         .expect("fatal error: can not find nearest buildings")
 }
@@ -188,8 +184,7 @@ fn layout_to_buildings(rows: &[Row]) -> Vec<Building> {
 }
 
 fn main() -> Result<(), DspbptkError> {
-    use env_logger::Env;
-    env_logger::Builder::from_env(Env::default().default_filter_or("info")).init();
+    env_logger::Builder::from_env(env_logger::Env::default().default_filter_or("info")).init();
 
     let header_data = Header::default();
     let zopfli_options = zopfli::Options::default();

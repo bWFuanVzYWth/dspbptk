@@ -1,7 +1,6 @@
 use crate::blueprint::Building;
 use petgraph::{
-    graph::{Graph, NodeIndex},
-    visit::EdgeRef,
+    algo::toposort, graph::{Graph, NodeIndex}, visit::EdgeRef
 };
 use std::collections::{HashMap, HashSet};
 
@@ -133,7 +132,7 @@ pub fn topological_sort_belt(buildings: &[Building]) -> Vec<Building> {
 
     // 5. 对DAG进行拓扑排序
     let dag_order =
-        petgraph::algo::toposort(&dag, None).expect("unreachable: cycle detected in DAG.");
+        toposort(&dag, None).expect("unreachable: cycle detected in DAG.");
 
     // 6. 按照拓扑序展开SCC
     dag_order

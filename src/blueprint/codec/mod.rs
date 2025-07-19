@@ -3,7 +3,7 @@ pub mod header;
 pub mod md5f;
 
 use crate::{
-    blueprint::data::Blueprint,
+    blueprint::{codec::md5f::compute_md5f_string, data::Blueprint},
     error::{
         DspbptkError::{self, BrokenBlueprint},
         DspbptkWarn::{self, FewUnknownAfterBlueprint, LotUnknownAfterBlueprint},
@@ -63,7 +63,7 @@ pub fn parse(string: &'_ str) -> Result<(Blueprint<'_>, Vec<DspbptkWarn>), Dspbp
 #[must_use]
 pub fn serialization(header: &str, content: &str) -> String {
     let mut header_content = format!("{header}\"{content}");
-    let md5f = md5f::compute_md5f_string(&header_content);
+    let md5f = compute_md5f_string(&header_content);
     header_content.push('"');
     header_content.push_str(&md5f);
     header_content

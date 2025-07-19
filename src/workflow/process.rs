@@ -2,7 +2,7 @@ use crate::{
     blueprint::{
         self, codec,
         data::{content::Content, header::Header},
-        editor::fix_index::fix_buildings_index,
+        editor::{fix_index::fix_buildings_index, sort::sort_buildings},
     },
     error::{DspbptkError, DspbptkWarn},
     workflow::{BlueprintKind, LegalBlueprintFileType},
@@ -69,7 +69,7 @@ pub fn process_middle_layer(
 
     if sorting_buildings {
         content_data_out.buildings =
-            blueprint::editor::sort::sort_buildings(content_data_out.buildings, true);
+            sort_buildings(content_data_out.buildings, true);
         content_data_out.buildings = fix_buildings_index(content_data_out.buildings);
     }
 
