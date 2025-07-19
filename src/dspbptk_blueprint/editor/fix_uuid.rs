@@ -1,11 +1,8 @@
-use crate::dspbptk_blueprint;
+use crate::dspbptk_blueprint::Building;
+use std::collections::HashMap;
 
 #[must_use]
-pub fn fix_dspbptk_buildings_index(
-    buildings: Vec<dspbptk_blueprint::Building>,
-) -> Vec<dspbptk_blueprint::Building> {
-    use std::collections::HashMap;
-
+pub fn fix_dspbptk_buildings_index(buildings: Vec<Building>) -> Vec<Building> {
     let uuid_lut = buildings
         .iter()
         .enumerate()
@@ -14,7 +11,7 @@ pub fn fix_dspbptk_buildings_index(
 
     buildings
         .into_iter()
-        .map(|building| dspbptk_blueprint::Building {
+        .map(|building| Building {
             uuid: *uuid_lut.get(&building.uuid).unwrap_or(&None),
             temp_output_obj_idx: uuid_lut
                 .get(&building.temp_output_obj_idx)

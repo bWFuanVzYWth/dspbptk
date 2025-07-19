@@ -237,7 +237,6 @@ fn parse_default(input: &[u8]) -> IResult<&[u8], F32x12> {
 #[cfg(test)]
 mod test {
     use nom::Finish;
-
     use super::*;
 
     #[test]

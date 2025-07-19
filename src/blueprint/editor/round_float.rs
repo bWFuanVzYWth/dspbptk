@@ -1,9 +1,10 @@
-use crate::blueprint::data::content::building::Building;
+use crate::blueprint::Building;
 
 impl Building {
     pub fn round_float(&mut self) {
         const ROUND_SCALE_POSITION: f32 = 300.0;
         const ROUND_SCALE_ANGLE: f32 = 20.0;
+
         let round = |x: f32, scale: f32| (x * scale).round() / scale;
         let round_local_offset = |x: f32| round(x, ROUND_SCALE_POSITION);
         let round_angle = |x: f32| round(x, ROUND_SCALE_ANGLE);

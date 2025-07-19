@@ -1,5 +1,3 @@
-use nalgebra::Vector3;
-
 use crate::{
     blueprint,
     dspbptk_blueprint::{
@@ -8,6 +6,7 @@ use crate::{
     },
     error::DspbptkError,
 };
+use nalgebra::Vector3;
 
 impl TryInto<blueprint::Building> for dspbptk_blueprint::Building {
     type Error = DspbptkError;
@@ -54,7 +53,7 @@ impl TryInto<blueprint::Building> for dspbptk_blueprint::Building {
     }
 }
 
-impl TryFrom<blueprint::data::content::building::Building> for dspbptk_blueprint::Building {
+impl TryFrom<blueprint::Building> for dspbptk_blueprint::Building {
     type Error = DspbptkError;
 
     /// 将当前`Building`对象转换为`DspbptkBuildingData`结构体
@@ -62,7 +61,7 @@ impl TryFrom<blueprint::data::content::building::Building> for dspbptk_blueprint
     /// # Errors
     /// 可能的原因：
     /// * index无法转换为uuid，一般是出现了负数index。原版蓝图不可能出现这个报错。
-    fn try_from(b: blueprint::data::content::building::Building) -> Result<Self, Self::Error> {
+    fn try_from(b: blueprint::Building) -> Result<Self, Self::Error> {
         Ok(Self {
             // 转换主索引为UUID，可能返回NonStandardIndex错误
             uuid: uuid_try_from_index(b.index)?,

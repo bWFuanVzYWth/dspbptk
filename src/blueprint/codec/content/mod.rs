@@ -2,24 +2,26 @@ pub mod area;
 pub mod building;
 
 use crate::{
-    blueprint::data::content::{Content, building::Version},
+    blueprint::{Content, Version},
     error::{
         DspbptkError::{self, BrokenBase64, BrokenContent, BrokenGzip, CanNotCompressGzip},
         DspbptkWarn::{self, FewUnknownAfterContent, LotUnknownAfterContent},
     },
 };
+use base64::prelude::*;
+use flate2::read::GzDecoder;
 use nom::{
-    IResult, Parser,
+    Finish, IResult, Parser,
     multi::count,
     number::complete::{le_i32, le_u8, le_u32},
 };
+use std::io::Read;
 
 impl Content {
     /// # Errors
     /// 可能的原因：
     /// * content编码错误，或者编码不受支持
     pub fn from_bin(bin: &'_ [u8]) -> Result<(Self, Vec<DspbptkWarn>), DspbptkError> {
-        use nom::Finish;
         let (unknown, content) = deserialization_non_finish(bin)
             .finish()
             .map_err(|e| BrokenContent(e.clone().into()))?;
@@ -92,7 +94,6 @@ fn deserialization_non_finish(bin: &[u8]) -> IResult<&[u8], Content> {
 }
 
 fn gzip_from_string(string: &'_ str) -> Result<Vec<u8>, DspbptkError> {
-    use base64::prelude::*;
     match BASE64_STANDARD.decode(string) {
         Ok(bin) => Ok(bin),
         Err(why) => Err(BrokenBase64(why)),
@@ -100,13 +101,10 @@ fn gzip_from_string(string: &'_ str) -> Result<Vec<u8>, DspbptkError> {
 }
 
 fn string_from_gzip(gzip: &[u8]) -> String {
-    use base64::prelude::*;
     BASE64_STANDARD.encode(gzip)
 }
 
 fn bin_from_gzip(gzip: &[u8]) -> Result<Vec<u8>, DspbptkError> {
-    use flate2::read::GzDecoder;
-    use std::io::Read;
     let mut bin = Vec::new();
     let mut decoder = GzDecoder::new(gzip);
     decoder.read_to_end(&mut bin).map_err(BrokenGzip)?;

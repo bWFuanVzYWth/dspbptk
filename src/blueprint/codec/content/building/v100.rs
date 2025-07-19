@@ -108,7 +108,6 @@ pub fn serialization(bin: &mut Vec<u8>, data: &Building) {
 #[cfg(test)]
 mod test {
     use nom::Finish;
-
     use super::*;
 
     #[test]

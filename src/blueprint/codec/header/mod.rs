@@ -3,9 +3,8 @@ use nom::{
     bytes::complete::{tag, take_till},
     sequence::preceded,
 };
-
 use crate::{
-    blueprint::data::header::Header,
+    blueprint::Header,
     error::{
         DspbptkError::{self, BrokenHeader},
         DspbptkWarn::{self, UnknownAfterHeader},
@@ -93,7 +92,6 @@ pub fn serialization(data: &Header) -> String {
 #[cfg(test)]
 mod test {
     use crate::blueprint::data::header::Header;
-
     use super::*;
 
     #[test]
