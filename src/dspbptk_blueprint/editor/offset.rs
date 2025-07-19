@@ -1,6 +1,6 @@
 use nalgebra::Vector3;
 
-use crate::dspbptk::{Building, uuid::new_uuid};
+use crate::dspbptk_blueprint::{Building, uuid::new_uuid};
 
 impl Building {
     #[must_use]

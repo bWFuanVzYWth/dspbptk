@@ -2,14 +2,14 @@ use nalgebra::Vector3;
 
 use crate::{
     blueprint,
-    dspbptk::{
+    dspbptk_blueprint::{
         self,
         uuid::{index_try_from_uuid, uuid_try_from_index},
     },
     error::DspbptkError,
 };
 
-impl TryInto<blueprint::Building> for dspbptk::Building {
+impl TryInto<blueprint::Building> for dspbptk_blueprint::Building {
     type Error = DspbptkError;
 
     ///  将`DspbptkBuildingData`转换为`BuildingData`
@@ -54,7 +54,7 @@ impl TryInto<blueprint::Building> for dspbptk::Building {
     }
 }
 
-impl TryFrom<blueprint::data::content::building::Building> for dspbptk::Building {
+impl TryFrom<blueprint::data::content::building::Building> for dspbptk_blueprint::Building {
     type Error = DspbptkError;
 
     /// 将当前`Building`对象转换为`DspbptkBuildingData`结构体
@@ -108,8 +108,8 @@ impl TryFrom<blueprint::data::content::building::Building> for dspbptk::Building
 // FIXME 这个东西放这里不一定合适
 #[must_use]
 pub fn fix_dspbptk_buildings_index(
-    buildings: Vec<dspbptk::Building>,
-) -> Vec<dspbptk::Building> {
+    buildings: Vec<dspbptk_blueprint::Building>,
+) -> Vec<dspbptk_blueprint::Building> {
     use std::collections::HashMap;
 
     let uuid_lut = buildings
@@ -120,7 +120,7 @@ pub fn fix_dspbptk_buildings_index(
 
     buildings
         .into_iter()
-        .map(|building| dspbptk::Building {
+        .map(|building| dspbptk_blueprint::Building {
             uuid: *uuid_lut.get(&building.uuid).unwrap_or(&None),
             temp_output_obj_idx: uuid_lut
                 .get(&building.temp_output_obj_idx)

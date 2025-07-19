@@ -59,11 +59,11 @@ impl LinearPatternArgs {
         let dspbptk_buildings_in = content_in
             .buildings
             .into_iter()
-            .map(|building| dspbptk::dspbptk::Building::try_from(building).unwrap())
+            .map(|building| dspbptk::dspbptk_blueprint::Building::try_from(building).unwrap())
             .collect::<Vec<_>>();
         let basis_vector = Vector3::<f64>::new(self.x, self.y, self.z);
-        let dspbptk_buildings_out = dspbptk::dspbptk::convert::fix_dspbptk_buildings_index(
-            dspbptk::editor::dspbptk::offset::linear_pattern(
+        let dspbptk_buildings_out = dspbptk::dspbptk_blueprint::convert::fix_dspbptk_buildings_index(
+            dspbptk::planet::dspbptk::offset::linear_pattern(
                 &dspbptk_buildings_in,
                 &basis_vector,
                 self.n,
@@ -87,11 +87,11 @@ impl OffsetArgs {
         let dspbptk_buildings_in = content_in
             .buildings
             .into_iter()
-            .map(|building| dspbptk::dspbptk::Building::try_from(building).unwrap())
+            .map(|building| dspbptk::dspbptk_blueprint::Building::try_from(building).unwrap())
             .collect::<Vec<_>>();
         let basis_vector = Vector3::<f64>::new(self.x, self.y, self.z);
-        let dspbptk_buildings_out = dspbptk::dspbptk::convert::fix_dspbptk_buildings_index(
-            dspbptk::editor::dspbptk::offset::offset(dspbptk_buildings_in, &basis_vector),
+        let dspbptk_buildings_out = dspbptk::dspbptk_blueprint::convert::fix_dspbptk_buildings_index(
+            dspbptk::planet::dspbptk::offset::offset(dspbptk_buildings_in, &basis_vector),
         );
         let buildings_out = dspbptk_buildings_out
             .into_iter()

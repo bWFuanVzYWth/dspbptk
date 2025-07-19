@@ -1,6 +1,6 @@
 use dspbptk::{
     blueprint::data::{content::Content, header::Header},
-    dspbptk::{Building, convert::fix_dspbptk_buildings_index, uuid::some_new_uuid},
+    dspbptk_blueprint::{Building, convert::fix_dspbptk_buildings_index, uuid::some_new_uuid},
     error::DspbptkError::{self},
     io::{BlueprintKind, LegalBlueprintFileType},
     item::Item,

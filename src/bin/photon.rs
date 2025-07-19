@@ -2,15 +2,17 @@ use nalgebra::Vector3;
 
 use dspbptk::{
     blueprint::data::{content::Content, header::Header},
-    dspbptk::{
-        Building, convert::fix_dspbptk_buildings_index, uuid::some_new_uuid as new_some_uuid,
+    dspbptk_blueprint::{
+        Building,
+        convert::fix_dspbptk_buildings_index,
+        generator::tesselation::{Module, module::receiver_1i1o},
+        uuid::some_new_uuid as new_some_uuid,
     },
-    editor::{
+    planet::{
         dspbptk::belt::connect_belts,
         unit_conversion::{arc_from_grid, grid_from_arc, local_offset_to_direction},
     },
     error::DspbptkError::{self, UnexpectBuildingsCount},
-    generator::tesselation::{Module, module::receiver_1i1o},
     io::{BlueprintKind, LegalBlueprintFileType},
     item::Item,
 };
