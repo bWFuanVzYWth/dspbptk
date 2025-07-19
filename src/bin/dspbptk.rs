@@ -10,7 +10,7 @@ use clap::Parser;
 use dspbptk::{
     dspbptk_building::fix_dspbptk_buildings_index,
     io::LegalBlueprintFileType,
-    toolkit::blueprint::sort::{fix_buildings_index, sort_buildings},
+    editor::blueprint::sort::{fix_buildings_index, sort_buildings},
 };
 use log::{error, warn};
 use nalgebra::Vector3;
@@ -66,7 +66,7 @@ impl LinearPatternArgs {
             .collect::<Vec<_>>();
         let basis_vector = Vector3::<f64>::new(self.x, self.y, self.z);
         let dspbptk_buildings_out =
-            fix_dspbptk_buildings_index(dspbptk::toolkit::dspbptk::offset::linear_pattern(
+            fix_dspbptk_buildings_index(dspbptk::editor::dspbptk::offset::linear_pattern(
                 &dspbptk_buildings_in,
                 &basis_vector,
                 self.n,
@@ -93,7 +93,7 @@ impl OffsetArgs {
             .collect::<Vec<_>>();
         let basis_vector = Vector3::<f64>::new(self.x, self.y, self.z);
         let dspbptk_buildings_out = fix_dspbptk_buildings_index(
-            dspbptk::toolkit::dspbptk::offset::offset(dspbptk_buildings_in, &basis_vector),
+            dspbptk::editor::dspbptk::offset::offset(dspbptk_buildings_in, &basis_vector),
         );
         let buildings_out = dspbptk_buildings_out
             .into_iter()

@@ -4,20 +4,19 @@ use std::f64::consts::FRAC_PI_2;
 
 use arrayvec::ArrayVec;
 
-use crate::toolkit::unit_conversion::arc_from_grid;
+use crate::editor::unit_conversion::arc_from_grid;
+
+pub mod module;
+
+const MAX_ROW_COUNT: usize = 44;
+type ModuleArray = ArrayVec<u8, MAX_ROW_COUNT>;
+
+const MODULE_TYPE_COUNT: usize = 6;
+type TotalModule = [usize; MODULE_TYPE_COUNT];
+type NeedModule = [f64; MODULE_TYPE_COUNT];
 
 // TODO 密铺排列计算
 // TODO 重构，为不同的模块impl对应的方法
-
-#[derive(Debug)]
-struct Row<'a> {
-    pub t: &'a Module,
-    pub y: f64,   // 这一行模块的锚点坐标y
-    pub n: usize, // 这一行模块的数量
-
-    total_score: f64, // 当前排列的总分
-    total_y: f64,
-}
 
 #[derive(Debug)]
 pub struct Module {
@@ -63,11 +62,15 @@ impl Module {
     }
 }
 
+/// 状态空间中
+#[derive(Clone)]
 struct Node {
-    code: ArrayVec<u8, 44>,
+    modules: ModuleArray,
     score: f64,
     y_max: f64,
 }
+
+const _: () = assert!(std::mem::size_of::<Node>() == 64);
 
 impl Ord for Node {
     fn cmp(&self, other: &Self) -> Ordering {
@@ -85,6 +88,21 @@ impl Eq for Node {}
 
 impl PartialEq for Node {
     fn eq(&self, other: &Self) -> bool {
-        self.cmp(other) == Ordering::Equal
+        self.modules.cmp(&other.modules) == Ordering::Equal
+    }
+}
+
+impl Node {
+    // pub fn extend(&self, building: u8) -> Self {
+    //     let new = self.clone();
+    //     new.modules.push(building);
+
+    //     // TODO 更新分数和y
+
+    //     new
+    // }
+
+    pub fn score(modules: ModuleArray) -> f64 {
+        0.0
     }
 }

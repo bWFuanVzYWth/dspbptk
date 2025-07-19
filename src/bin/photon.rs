@@ -3,19 +3,18 @@ use nalgebra::Vector3;
 use dspbptk::{
     blueprint::{content::ContentData, header::HeaderData},
     dspbptk_building::{
-        fix_dspbptk_buildings_index, uuid::some_new_uuid as new_some_uuid, DspbptkBuildingData
+        DspbptkBuildingData, fix_dspbptk_buildings_index, uuid::some_new_uuid as new_some_uuid,
     },
     error::DspbptkError::{self, UnexpectBuildingsCount},
     io::{BlueprintKind, LegalBlueprintFileType},
     item::Item,
-    tesselation_structure::receiver_1i1o,
-    toolkit::{
+    editor::{
         dspbptk::{
             belt::connect_belts,
-            tesselation::Module,
         },
         unit_conversion::{arc_from_grid, grid_from_arc, local_offset_to_direction},
     },
+    generator::tesselation::{Module, module::receiver_1i1o},
 };
 
 // FIXME 改用tesselation::Row
