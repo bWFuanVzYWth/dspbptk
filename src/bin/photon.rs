@@ -1,20 +1,18 @@
 use nalgebra::Vector3;
 
 use dspbptk::{
-    blueprint::data::{content::ContentData, header::HeaderData},
+    blueprint::data::{content::Content, header::Header},
     dspbptk_building::{
         DspbptkBuildingData, fix_dspbptk_buildings_index, uuid::some_new_uuid as new_some_uuid,
     },
-    error::DspbptkError::{self, UnexpectBuildingsCount},
-    io::{BlueprintKind, LegalBlueprintFileType},
-    item::Item,
     editor::{
-        dspbptk::{
-            belt::connect_belts,
-        },
+        dspbptk::belt::connect_belts,
         unit_conversion::{arc_from_grid, grid_from_arc, local_offset_to_direction},
     },
+    error::DspbptkError::{self, UnexpectBuildingsCount},
     generator::tesselation::{Module, module::receiver_1i1o},
+    io::{BlueprintKind, LegalBlueprintFileType},
+    item::Item,
 };
 
 // FIXME 改用tesselation::Row
@@ -197,7 +195,7 @@ fn main() -> Result<(), DspbptkError<'static>> {
     use env_logger::Env;
     env_logger::Builder::from_env(Env::default().default_filter_or("info")).init();
 
-    let header_data = HeaderData::default();
+    let header_data = Header::default();
     let zopfli_options = zopfli::Options::default();
 
     // 先计算布局
@@ -206,7 +204,7 @@ fn main() -> Result<(), DspbptkError<'static>> {
     // 再转换为建筑列表
     let buildings = layout_to_buildings(&rows);
 
-    let content_data = ContentData {
+    let content_data = Content {
         buildings_length: u32::try_from(buildings.len()).map_err(UnexpectBuildingsCount)?,
         buildings: buildings
             .into_iter()

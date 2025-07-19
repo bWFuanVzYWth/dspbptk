@@ -1,13 +1,13 @@
 use dspbptk::{
-    blueprint::data::{content::ContentData, header::HeaderData},
+    blueprint::data::{content::Content, header::Header},
     error::DspbptkError,
     io::{BlueprintKind, LegalBlueprintFileType},
 };
 
 fn main() -> Result<(), DspbptkError<'static>> {
     let zopfli_options = zopfli::Options::default();
-    let header_data = HeaderData::default();
-    let content_data = ContentData::default();
+    let header_data = Header::default();
+    let content_data = Content::default();
 
     if let BlueprintKind::Txt(blueprint) = dspbptk::io::process_back_end(
         &header_data,

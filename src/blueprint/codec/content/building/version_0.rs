@@ -4,10 +4,10 @@ use nom::{
     number::complete::{le_f32, le_i8, le_i16, le_i32, le_u16},
 };
 
-use crate::blueprint::data::content::building::BuildingData;
+use crate::blueprint::data::content::building::Building;
 
 #[expect(clippy::similar_names)]
-pub fn deserialization_version_0(bin: &[u8]) -> IResult<&[u8], BuildingData> {
+pub fn deserialization_version_0(bin: &[u8]) -> IResult<&[u8], Building> {
     let unknown = bin;
 
     let (unknown, index) = le_i32(unknown)?;
@@ -37,7 +37,7 @@ pub fn deserialization_version_0(bin: &[u8]) -> IResult<&[u8], BuildingData> {
 
     Ok((
         unknown,
-        BuildingData {
+        Building {
             index,
             area_index,
             local_offset_x,
@@ -70,7 +70,7 @@ pub fn deserialization_version_0(bin: &[u8]) -> IResult<&[u8], BuildingData> {
     ))
 }
 
-pub fn serialization_version_0(bin: &mut Vec<u8>, data: &BuildingData) {
+pub fn serialization_version_0(bin: &mut Vec<u8>, data: &Building) {
     bin.extend_from_slice(&data.index.to_le_bytes());
     bin.extend_from_slice(&data.area_index.to_le_bytes());
     bin.extend_from_slice(&data.local_offset_x.to_le_bytes());
@@ -116,7 +116,7 @@ mod test {
             0, 0, 0, 30, 0, 0, 0,
         ];
 
-        let data_test = BuildingData {
+        let data_test = Building {
             index: 1,
             area_index: 2,
             local_offset_x: 3.1,
@@ -155,7 +155,7 @@ mod test {
 
     #[test]
     fn test_deserialization_version_0() {
-        let data_expected = BuildingData {
+        let data_expected = Building {
             index: 1,
             area_index: 2,
             local_offset_x: 3.1,

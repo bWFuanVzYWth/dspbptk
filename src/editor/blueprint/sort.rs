@@ -1,6 +1,6 @@
 use std::collections::{HashMap, HashSet};
 
-use crate::blueprint::data::content::building::{self, BuildingData};
+use crate::blueprint::data::content::building::{self, Building};
 
 use petgraph::{
     graph::{Graph, NodeIndex},
@@ -13,7 +13,7 @@ use petgraph::{
 /// 如果是其它建筑则依次按照`item_id`、`model_index`、`recipe_id`、`area_index`、`local_offset`进行排序(稳定)，其它建筑放在建筑列表后面。\
 /// 注意传送带单独分组，并不与其它建筑保证`item_id`的顺序关系
 #[must_use]
-pub fn sort_buildings(buildings: Vec<BuildingData>, reserved: bool) -> Vec<BuildingData> {
+pub fn sort_buildings(buildings: Vec<Building>, reserved: bool) -> Vec<Building> {
     // 0. 空建筑列表提前返回
     if buildings.is_empty() {
         return Vec::new();
@@ -37,13 +37,13 @@ pub fn sort_buildings(buildings: Vec<BuildingData>, reserved: bool) -> Vec<Build
     sorted
 }
 
-fn split_belt_and_non_belt(buildings: Vec<BuildingData>) -> (Vec<BuildingData>, Vec<BuildingData>) {
+fn split_belt_and_non_belt(buildings: Vec<Building>) -> (Vec<Building>, Vec<Building>) {
     buildings
         .into_iter()
         .partition(|building| (2001..=2009).contains(&building.item_id))
 }
 
-fn stable_sort_non_belt(mut buildings: Vec<BuildingData>) -> Vec<BuildingData> {
+fn stable_sort_non_belt(mut buildings: Vec<Building>) -> Vec<Building> {
     buildings.sort_by_cached_key(|building| {
         // 预计算排序键，实现Schwartzian transform优化
         (
@@ -58,7 +58,7 @@ fn stable_sort_non_belt(mut buildings: Vec<BuildingData>) -> Vec<BuildingData> {
     buildings
 }
 
-fn calculate_offset_score(b: &BuildingData) -> f64 {
+fn calculate_offset_score(b: &Building) -> f64 {
     let (x, y, z) = (
         f64::from(b.local_offset_x),
         f64::from(b.local_offset_y),
@@ -68,9 +68,9 @@ fn calculate_offset_score(b: &BuildingData) -> f64 {
 }
 
 fn combine_sorted_results(
-    belt_buildings: Vec<BuildingData>,
-    non_belt_buildings: Vec<BuildingData>,
-) -> Vec<BuildingData> {
+    belt_buildings: Vec<Building>,
+    non_belt_buildings: Vec<Building>,
+) -> Vec<Building> {
     belt_buildings
         .into_iter()
         .chain(non_belt_buildings)
@@ -78,7 +78,7 @@ fn combine_sorted_results(
 }
 
 #[must_use]
-pub fn fix_buildings_index(buildings: Vec<BuildingData>) -> Vec<BuildingData> {
+pub fn fix_buildings_index(buildings: Vec<Building>) -> Vec<Building> {
     let lut = buildings
         .iter()
         .zip(0..=i32::MAX)
@@ -87,7 +87,7 @@ pub fn fix_buildings_index(buildings: Vec<BuildingData>) -> Vec<BuildingData> {
 
     buildings
         .into_iter()
-        .map(|building| BuildingData {
+        .map(|building| Building {
             index: *lut.get(&building.index).unwrap_or(&building::INDEX_NULL),
             temp_output_obj_idx: lut
                 .get(&building.temp_output_obj_idx)
@@ -118,7 +118,7 @@ pub fn fix_buildings_index(buildings: Vec<BuildingData>) -> Vec<BuildingData> {
 /// # Panics
 /// 说明构建缩点后的DAG这一步的实现存在错误，实际生成的并不是DAG。这永远不应该出现。
 #[must_use]
-pub fn topological_sort_belt(buildings: &[BuildingData]) -> Vec<BuildingData> {
+pub fn topological_sort_belt(buildings: &[Building]) -> Vec<Building> {
     let graph = build_graph(buildings);
 
     // 1. 获取所有强连通分量（SCC）
@@ -179,7 +179,7 @@ pub fn topological_sort_belt(buildings: &[BuildingData]) -> Vec<BuildingData> {
 ///
 /// # 返回值
 /// 返回构建完成的有向图结构，节点权重和边权重均为usize类型
-fn build_graph(buildings: &[BuildingData]) -> Graph<usize, usize> {
+fn build_graph(buildings: &[Building]) -> Graph<usize, usize> {
     let mut graph: Graph<usize, usize> = Graph::new();
 
     // 创建节点
@@ -222,7 +222,7 @@ fn build_graph(buildings: &[BuildingData]) -> Graph<usize, usize> {
 /// 3. 按链表顺序收集结果
 ///
 /// 复杂度: O(n)
-fn optimize_scc(scc: &[NodeIndex], buildings: &[BuildingData]) -> Vec<BuildingData> {
+fn optimize_scc(scc: &[NodeIndex], buildings: &[Building]) -> Vec<Building> {
     // 创建节点索引映射表: 建筑物ID -> SCC中的位置
     let node_index_map = scc
         .iter()

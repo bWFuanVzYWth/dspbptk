@@ -1,10 +1,10 @@
 pub mod area;
 pub mod building;
 
-use crate::blueprint::data::content::area::AreaData;
+use crate::blueprint::data::content::area::Area;
 
-#[derive(Debug, Clone)]
-pub struct ContentData {
+#[derive(Debug, Clone, PartialEq)]
+pub struct Content {
     pub patch: i32,
     pub cursor_offset_x: i32,
     pub cursor_offset_y: i32,
@@ -13,13 +13,13 @@ pub struct ContentData {
     pub drag_box_size_y: i32,
     pub primary_area_idx: i32,
     pub areas_length: u8,
-    pub areas: Vec<area::AreaData>,
+    pub areas: Vec<area::Area>,
     pub buildings_length: u32,
-    pub buildings: Vec<building::BuildingData>,
+    pub buildings: Vec<building::Building>,
     pub unknown: Vec<u8>,
 }
 
-impl Default for ContentData {
+impl Default for Content {
     fn default() -> Self {
         Self {
             patch: 0,
@@ -30,7 +30,7 @@ impl Default for ContentData {
             drag_box_size_y: 1,
             primary_area_idx: 0,
             areas_length: 1, // 默认一个区域
-            areas: vec![AreaData::default()],
+            areas: vec![Area::default()],
             buildings_length: 0,
             buildings: Vec::new(),
             unknown: Vec::new(),

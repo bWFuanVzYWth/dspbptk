@@ -8,14 +8,14 @@ use nom::{
 };
 
 use crate::{
-    blueprint::data::content::{ContentData, building::BuildingDataVersion},
+    blueprint::data::content::{Content, building::Version},
     error::{
         DspbptkError::{self, BrokenBase64, BrokenContent, BrokenGzip, CanNotCompressGzip},
         DspbptkWarn::{self, FewUnknownAfterContent, LotUnknownAfterContent},
     },
 };
 
-impl ContentData {
+impl Content {
     /// # Errors
     /// 可能的原因：
     /// * content编码错误，或者编码不受支持
@@ -50,15 +50,13 @@ impl ContentData {
             .for_each(|area_data| area::serialization(&mut bin, area_data));
         bin.extend_from_slice(&self.buildings_length.to_le_bytes());
         self.buildings.iter().for_each(|building_data| {
-            building::serialization(&mut bin, building_data, &BuildingDataVersion::NEG101);
+            building::serialization(&mut bin, building_data, &Version::Neg101);
         });
         bin
     }
 }
 
-
-
-fn deserialization_non_finish(bin: &[u8]) -> IResult<&[u8], ContentData> {
+fn deserialization_non_finish(bin: &[u8]) -> IResult<&[u8], Content> {
     let unknown = bin;
 
     let (unknown, patch) = le_i32(unknown)?;
@@ -77,7 +75,7 @@ fn deserialization_non_finish(bin: &[u8]) -> IResult<&[u8], ContentData> {
 
     Ok((
         unknown,
-        ContentData {
+        Content {
             patch,
             cursor_offset_x,
             cursor_offset_y,
@@ -149,7 +147,7 @@ pub fn bin_from_string<'a>(
 /// 可能的原因：
 /// * gzip压缩错误，这个错误通常不该出现，万一真炸了得去看zopfli的文档
 pub fn string_from_data<'a>(
-    data: &ContentData,
+    data: &Content,
     zopfli_options: &zopfli::Options,
 ) -> Result<String, DspbptkError<'a>> {
     let bin = data.to_bin();

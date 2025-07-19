@@ -63,6 +63,7 @@ mimalloc = "0.1.47"
 # graph
 petgraph = "0.8.2"
 arrayvec = "0.7.6"
+num_enum = "0.7.4"
 
 [profile.release]
 codegen-units = 1

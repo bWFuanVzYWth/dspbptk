@@ -1,5 +1,5 @@
 use dspbptk::{
-    blueprint::data::{content::ContentData, header::HeaderData},
+    blueprint::data::{content::Content, header::Header},
     dspbptk_building::{DspbptkBuildingData, fix_dspbptk_buildings_index, uuid::some_new_uuid},
     error::DspbptkError::{self},
     io::{BlueprintKind, LegalBlueprintFileType},
@@ -19,7 +19,7 @@ fn new_receiver(local_offset: Vector3<f64>) -> DspbptkBuildingData {
 }
 
 fn main() -> Result<(), DspbptkError<'static>> {
-    let header_data = HeaderData::default();
+    let header_data = Header::default();
     let zopfli_options = zopfli::Options::default();
 
     // 基础行
@@ -53,7 +53,7 @@ fn main() -> Result<(), DspbptkError<'static>> {
     let buildings = [base, test_axis, test_corner].concat();
     let buildings = fix_dspbptk_buildings_index(buildings);
 
-    let content_data = ContentData {
+    let content_data = Content {
         buildings_length: u32::try_from(buildings.len()).unwrap(),
         buildings: buildings
             .into_iter()

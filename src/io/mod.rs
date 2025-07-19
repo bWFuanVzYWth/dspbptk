@@ -6,8 +6,8 @@ use crate::{
     blueprint::{
         codec,
         data::{
-            content::{self, ContentData},
-            header::{self, HeaderData},
+            content::{self, Content},
+            header::{self, Header},
         },
     },
     error::{
@@ -109,7 +109,7 @@ pub fn write_file(
 pub fn process_front_end<'a>(
     blueprint: &'a BlueprintKind,
     blueprint_content_bin: &'a mut Vec<u8>,
-) -> Result<(HeaderData, ContentData, Vec<DspbptkWarn>), DspbptkError<'a>> {
+) -> Result<(Header, Content, Vec<DspbptkWarn>), DspbptkError<'a>> {
     match blueprint {
         BlueprintKind::Txt(blueprint_string) => {
             // let start = std::time::Instant::now();
@@ -117,7 +117,7 @@ pub fn process_front_end<'a>(
             let (blueprint_data, warns_blueprint) = codec::parse(blueprint_string)?;
             codec::content::bin_from_string(blueprint_content_bin, blueprint_data.content)?;
             let (content_data, warns_content) =
-                ContentData::from_bin(blueprint_content_bin.as_slice())?;
+                Content::from_bin(blueprint_content_bin.as_slice())?;
             let (header_data, warns_header) = codec::header::parse(blueprint_data.header)?;
 
             // log::info!("parse in {:?} sec.", start.elapsed());
@@ -134,8 +134,8 @@ pub fn process_front_end<'a>(
             ))
         }
         BlueprintKind::Content(content_bin) => {
-            let (content_data, warns_content) = ContentData::from_bin(content_bin)?;
-            let header_data = HeaderData::default();
+            let (content_data, warns_content) = Content::from_bin(content_bin)?;
+            let header_data = Header::default();
             Ok((header_data, content_data, warns_content))
         }
     }
@@ -146,8 +146,8 @@ pub fn process_front_end<'a>(
 /// # Errors
 /// 所有编码或输出时发生的错误在此汇总
 pub fn process_back_end<'a>(
-    header_data: &HeaderData,
-    content_data: &ContentData,
+    header_data: &Header,
+    content_data: &Content,
     zopfli_options: &zopfli::Options,
     output_type: &LegalBlueprintFileType,
 ) -> Result<BlueprintKind, DspbptkError<'a>> {

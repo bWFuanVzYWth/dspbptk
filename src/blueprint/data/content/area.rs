@@ -1,8 +1,7 @@
-
 pub const INDEX_NULL: i8 = -1;
 
-#[derive(Debug, Clone)]
-pub struct AreaData {
+#[derive(Debug, Clone, Eq, PartialEq)]
+pub struct Area {
     pub index: i8,
     pub parent_index: i8,
     pub tropic_anchor: i16,
@@ -13,7 +12,7 @@ pub struct AreaData {
     pub height: i16,
 }
 
-impl Default for AreaData {
+impl Default for Area {
     fn default() -> Self {
         Self {
             index: 0,

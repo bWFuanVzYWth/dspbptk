@@ -5,10 +5,7 @@ use nom::{
     number::complete::{le_f32, le_i8, le_i16, le_i32, le_u16},
 };
 
-use crate::blueprint::data::content::building::BuildingData;
-
-// FIXME 这种硬编码常量应该放在这里吗？
-pub const NEG_101: i32 = -101; // 9B FF FF FF
+use crate::blueprint::data::content::building::{Building, Version};
 
 // FIXME 这种硬编码常量应该放在这里吗？
 const BELT_LOW: i16 = 2001;
@@ -20,10 +17,11 @@ const SORTER_HIGH: i16 = 2019;
 pub type F32x12 = (f32, f32, f32, f32, f32, f32, f32, f32, f32, f32, f32, f32);
 
 #[expect(clippy::similar_names)]
-pub fn deserialization_version_neg101(bin: &[u8]) -> IResult<&[u8], BuildingData> {
+pub fn deserialization_version_neg101(bin: &[u8]) -> IResult<&[u8], Building> {
     let unknown = bin;
 
-    let (unknown, _version) = tag((NEG_101).to_le_bytes().as_slice())(unknown)?;
+    let (unknown, _version) =
+        tag(i32::from(Version::Neg101).to_le_bytes().as_slice())(unknown)?;
     let (unknown, index) = le_i32(unknown)?;
     let (unknown, item_id) = le_i16(unknown)?;
     let (unknown, model_index) = le_i16(unknown)?;
@@ -66,7 +64,7 @@ pub fn deserialization_version_neg101(bin: &[u8]) -> IResult<&[u8], BuildingData
 
     Ok((
         unknown,
-        BuildingData {
+        Building {
             index,
             area_index,
             local_offset_x,
@@ -99,8 +97,8 @@ pub fn deserialization_version_neg101(bin: &[u8]) -> IResult<&[u8], BuildingData
     ))
 }
 
-pub fn serialization_version_neg101(bin: &mut Vec<u8>, data: &BuildingData) {
-    bin.extend_from_slice(&(NEG_101).to_le_bytes());
+pub fn serialization_version_neg101(bin: &mut Vec<u8>, data: &Building) {
+    bin.extend_from_slice(&i32::from(Version::Neg101).to_le_bytes());
     bin.extend_from_slice(&data.index.to_le_bytes());
     bin.extend_from_slice(&data.item_id.to_le_bytes());
     bin.extend_from_slice(&data.model_index.to_le_bytes());
@@ -253,7 +251,7 @@ mod test {
             26, 0, 4, 0, 27, 0, 0, 0, 28, 0, 0, 0, 29, 0, 0, 0, 30, 0, 0, 0,
         ];
 
-        let data_test = BuildingData {
+        let data_test = Building {
             index: 1,
             area_index: 2,
             local_offset_x: 3.1,
@@ -292,7 +290,7 @@ mod test {
 
     #[test]
     fn test_deserialization_version_neg101_default() {
-        let data_expected = BuildingData {
+        let data_expected = Building {
             index: 1,
             area_index: 2,
             local_offset_x: 3.1,
@@ -342,7 +340,7 @@ mod test {
             21, 22, 23, 24, 25, 0, 26, 0, 4, 0, 27, 0, 0, 0, 28, 0, 0, 0, 29, 0, 0, 0, 30, 0, 0, 0,
         ];
 
-        let data_test = BuildingData {
+        let data_test = Building {
             index: 1,
             area_index: 2,
             local_offset_x: 3.1,
@@ -381,7 +379,7 @@ mod test {
 
     #[test]
     fn test_deserialization_version_neg101_belt() {
-        let data_expected = BuildingData {
+        let data_expected = Building {
             index: 1,
             area_index: 2,
             local_offset_x: 3.1,
@@ -433,7 +431,7 @@ mod test {
             29, 0, 0, 0, 30, 0, 0, 0,
         ];
 
-        let data_test = BuildingData {
+        let data_test = Building {
             index: 1,
             area_index: 2,
             local_offset_x: 3.1,
@@ -472,7 +470,7 @@ mod test {
 
     #[test]
     fn test_deserialization_version_neg101_sorter() {
-        let data_expected = BuildingData {
+        let data_expected = Building {
             index: 1,
             area_index: 2,
             local_offset_x: 3.1,

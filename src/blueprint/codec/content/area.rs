@@ -3,12 +3,12 @@ use nom::{
     number::complete::{le_i8, le_i16},
 };
 
-use crate::blueprint::data::content::area::AreaData;
+use crate::blueprint::data::content::area::Area;
 
 /// # Errors
 /// 可能的原因：
 /// * content的area部分已经损坏，或者编码不受支持
-pub fn deserialization(bin: &[u8]) -> IResult<&[u8], AreaData> {
+pub fn deserialization(bin: &[u8]) -> IResult<&[u8], Area> {
     let unknown = bin;
 
     let (unknown, index) = le_i8(unknown)?;
@@ -22,7 +22,7 @@ pub fn deserialization(bin: &[u8]) -> IResult<&[u8], AreaData> {
 
     Ok((
         unknown,
-        AreaData {
+        Area {
             index,
             parent_index,
             tropic_anchor,
@@ -35,7 +35,7 @@ pub fn deserialization(bin: &[u8]) -> IResult<&[u8], AreaData> {
     ))
 }
 
-pub fn serialization(bin: &mut Vec<u8>, data: &AreaData) {
+pub fn serialization(bin: &mut Vec<u8>, data: &Area) {
     bin.extend_from_slice(&data.index.to_le_bytes());
     bin.extend_from_slice(&data.parent_index.to_le_bytes());
     bin.extend_from_slice(&data.tropic_anchor.to_le_bytes());

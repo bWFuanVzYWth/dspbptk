@@ -9,16 +9,16 @@ use std::{
 use clap::Parser;
 use dspbptk::{
     dspbptk_building::fix_dspbptk_buildings_index,
-    io::LegalBlueprintFileType,
     editor::blueprint::sort::{fix_buildings_index, sort_buildings},
+    io::LegalBlueprintFileType,
 };
 use log::{error, warn};
 use nalgebra::Vector3;
 use rayon::prelude::*;
 use walkdir::WalkDir;
 
-use dspbptk::blueprint::data::content::ContentData;
-use dspbptk::blueprint::data::header::HeaderData;
+use dspbptk::blueprint::data::content::Content;
+use dspbptk::blueprint::data::header::Header;
 use dspbptk::io::{self, FileType};
 fn collect_files(path_in: &Path) -> Vec<PathBuf> {
     WalkDir::new(path_in)
@@ -58,7 +58,7 @@ fn generate_output_path(
 }
 
 impl LinearPatternArgs {
-    fn apply(&self, content_in: ContentData) -> ContentData {
+    fn apply(&self, content_in: Content) -> Content {
         let dspbptk_buildings_in = content_in
             .buildings
             .into_iter()
@@ -76,7 +76,7 @@ impl LinearPatternArgs {
             .map(|building| building.as_building_data().unwrap())
             .collect::<Vec<_>>();
 
-        ContentData {
+        Content {
             buildings_length: u32::try_from(buildings_out.len()).unwrap(),
             buildings: buildings_out,
             ..content_in
@@ -85,7 +85,7 @@ impl LinearPatternArgs {
 }
 
 impl OffsetArgs {
-    fn apply(&self, content_in: ContentData) -> ContentData {
+    fn apply(&self, content_in: Content) -> Content {
         let dspbptk_buildings_in = content_in
             .buildings
             .into_iter()
@@ -100,7 +100,7 @@ impl OffsetArgs {
             .map(|building| building.as_building_data().unwrap())
             .collect::<Vec<_>>();
 
-        ContentData {
+        Content {
             buildings_length: u32::try_from(buildings_out.len()).unwrap(),
             buildings: buildings_out,
             ..content_in
@@ -109,12 +109,12 @@ impl OffsetArgs {
 }
 
 fn process_middle_layer(
-    header_data_in: HeaderData,
-    content_data_in: ContentData,
+    header_data_in: Header,
+    content_data_in: Content,
     sorting_buildings: bool,
     rounding_local_offset: bool,
     sub_command: &Option<SubCommand>,
-) -> (HeaderData, ContentData) {
+) -> (Header, Content) {
     let (header_data_out, mut content_data_out) = match sub_command {
         Some(SubCommand::LinearPattern(linear_pattern_args)) => {
             (header_data_in, linear_pattern_args.apply(content_data_in))

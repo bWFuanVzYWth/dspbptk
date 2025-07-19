@@ -9,10 +9,6 @@
 * 常用的蓝图处理相关工具集，如线性变换等
 * 常用的算法生成蓝图相关工具集，如偏移密铺等
 
-## 参考 Acknowledgements
-
-* MD5f: <https://github.com/Wesmania/dspbp>
-
 ## 注意 · Warnings
 
 * 如果不设置输出路径，默认将覆写原始蓝图，没有二次确认

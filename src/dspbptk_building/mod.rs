@@ -1,7 +1,7 @@
 use nalgebra::Vector3;
 
 use crate::{
-    blueprint::data::content::building::BuildingData,
+    blueprint::data::content::building::Building,
     dspbptk_building::uuid::{index_try_from_uuid, uuid_try_from_index},
     error::DspbptkError,
 };
@@ -43,8 +43,8 @@ impl DspbptkBuildingData {
     /// * uuid无法转换为index。一般是uuid的数字太大超过了i32的范围，而这又往往是忘记了调用`fix_dspbptk_buildings_index`引起的
     /// * `parameters.len()`太长。如果报这个错说明参数列表真的太长了。原版蓝图不可能出现这个报错。
     #[expect(clippy::cast_possible_truncation)]
-    pub fn as_building_data<'a>(self) -> Result<BuildingData, DspbptkError<'a>> {
-        Ok(BuildingData {
+    pub fn as_building_data<'a>(self) -> Result<Building, DspbptkError<'a>> {
+        Ok(Building {
             index: index_try_from_uuid(self.uuid)?,
             area_index: self.area_index,
             local_offset_x: self.local_offset.x as f32,
@@ -108,7 +108,7 @@ impl Default for DspbptkBuildingData {
     }
 }
 
-impl BuildingData {
+impl Building {
     /// 将当前`Building`对象转换为`DspbptkBuildingData`结构体
     ///
     /// # Errors

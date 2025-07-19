@@ -5,7 +5,7 @@ use nom::{
 };
 
 use crate::{
-    blueprint::data::header::HeaderData,
+    blueprint::data::header::Header,
     error::{
         DspbptkError::{self, BrokenHeader},
         DspbptkWarn::{self, UnknownAfterHeader},
@@ -28,7 +28,7 @@ fn take_till_comma(string: &str) -> IResult<&str, &str> {
     take_till(|c| c == ',')(string)
 }
 
-fn parse_non_finish(string: &str) -> IResult<&str, HeaderData> {
+fn parse_non_finish(string: &str) -> IResult<&str, Header> {
     let unknown = string;
 
     let (unknown, layout) = preceded(tag_blueprint, take_till_comma).parse(unknown)?;
@@ -44,7 +44,7 @@ fn parse_non_finish(string: &str) -> IResult<&str, HeaderData> {
 
     Ok((
         unknown,
-        HeaderData {
+        Header {
             layout: layout.to_string(),
             icons_0: icons_0.to_string(),
             icons_1: icons_1.to_string(),
@@ -63,7 +63,7 @@ fn parse_non_finish(string: &str) -> IResult<&str, HeaderData> {
 /// # Errors
 /// 可能的原因：
 /// * 蓝图的header已经损坏，或编码不受支持
-pub fn parse(string: &'_ str) -> Result<(HeaderData, Vec<DspbptkWarn>), DspbptkError<'_>> {
+pub fn parse(string: &'_ str) -> Result<(Header, Vec<DspbptkWarn>), DspbptkError<'_>> {
     let (unknown, data) = parse_non_finish(string).finish().map_err(BrokenHeader)?;
     match unknown.len() {
         0 => Ok((data, Vec::new())),
@@ -72,7 +72,7 @@ pub fn parse(string: &'_ str) -> Result<(HeaderData, Vec<DspbptkWarn>), DspbptkE
 }
 
 #[must_use]
-pub fn serialization(data: &HeaderData) -> String {
+pub fn serialization(data: &Header) -> String {
     format!(
         "BLUEPRINT:0,{},{},{},{},{},{},0,{},{},{},{}",
         data.layout,
@@ -90,7 +90,7 @@ pub fn serialization(data: &HeaderData) -> String {
 
 #[cfg(test)]
 mod test {
-    use crate::blueprint::data::header::HeaderData;
+    use crate::blueprint::data::header::Header;
 
     use super::*;
 
@@ -103,7 +103,7 @@ mod test {
         assert_eq!(
             result.ok(),
             Some((
-                HeaderData {
+                Header {
                     layout: "9".to_string(),
                     icons_0: "0".to_string(),
                     icons_1: "1".to_string(),
@@ -123,7 +123,7 @@ mod test {
 
     #[test]
     fn test_serialization() {
-        let header = HeaderData {
+        let header = Header {
             layout: "9".to_string(),
             icons_0: "0".to_string(),
             icons_1: "1".to_string(),

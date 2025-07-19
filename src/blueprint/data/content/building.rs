@@ -1,14 +1,17 @@
+use num_enum::IntoPrimitive;
 
 pub const INDEX_NULL: i32 = -1;
 
-pub enum BuildingDataVersion {
-    ZERO,
-    NEG100,
-    NEG101,
+#[derive(IntoPrimitive)]
+#[repr(i32)]
+pub enum Version {
+    ZERO = 0,
+    Neg100 = -100,
+    Neg101 = -101,
 }
 
 #[derive(Debug, Clone, PartialEq)]
-pub struct BuildingData {
+pub struct Building {
     pub index: i32,
     pub area_index: i8,
     pub local_offset_x: f32,
@@ -39,7 +42,7 @@ pub struct BuildingData {
     pub parameters: Vec<i32>,
 }
 
-impl Default for BuildingData {
+impl Default for Building {
     fn default() -> Self {
         Self {
             index: INDEX_NULL,

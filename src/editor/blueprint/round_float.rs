@@ -1,6 +1,6 @@
-use crate::blueprint::data::content::building::BuildingData;
+use crate::blueprint::data::content::building::Building;
 
-impl BuildingData {
+impl Building {
     pub fn round_float(&mut self) {
         const ROUND_SCALE_POSITION: f32 = 300.0;
         const ROUND_SCALE_ANGLE: f32 = 20.0;

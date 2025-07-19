@@ -1,5 +1,5 @@
 #[derive(Debug, Clone, Eq, PartialEq)]
-pub struct HeaderData {
+pub struct Header {
     pub layout: String,
     pub icons_0: String,
     pub icons_1: String,
@@ -13,7 +13,7 @@ pub struct HeaderData {
     pub unknown: String,
 }
 
-impl Default for HeaderData {
+impl Default for Header {
     fn default() -> Self {
         Self {
             layout: "0".to_string(),

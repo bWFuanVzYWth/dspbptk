@@ -5,16 +5,14 @@ use nom::{
     number::complete::{le_f32, le_i8, le_i16, le_i32, le_u16},
 };
 
-use crate::blueprint::data::content::building::BuildingData;
-
-// FIXME 这种硬编码常量应该放在这里吗？
-const NEG_100: i32 = -100; // 9C FF FF FF
+use crate::blueprint::data::content::building::{Building, Version};
 
 #[expect(clippy::similar_names)]
-pub fn deserialization_version_neg100(bin: &[u8]) -> IResult<&[u8], BuildingData> {
+pub fn deserialization_version_neg100(bin: &[u8]) -> IResult<&[u8], Building> {
     let unknown = bin;
 
-    let (unknown, _version) = tag((NEG_100).to_le_bytes().as_slice())(unknown)?;
+    let (unknown, _version) =
+        tag(i32::from(Version::Neg100).to_le_bytes().as_slice())(unknown)?;
     let (unknown, index) = le_i32(unknown)?;
     let (unknown, area_index) = le_i8(unknown)?;
     let (unknown, local_offset_x) = le_f32(unknown)?;
@@ -43,7 +41,7 @@ pub fn deserialization_version_neg100(bin: &[u8]) -> IResult<&[u8], BuildingData
 
     Ok((
         unknown,
-        BuildingData {
+        Building {
             index,
             area_index,
             local_offset_x,
@@ -76,8 +74,8 @@ pub fn deserialization_version_neg100(bin: &[u8]) -> IResult<&[u8], BuildingData
     ))
 }
 
-pub fn serialization_version_neg100(bin: &mut Vec<u8>, data: &BuildingData) {
-    bin.extend_from_slice(&(NEG_100).to_le_bytes());
+pub fn serialization_version_neg100(bin: &mut Vec<u8>, data: &Building) {
+    bin.extend_from_slice(&(i32::from(Version::Neg100)).to_le_bytes());
     bin.extend_from_slice(&data.index.to_le_bytes());
     bin.extend_from_slice(&data.area_index.to_le_bytes());
     bin.extend_from_slice(&data.local_offset_x.to_le_bytes());
@@ -124,7 +122,7 @@ mod test {
             0, 4, 0, 27, 0, 0, 0, 28, 0, 0, 0, 29, 0, 0, 0, 30, 0, 0, 0,
         ];
 
-        let data_test = BuildingData {
+        let data_test = Building {
             index: 1,
             area_index: 2,
             local_offset_x: 3.1,
@@ -163,7 +161,7 @@ mod test {
 
     #[test]
     fn test_deserialization_version_neg100() {
-        let data_expected = BuildingData {
+        let data_expected = Building {
             index: 1,
             area_index: 2,
             local_offset_x: 3.1,
