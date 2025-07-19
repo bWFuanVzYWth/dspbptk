@@ -8,18 +8,15 @@ use std::{
 
 use clap::Parser;
 use dspbptk::{
-    blueprint::editor::sort::{fix_buildings_index, sort_buildings},
-    dspbptk_blueprint::convert::fix_dspbptk_buildings_index,
-    io::LegalBlueprintFileType,
+    self,
+    blueprint::Content,
+    io::{self, FileType, LegalBlueprintFileType},
 };
 use log::{error, warn};
 use nalgebra::Vector3;
 use rayon::prelude::*;
 use walkdir::WalkDir;
 
-use dspbptk::blueprint::data::content::Content;
-use dspbptk::blueprint::data::header::Header;
-use dspbptk::io::{self, FileType};
 fn collect_files(path_in: &Path) -> Vec<PathBuf> {
     WalkDir::new(path_in)
         .into_iter()
@@ -62,15 +59,16 @@ impl LinearPatternArgs {
         let dspbptk_buildings_in = content_in
             .buildings
             .into_iter()
-            .map(|building| dspbptk::dspbptk_blueprint::data::Building::try_from(building).unwrap())
+            .map(|building| dspbptk::dspbptk::Building::try_from(building).unwrap())
             .collect::<Vec<_>>();
         let basis_vector = Vector3::<f64>::new(self.x, self.y, self.z);
-        let dspbptk_buildings_out =
-            fix_dspbptk_buildings_index(dspbptk::editor::dspbptk::offset::linear_pattern(
+        let dspbptk_buildings_out = dspbptk::dspbptk::convert::fix_dspbptk_buildings_index(
+            dspbptk::editor::dspbptk::offset::linear_pattern(
                 &dspbptk_buildings_in,
                 &basis_vector,
                 self.n,
-            ));
+            ),
+        );
         let buildings_out = dspbptk_buildings_out
             .into_iter()
             .map(|building| building.try_into().unwrap())
@@ -89,10 +87,10 @@ impl OffsetArgs {
         let dspbptk_buildings_in = content_in
             .buildings
             .into_iter()
-            .map(|building| dspbptk::dspbptk_blueprint::data::Building::try_from(building).unwrap())
+            .map(|building| dspbptk::dspbptk::Building::try_from(building).unwrap())
             .collect::<Vec<_>>();
         let basis_vector = Vector3::<f64>::new(self.x, self.y, self.z);
-        let dspbptk_buildings_out = fix_dspbptk_buildings_index(
+        let dspbptk_buildings_out = dspbptk::dspbptk::convert::fix_dspbptk_buildings_index(
             dspbptk::editor::dspbptk::offset::offset(dspbptk_buildings_in, &basis_vector),
         );
         let buildings_out = dspbptk_buildings_out
@@ -109,12 +107,12 @@ impl OffsetArgs {
 }
 
 fn process_middle_layer(
-    header_data_in: Header,
+    header_data_in: dspbptk::blueprint::Header,
     content_data_in: Content,
     sorting_buildings: bool,
     rounding_local_offset: bool,
     sub_command: &Option<SubCommand>,
-) -> (Header, Content) {
+) -> (dspbptk::blueprint::Header, Content) {
     let (header_data_out, mut content_data_out) = match sub_command {
         Some(SubCommand::LinearPattern(linear_pattern_args)) => {
             (header_data_in, linear_pattern_args.apply(content_data_in))
@@ -132,8 +130,10 @@ fn process_middle_layer(
     }
 
     if sorting_buildings {
-        content_data_out.buildings = sort_buildings(content_data_out.buildings, true);
-        content_data_out.buildings = fix_buildings_index(content_data_out.buildings);
+        content_data_out.buildings =
+            dspbptk::blueprint::editor::sort::sort_buildings(content_data_out.buildings, true);
+        content_data_out.buildings =
+            dspbptk::blueprint::editor::sort::fix_buildings_index(content_data_out.buildings);
     }
 
     (header_data_out, content_data_out)

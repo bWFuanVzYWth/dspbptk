@@ -17,7 +17,7 @@ const SORTER_HIGH: i16 = 2019;
 pub type F32x12 = (f32, f32, f32, f32, f32, f32, f32, f32, f32, f32, f32, f32);
 
 #[expect(clippy::similar_names)]
-pub fn deserialization_version_neg101(bin: &[u8]) -> IResult<&[u8], Building> {
+pub fn deserialization(bin: &[u8]) -> IResult<&[u8], Building> {
     let unknown = bin;
 
     let (unknown, _version) = tag(i32::from(Version::Neg101).to_le_bytes().as_slice())(unknown)?;
@@ -96,7 +96,7 @@ pub fn deserialization_version_neg101(bin: &[u8]) -> IResult<&[u8], Building> {
     ))
 }
 
-pub fn serialization_version_neg101(bin: &mut Vec<u8>, data: &Building) {
+pub fn serialization(bin: &mut Vec<u8>, data: &Building) {
     bin.extend_from_slice(&i32::from(Version::Neg101).to_le_bytes());
     bin.extend_from_slice(&data.index.to_le_bytes());
     bin.extend_from_slice(&data.item_id.to_le_bytes());
@@ -282,7 +282,7 @@ mod test {
         };
 
         let mut bin_test = Vec::new();
-        serialization_version_neg101(&mut bin_test, &data_test);
+        serialization(&mut bin_test, &data_test);
 
         assert_eq!(bin_test, bin_expected);
     }
@@ -326,7 +326,7 @@ mod test {
             26, 0, 4, 0, 27, 0, 0, 0, 28, 0, 0, 0, 29, 0, 0, 0, 30, 0, 0, 0,
         ];
 
-        let test = deserialization_version_neg101(&bin_test).finish();
+        let test = deserialization(&bin_test).finish();
 
         assert_eq!(test, Ok(([].as_slice(), data_expected)));
     }
@@ -371,7 +371,7 @@ mod test {
         };
 
         let mut bin_test = Vec::new();
-        serialization_version_neg101(&mut bin_test, &data_test);
+        serialization(&mut bin_test, &data_test);
 
         assert_eq!(bin_test, bin_expected);
     }
@@ -415,7 +415,7 @@ mod test {
             21, 22, 23, 24, 25, 0, 26, 0, 4, 0, 27, 0, 0, 0, 28, 0, 0, 0, 29, 0, 0, 0, 30, 0, 0, 0,
         ];
 
-        let test = deserialization_version_neg101(&bin_test).finish();
+        let test = deserialization(&bin_test).finish();
 
         assert_eq!(test, Ok(([].as_slice(), data_expected)));
     }
@@ -462,7 +462,7 @@ mod test {
         };
 
         let mut bin_test = Vec::new();
-        serialization_version_neg101(&mut bin_test, &data_test);
+        serialization(&mut bin_test, &data_test);
 
         assert_eq!(bin_test, bin_expected);
     }
@@ -508,7 +508,7 @@ mod test {
             29, 0, 0, 0, 30, 0, 0, 0,
         ];
 
-        let test = deserialization_version_neg101(&bin_test).finish();
+        let test = deserialization(&bin_test).finish();
 
         assert_eq!(test, Ok(([].as_slice(), data_expected)));
     }

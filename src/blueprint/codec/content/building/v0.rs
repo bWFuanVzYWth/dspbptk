@@ -7,7 +7,7 @@ use nom::{
 use crate::blueprint::data::content::building::Building;
 
 #[expect(clippy::similar_names)]
-pub fn deserialization_version_0(bin: &[u8]) -> IResult<&[u8], Building> {
+pub fn deserialization(bin: &[u8]) -> IResult<&[u8], Building> {
     let unknown = bin;
 
     let (unknown, index) = le_i32(unknown)?;
@@ -70,7 +70,7 @@ pub fn deserialization_version_0(bin: &[u8]) -> IResult<&[u8], Building> {
     ))
 }
 
-pub fn serialization_version_0(bin: &mut Vec<u8>, data: &Building) {
+pub fn serialization(bin: &mut Vec<u8>, data: &Building) {
     bin.extend_from_slice(&data.index.to_le_bytes());
     bin.extend_from_slice(&data.area_index.to_le_bytes());
     bin.extend_from_slice(&data.local_offset_x.to_le_bytes());
@@ -148,7 +148,7 @@ mod test {
         };
 
         let mut bin_test = Vec::new();
-        serialization_version_0(&mut bin_test, &data_test);
+        serialization(&mut bin_test, &data_test);
 
         assert_eq!(bin_test, bin_expected);
     }
@@ -193,7 +193,7 @@ mod test {
             0, 0, 0, 30, 0, 0, 0,
         ];
 
-        let test = deserialization_version_0(&bin_test).finish();
+        let test = deserialization(&bin_test).finish();
 
         assert_eq!(test, Ok(([].as_slice(), data_expected)));
     }

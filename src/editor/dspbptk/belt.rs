@@ -1,4 +1,4 @@
-use crate::dspbptk_blueprint::data::Building;
+use crate::dspbptk::Building;
 
 /// 把vec中的传送带节点连接成一条整体，注意这个函数并不检查建筑是否为传送带
 #[must_use]

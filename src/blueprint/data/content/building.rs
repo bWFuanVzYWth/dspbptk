@@ -5,7 +5,7 @@ pub const INDEX_NULL: i32 = -1;
 #[derive(IntoPrimitive)]
 #[repr(i32)]
 pub enum Version {
-    ZERO = 0,
+    Zero = 0,
     Neg100 = -100,
     Neg101 = -101,
 }
