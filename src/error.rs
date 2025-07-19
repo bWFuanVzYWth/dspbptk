@@ -4,12 +4,12 @@ use thiserror::Error;
 pub enum DspbptkError<'a> {
     #[error("can not read file: {path:?}, because {source}")]
     CanNotReadFile {
-        path: &'a std::path::Path,
+        path: std::path::PathBuf,
         source: std::io::Error,
     },
     #[error("can not write file: {path:?}, because {source}")]
     CanNotWriteFile {
-        path: &'a std::path::Path,
+        path: std::path::PathBuf,
         source: std::io::Error,
     },
     #[error("unknown file type")]
@@ -59,9 +59,9 @@ pub enum DspbptkEditWarn {
 }
 
 #[derive(Error, Debug)]
-pub enum DspbptkInfo<'a> {
+pub enum DspbptkInfo {
     #[error("read file: {0:?}")]
-    ReadFile(&'a std::path::PathBuf),
+    ReadFile(std::path::PathBuf),
     #[error("write file: {0:?}")]
-    WriteFile(&'a std::path::PathBuf),
+    WriteFile(std::path::PathBuf),
 }

@@ -5,10 +5,7 @@ use clap::ValueEnum;
 use crate::{
     blueprint::{
         codec,
-        data::{
-            content::{self, Content},
-            header::{self, Header},
-        },
+        data::{content::Content, header::Header},
     },
     error::{
         DspbptkError::{self, CanNotReadFile, CanNotWriteFile, UnknownFileType},
@@ -36,11 +33,14 @@ pub enum FileType {
 /// # Errors
 /// 可能的原因：
 /// 无法为将要输出的文件创建父文件夹，一般是权限之类的问题
-pub fn create_father_dir(path: &'_ PathBuf) -> Result<(), DspbptkError<'_>> {
+pub fn create_father_dir(path: &Path) -> Result<(), DspbptkError<'_>> {
     let parent = path
         .parent()
         .map_or_else(|| PathBuf::from("."), std::path::Path::to_path_buf);
-    std::fs::create_dir_all(&parent).map_err(|e| CanNotWriteFile { path, source: e })
+    std::fs::create_dir_all(&parent).map_err(|e| CanNotWriteFile {
+        path: path.to_path_buf(),
+        source: e,
+    })
 }
 
 #[must_use]
@@ -54,18 +54,24 @@ pub fn classify_file_type(entry: &Path) -> FileType {
         })
 }
 
-fn read_content_file(path: &'_ Path) -> Result<Vec<u8>, DspbptkError<'_>> {
-    std::fs::read(path).map_err(|e| CanNotReadFile { path, source: e })
+fn read_content_file(path: &Path) -> Result<Vec<u8>, DspbptkError<'_>> {
+    std::fs::read(path).map_err(|e| CanNotReadFile {
+        path: path.to_path_buf(),
+        source: e,
+    })
 }
 
-fn read_blueprint_file(path: &'_ Path) -> Result<String, DspbptkError<'_>> {
-    std::fs::read_to_string(path).map_err(|e| CanNotReadFile { path, source: e })
+fn read_blueprint_file(path: &Path) -> Result<String, DspbptkError<'_>> {
+    std::fs::read_to_string(path).map_err(|e| CanNotReadFile {
+        path: path.to_path_buf(),
+        source: e,
+    })
 }
 
 /// # Errors
 /// 可能的原因：
 /// * 文件的后缀名不受支持
-pub fn read_file(path: &'_ Path) -> Result<BlueprintKind, DspbptkError<'_>> {
+pub fn read_file(path: &Path) -> Result<BlueprintKind, DspbptkError<'_>> {
     match classify_file_type(path) {
         FileType::Blueprint(LegalBlueprintFileType::Txt) => {
             let blueprint_string = read_blueprint_file(path)?;
@@ -79,23 +85,26 @@ pub fn read_file(path: &'_ Path) -> Result<BlueprintKind, DspbptkError<'_>> {
     }
 }
 
-fn write_blueprint_file(path: &'_ PathBuf, blueprint: String) -> Result<(), DspbptkError<'_>> {
+fn write_blueprint_file(path: &Path, blueprint: String) -> Result<(), DspbptkError<'_>> {
     create_father_dir(path)?;
-    std::fs::write(path, blueprint).map_err(|e| CanNotWriteFile { path, source: e })
+    std::fs::write(path, blueprint).map_err(|e| CanNotWriteFile {
+        path: path.to_path_buf(),
+        source: e,
+    })
 }
 
-fn write_content_file(path: &'_ PathBuf, content: Vec<u8>) -> Result<(), DspbptkError<'_>> {
+fn write_content_file(path: &Path, content: Vec<u8>) -> Result<(), DspbptkError<'_>> {
     create_father_dir(path)?;
-    std::fs::write(path, content).map_err(|e| CanNotWriteFile { path, source: e })
+    std::fs::write(path, content).map_err(|e| CanNotWriteFile {
+        path: path.to_path_buf(),
+        source: e,
+    })
 }
 
 /// # Errors
 /// 可能的错误：
 /// * 无法为待写入硬盘的文件创建文件夹，一般是权限之类的问题
-pub fn write_file(
-    path: &'_ PathBuf,
-    blueprint_kind: BlueprintKind,
-) -> Result<(), DspbptkError<'_>> {
+pub fn write_file(path: &Path, blueprint_kind: BlueprintKind) -> Result<(), DspbptkError<'_>> {
     match blueprint_kind {
         BlueprintKind::Txt(blueprint) => write_blueprint_file(path, blueprint),
         BlueprintKind::Content(content) => write_content_file(path, content),
