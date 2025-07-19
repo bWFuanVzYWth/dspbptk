@@ -8,9 +8,7 @@ use std::{
 
 use clap::Parser;
 use dspbptk::{
-    dspbptk_building::fix_dspbptk_buildings_index,
-    editor::blueprint::sort::{fix_buildings_index, sort_buildings},
-    io::LegalBlueprintFileType,
+    blueprint::editor::sort::{fix_buildings_index, sort_buildings}, dspbptk_blueprint::convert::fix_dspbptk_buildings_index, io::LegalBlueprintFileType
 };
 use log::{error, warn};
 use nalgebra::Vector3;

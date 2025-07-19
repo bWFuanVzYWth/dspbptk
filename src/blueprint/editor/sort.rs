@@ -1,11 +1,11 @@
 use std::collections::{HashMap, HashSet};
 
-use crate::blueprint::data::content::building::{self, Building};
-
 use petgraph::{
     graph::{Graph, NodeIndex},
     visit::EdgeRef,
 };
+
+use crate::blueprint::data::content::building::{self, Building};
 
 /// 对建筑进行排序。
 ///

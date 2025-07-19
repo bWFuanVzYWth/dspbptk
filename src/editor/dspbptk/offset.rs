@@ -1,8 +1,8 @@
 use nalgebra::Vector3;
 
-use crate::dspbptk_building::{DspbptkBuildingData, uuid::new_uuid};
+use crate::dspbptk_blueprint::{data::Building, uuid::new_uuid};
 
-impl DspbptkBuildingData {
+impl Building {
     #[must_use]
     pub fn offset(self, offset: &Vector3<f64>, index_offset: u128) -> Self {
         Self {
@@ -22,9 +22,9 @@ impl DspbptkBuildingData {
 
 #[must_use]
 pub fn offset(
-    module: Vec<DspbptkBuildingData>,
+    module: Vec<Building>,
     basis_vector: &Vector3<f64>,
-) -> Vec<DspbptkBuildingData> {
+) -> Vec<Building> {
     let index_offset = new_uuid();
     module
         .into_iter()
@@ -43,10 +43,10 @@ pub fn offset(
 /// 包含所有偏移后建筑模块的向量，每个模块按线性模式排列。
 #[must_use]
 pub fn linear_pattern(
-    module: &[DspbptkBuildingData],
+    module: &[Building],
     basis_vector: &Vector3<f64>,
     count: u32,
-) -> Vec<DspbptkBuildingData> {
+) -> Vec<Building> {
     (0..count)
         .flat_map(|i| {
             let offset = f64::from(i) * basis_vector;

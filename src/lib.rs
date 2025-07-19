@@ -30,7 +30,7 @@
 #![feature(array_chunks)]
 
 pub mod blueprint;
-pub mod dspbptk_building;
+pub mod dspbptk_blueprint;
 pub mod editor;
 pub mod error;
 pub mod generator;

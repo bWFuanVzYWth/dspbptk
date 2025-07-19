@@ -1,7 +1,7 @@
 use nalgebra::Vector3;
 
 use crate::{
-    dspbptk_building::{DspbptkBuildingData, uuid::some_new_uuid},
+    dspbptk_blueprint::{data::Building, uuid::some_new_uuid},
     editor::dspbptk::belt::connect_belts,
     item::Item,
 };
@@ -17,11 +17,11 @@ const SORTER_MODEL: i16 = Item::分拣器.model()[0];
 #[must_use]
 pub fn new(
     local_offset: Vector3<f64>,
-    input_obj: &DspbptkBuildingData,
+    input_obj: &Building,
     input_from_slot: i8,
-    output_obj: &DspbptkBuildingData,
+    output_obj: &Building,
     output_to_slot: i8,
-) -> Vec<DspbptkBuildingData> {
+) -> Vec<Building> {
     let (y_scale, sorter_yaw) = if input_obj.local_offset.y > output_obj.local_offset.y {
         (1.0_f64, 180.0_f64)
     } else {
@@ -29,7 +29,7 @@ pub fn new(
     };
 
     // 光子锅
-    let receiver = DspbptkBuildingData {
+    let receiver = Building {
         uuid: some_new_uuid(),
         item_id: Item::射线接收站 as i16,
         model_index: RECEIVER_MODEL,
@@ -39,7 +39,7 @@ pub fn new(
     };
 
     // 透镜带
-    let belt_lens_from_sorter = DspbptkBuildingData {
+    let belt_lens_from_sorter = Building {
         uuid: some_new_uuid(),
         item_id: Item::极速传送带 as i16,
         model_index: BELT_MODEL,
@@ -52,7 +52,7 @@ pub fn new(
         ..Default::default()
     };
 
-    let belt_lens_into_receiver = DspbptkBuildingData {
+    let belt_lens_into_receiver = Building {
         uuid: some_new_uuid(),
         item_id: Item::极速传送带 as i16,
         model_index: BELT_MODEL,
@@ -66,7 +66,7 @@ pub fn new(
     };
 
     // 分流透镜的黄爪
-    let sorter_lens_input = DspbptkBuildingData {
+    let sorter_lens_input = Building {
         uuid: some_new_uuid(),
         item_id: Item::分拣器 as i16,
         model_index: SORTER_MODEL,
@@ -91,7 +91,7 @@ pub fn new(
     let belts_lens = connect_belts(&belts_lens, None, 0, receiver.uuid, 0);
 
     // 光子带
-    let belt_photons_from_receiver = DspbptkBuildingData {
+    let belt_photons_from_receiver = Building {
         uuid: some_new_uuid(),
         item_id: Item::极速传送带 as i16,
         model_index: BELT_MODEL,
@@ -104,7 +104,7 @@ pub fn new(
         ..Default::default()
     };
 
-    let belt_photons_output = DspbptkBuildingData {
+    let belt_photons_output = Building {
         uuid: some_new_uuid(),
         item_id: Item::极速传送带 as i16,
         model_index: BELT_MODEL,

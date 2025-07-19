@@ -1,14 +1,14 @@
-use crate::dspbptk_building::DspbptkBuildingData;
+use crate::dspbptk_blueprint::data::Building;
 
 /// 把vec中的传送带节点连接成一条整体，注意这个函数并不检查建筑是否为传送带
 #[must_use]
 pub fn connect_belts(
-    belts: &[DspbptkBuildingData],
+    belts: &[Building],
     module_temp_input_obj_idx: Option<u128>,
     module_input_from_slot: i8,
     module_temp_output_obj_idx: Option<u128>,
     module_output_to_slot: i8,
-) -> Vec<DspbptkBuildingData> {
+) -> Vec<Building> {
     if belts.is_empty() {
         return Vec::new();
     }
@@ -24,8 +24,8 @@ pub fn connect_belts(
 
     let last_info = std::iter::once((module_temp_input_obj_idx, module_input_from_slot)).chain(
         std::iter::repeat((
-            DspbptkBuildingData::default().temp_input_obj_idx,
-            DspbptkBuildingData::default().input_from_slot,
+            Building::default().temp_input_obj_idx,
+            Building::default().input_from_slot,
         )),
     );
 
@@ -37,7 +37,7 @@ pub fn connect_belts(
                 ((temp_input_obj_idx, input_from_slot), (temp_output_obj_idx, output_to_slot)),
                 belt,
             )| {
-                DspbptkBuildingData {
+                Building {
                     temp_output_obj_idx,
                     temp_input_obj_idx,
                     output_to_slot,

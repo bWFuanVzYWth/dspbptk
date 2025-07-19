@@ -2,15 +2,15 @@ use nalgebra::Vector3;
 
 use dspbptk::{
     blueprint::data::{content::Content, header::Header},
-    dspbptk_building::{
-        DspbptkBuildingData, fix_dspbptk_buildings_index, uuid::some_new_uuid as new_some_uuid,
+    dspbptk_blueprint::{
+        convert::fix_dspbptk_buildings_index, data::Building, uuid::some_new_uuid as new_some_uuid
     },
     editor::{
         dspbptk::belt::connect_belts,
         unit_conversion::{arc_from_grid, grid_from_arc, local_offset_to_direction},
     },
     error::DspbptkError::{self, UnexpectBuildingsCount},
-    generator::tesselation::{Module, module::receiver_1i1o},
+    generator::tesselation::{module::receiver_1i1o, Module},
     io::{BlueprintKind, LegalBlueprintFileType},
     item::Item,
 };
@@ -79,9 +79,9 @@ fn calculate_layout() -> Vec<Row> {
 }
 
 fn find_nearest(
-    buildings: &[DspbptkBuildingData],
+    buildings: &[Building],
     reference_local_offset: Vector3<f64>,
-) -> &DspbptkBuildingData {
+) -> &Building {
     buildings
         .iter()
         .max_by(|a, b| {
@@ -99,9 +99,9 @@ fn find_nearest(
 
 fn receivers_with_io(
     row: &Row,
-    lens_belts: &[DspbptkBuildingData],
-    photons_belts: &[DspbptkBuildingData],
-) -> Vec<DspbptkBuildingData> {
+    lens_belts: &[Building],
+    photons_belts: &[Building],
+) -> Vec<Building> {
     (0..row.n)
         .map(|i| {
             let local_offset = Vector3::new(
@@ -131,7 +131,7 @@ fn receivers_with_io(
         .concat()
 }
 
-fn main_belts(row: &Row) -> Vec<DspbptkBuildingData> {
+fn main_belts(row: &Row) -> Vec<Building> {
     const BELT_GRID: f64 = 1.83;
     const BELT_ARC: f64 = arc_from_grid(BELT_GRID);
 
@@ -144,7 +144,7 @@ fn main_belts(row: &Row) -> Vec<DspbptkBuildingData> {
     let belts_count = (y.cos() * (x_arc / BELT_ARC)).ceil() as u64;
 
     (0..=belts_count)
-        .map(|i| DspbptkBuildingData {
+        .map(|i| Building {
             uuid: new_some_uuid(),
             item_id: Item::极速传送带 as i16,
             model_index: Item::极速传送带.model()[0],
@@ -158,7 +158,7 @@ fn main_belts(row: &Row) -> Vec<DspbptkBuildingData> {
         .collect::<Vec<_>>()
 }
 
-fn layout_to_buildings(rows: &[Row]) -> Vec<DspbptkBuildingData> {
+fn layout_to_buildings(rows: &[Row]) -> Vec<Building> {
     // 生成主干传送带
     let belts_in_rows = rows
         .iter()
