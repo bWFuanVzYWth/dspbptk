@@ -166,7 +166,7 @@ fn process_one_file(
     // TODO 数据统计
 }
 
-fn process_workflow(args: &Args) {
+fn parallel_process(args: &Args) {
     let zopfli_options = configure_zopfli_options(args);
     let path_in = &args.input;
     let path_out = args.output.as_deref().unwrap_or(path_in);
@@ -300,5 +300,5 @@ fn main() {
     eprintln!("https://github.com/bWFuanVzYWth/dspbptk");
     let args = Args::parse();
 
-    process_workflow(&args);
+    parallel_process(&args);
 }

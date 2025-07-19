@@ -2,6 +2,8 @@ use std::f64::consts::PI;
 
 use nalgebra::Vector3;
 
+// TODO 跨纬度的坐标计算
+
 /// 纬线长度(格)
 pub const EQUATORIAL_GRID: f64 = 1000.0;
 

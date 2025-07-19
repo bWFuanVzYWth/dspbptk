@@ -1,8 +1,9 @@
 use num_enum::IntoPrimitive;
+use strum_macros::EnumIter;
 
 pub const INDEX_NULL: i32 = -1;
 
-#[derive(IntoPrimitive)]
+#[derive(IntoPrimitive, EnumIter)]
 #[repr(i32)]
 pub enum Version {
     Zero = 0,

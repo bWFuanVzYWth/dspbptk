@@ -7,7 +7,6 @@ use nom::{
 
 use crate::blueprint::data::content::building::{Building, Version};
 
-// FIXME 这种硬编码常量应该放在这里吗？
 const BELT_LOW: i16 = 2001;
 const BELT_HIGH: i16 = 2009;
 const SORTER_LOW: i16 = 2011;

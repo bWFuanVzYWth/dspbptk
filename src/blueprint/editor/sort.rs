@@ -77,31 +77,6 @@ fn combine_sorted_results(
         .collect::<Vec<_>>()
 }
 
-#[must_use]
-pub fn fix_buildings_index(buildings: Vec<Building>) -> Vec<Building> {
-    let lut = buildings
-        .iter()
-        .zip(0..=i32::MAX)
-        .map(|(building, index)| (building.index, index))
-        .collect::<HashMap<_, _>>();
-
-    buildings
-        .into_iter()
-        .map(|building| Building {
-            index: *lut.get(&building.index).unwrap_or(&building::INDEX_NULL),
-            temp_output_obj_idx: lut
-                .get(&building.temp_output_obj_idx)
-                .copied()
-                .unwrap_or(building::INDEX_NULL),
-            temp_input_obj_idx: lut
-                .get(&building.temp_input_obj_idx)
-                .copied()
-                .unwrap_or(building::INDEX_NULL),
-            ..building
-        })
-        .collect()
-}
-
 /// 根据传送带连接关系，进行广义的拓扑排序。假定所有的建筑都是传送带。
 ///
 /// 传送带节点通过`temp_output_obj_idx`记录输出连接（可为`INDEX_NULL`），输入连接不记录，永远都是`INDEX_NULL`。

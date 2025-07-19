@@ -1,6 +1,8 @@
+use num_enum::IntoPrimitive;
 use strum_macros::EnumIter;
 
-#[derive(Debug, EnumIter)]
+#[derive(Debug, EnumIter, IntoPrimitive)]
+#[repr(i16)]
 pub enum Item {
     地基 = 1131,
     传送带 = 2001,
