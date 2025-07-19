@@ -1,9 +1,8 @@
+use crate::blueprint::Area;
 use nom::{
     IResult,
     number::complete::{le_i8, le_i16},
 };
-
-use crate::blueprint::data::content::area::Area;
 
 /// # Errors
 /// 可能的原因：

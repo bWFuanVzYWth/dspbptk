@@ -1,3 +1,4 @@
+use crate::blueprint::{Building, Version::Neg100};
 use nom::{
     IResult, Parser,
     bytes::complete::tag,
@@ -5,13 +6,11 @@ use nom::{
     number::complete::{le_f32, le_i8, le_i16, le_i32, le_u16},
 };
 
-use crate::blueprint::data::content::building::{Building, Version};
-
 #[expect(clippy::similar_names)]
 pub fn deserialization(bin: &[u8]) -> IResult<&[u8], Building> {
     let unknown = bin;
 
-    let (unknown, _version) = tag(i32::from(Version::Neg100).to_le_bytes().as_slice())(unknown)?;
+    let (unknown, _version) = tag(i32::from(Neg100).to_le_bytes().as_slice())(unknown)?;
     let (unknown, index) = le_i32(unknown)?;
     let (unknown, area_index) = le_i8(unknown)?;
     let (unknown, local_offset_x) = le_f32(unknown)?;
@@ -74,7 +73,7 @@ pub fn deserialization(bin: &[u8]) -> IResult<&[u8], Building> {
 }
 
 pub fn serialization(bin: &mut Vec<u8>, data: &Building) {
-    bin.extend_from_slice(&(i32::from(Version::Neg100)).to_le_bytes());
+    bin.extend_from_slice(&(i32::from(Neg100)).to_le_bytes());
     bin.extend_from_slice(&data.index.to_le_bytes());
     bin.extend_from_slice(&data.area_index.to_le_bytes());
     bin.extend_from_slice(&data.local_offset_x.to_le_bytes());

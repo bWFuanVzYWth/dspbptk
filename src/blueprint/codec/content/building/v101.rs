@@ -1,3 +1,4 @@
+use crate::blueprint::{Building, Version::Neg101};
 use nom::{
     IResult, Parser,
     bytes::complete::tag,
@@ -5,21 +6,19 @@ use nom::{
     number::complete::{le_f32, le_i8, le_i16, le_i32, le_u16},
 };
 
-use crate::blueprint::data::content::building::{Building, Version};
-
 const BELT_LOW: i16 = 2001;
 const BELT_HIGH: i16 = 2009;
 const SORTER_LOW: i16 = 2011;
 const SORTER_HIGH: i16 = 2019;
 
 // 定义过于复杂的类型，避免使用时不小心写错
-pub type F32x12 = (f32, f32, f32, f32, f32, f32, f32, f32, f32, f32, f32, f32);
+type F32x12 = (f32, f32, f32, f32, f32, f32, f32, f32, f32, f32, f32, f32);
 
 #[expect(clippy::similar_names)]
 pub fn deserialization(bin: &[u8]) -> IResult<&[u8], Building> {
     let unknown = bin;
 
-    let (unknown, _version) = tag(i32::from(Version::Neg101).to_le_bytes().as_slice())(unknown)?;
+    let (unknown, _version) = tag(i32::from(Neg101).to_le_bytes().as_slice())(unknown)?;
     let (unknown, index) = le_i32(unknown)?;
     let (unknown, item_id) = le_i16(unknown)?;
     let (unknown, model_index) = le_i16(unknown)?;
@@ -96,7 +95,7 @@ pub fn deserialization(bin: &[u8]) -> IResult<&[u8], Building> {
 }
 
 pub fn serialization(bin: &mut Vec<u8>, data: &Building) {
-    bin.extend_from_slice(&i32::from(Version::Neg101).to_le_bytes());
+    bin.extend_from_slice(&i32::from(Neg101).to_le_bytes());
     bin.extend_from_slice(&data.index.to_le_bytes());
     bin.extend_from_slice(&data.item_id.to_le_bytes());
     bin.extend_from_slice(&data.model_index.to_le_bytes());

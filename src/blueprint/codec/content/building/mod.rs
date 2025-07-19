@@ -2,9 +2,11 @@ mod v0;
 mod v100;
 mod v101;
 
+use crate::blueprint::{
+    Building,
+    Version::{self, Neg100, Neg101, Zero},
+};
 use nom::{IResult, Parser, branch::alt};
-
-use crate::blueprint::{Building, Version};
 
 /// # Errors
 /// 可能的原因：
@@ -21,8 +23,8 @@ pub fn deserialization(bin: &[u8]) -> IResult<&[u8], Building> {
 
 pub fn serialization(bin: &mut Vec<u8>, data: &Building, version: &Version) {
     match version {
-        Version::Zero => v0::serialization(bin, data),
-        Version::Neg100 => v100::serialization(bin, data),
-        Version::Neg101 => v101::serialization(bin, data),
+        Zero => v0::serialization(bin, data),
+        Neg100 => v100::serialization(bin, data),
+        Neg101 => v101::serialization(bin, data),
     }
 }

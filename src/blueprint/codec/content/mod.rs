@@ -1,18 +1,17 @@
 pub mod area;
 pub mod building;
 
-use nom::{
-    IResult, Parser,
-    multi::count,
-    number::complete::{le_i32, le_u8, le_u32},
-};
-
 use crate::{
     blueprint::data::content::{Content, building::Version},
     error::{
         DspbptkError::{self, BrokenBase64, BrokenContent, BrokenGzip, CanNotCompressGzip},
         DspbptkWarn::{self, FewUnknownAfterContent, LotUnknownAfterContent},
     },
+};
+use nom::{
+    IResult, Parser,
+    multi::count,
+    number::complete::{le_i32, le_u8, le_u32},
 };
 
 impl Content {
