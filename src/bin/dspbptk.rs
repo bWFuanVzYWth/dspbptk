@@ -62,7 +62,7 @@ impl LinearPatternArgs {
         let dspbptk_buildings_in = content_in
             .buildings
             .into_iter()
-            .map(|building| building.as_dspbptk_building_data().unwrap())
+            .map(|building| dspbptk::dspbptk_blueprint::data::Building::try_from(building).unwrap())
             .collect::<Vec<_>>();
         let basis_vector = Vector3::<f64>::new(self.x, self.y, self.z);
         let dspbptk_buildings_out =
@@ -73,7 +73,7 @@ impl LinearPatternArgs {
             ));
         let buildings_out = dspbptk_buildings_out
             .into_iter()
-            .map(|building| building.as_building_data().unwrap())
+            .map(|building| building.try_into().unwrap())
             .collect::<Vec<_>>();
 
         Content {
@@ -89,7 +89,7 @@ impl OffsetArgs {
         let dspbptk_buildings_in = content_in
             .buildings
             .into_iter()
-            .map(|building| building.as_dspbptk_building_data().unwrap())
+            .map(|building| dspbptk::dspbptk_blueprint::data::Building::try_from(building).unwrap())
             .collect::<Vec<_>>();
         let basis_vector = Vector3::<f64>::new(self.x, self.y, self.z);
         let dspbptk_buildings_out = fix_dspbptk_buildings_index(
@@ -97,7 +97,7 @@ impl OffsetArgs {
         );
         let buildings_out = dspbptk_buildings_out
             .into_iter()
-            .map(|building| building.as_building_data().unwrap())
+            .map(|building| building.try_into().unwrap())
             .collect::<Vec<_>>();
 
         Content {

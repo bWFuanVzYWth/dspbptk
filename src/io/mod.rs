@@ -111,7 +111,6 @@ pub fn write_file(path: &Path, blueprint_kind: BlueprintKind) -> Result<(), Dspb
     }
 }
 
-// FIXME 这里的blueprint_content_bin很丑
 /// 蓝图工具的前端，可读取并解码多种格式的蓝图数据
 ///
 /// # Errors

@@ -205,7 +205,7 @@ fn main() -> Result<(), DspbptkError> {
         buildings_length: u32::try_from(buildings.len()).map_err(UnexpectBuildingsCount)?,
         buildings: buildings
             .into_iter()
-            .map(|dspbptk_building| dspbptk_building.as_building_data().unwrap())
+            .map(|dspbptk_building| dspbptk_building.try_into().unwrap())
             .collect(),
         ..Default::default()
     };
