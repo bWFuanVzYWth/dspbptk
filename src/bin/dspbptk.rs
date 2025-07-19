@@ -10,7 +10,10 @@ use clap::Parser;
 use dspbptk::{
     self,
     blueprint::Content,
-    dspbptk_blueprint::editor::offset::{self, linear_pattern},
+    dspbptk_blueprint::editor::{
+        fix_uuid::fix_dspbptk_buildings_index,
+        offset::{self, linear_pattern},
+    },
     workflow::{
         self, FileType, LegalBlueprintFileType,
         io::{classify_file_type, read_file, write_file},
@@ -64,27 +67,20 @@ impl workflow::process::DspbptkMap for SubCommand {
             .map(|building| dspbptk::dspbptk_blueprint::Building::try_from(building).unwrap())
             .collect::<Vec<_>>();
 
-        let dspbptk_buildings_out =
-            match self {
-                SubCommand::LinearPattern(linear_pattern_args) => {
-                    let basis_vector = Vector3::<f64>::new(
-                        linear_pattern_args.x,
-                        linear_pattern_args.y,
-                        linear_pattern_args.z,
-                    );
-
-                    dspbptk::dspbptk_blueprint::convert::fix_dspbptk_buildings_index(
-                        linear_pattern(&dspbptk_buildings_in, &basis_vector, linear_pattern_args.n),
-                    )
-                }
-                SubCommand::Offset(offset_args) => {
-                    let basis_vector =
-                        Vector3::<f64>::new(offset_args.x, offset_args.y, offset_args.z);
-                    dspbptk::dspbptk_blueprint::convert::fix_dspbptk_buildings_index(
-                        offset::offset(dspbptk_buildings_in, &basis_vector),
-                    )
-                }
-            };
+        let dspbptk_buildings_out = fix_dspbptk_buildings_index(match self {
+            SubCommand::LinearPattern(linear_pattern_args) => {
+                let basis_vector = Vector3::<f64>::new(
+                    linear_pattern_args.x,
+                    linear_pattern_args.y,
+                    linear_pattern_args.z,
+                );
+                linear_pattern(&dspbptk_buildings_in, &basis_vector, linear_pattern_args.n)
+            }
+            SubCommand::Offset(offset_args) => {
+                let basis_vector = Vector3::<f64>::new(offset_args.x, offset_args.y, offset_args.z);
+                offset::offset(dspbptk_buildings_in, &basis_vector)
+            }
+        });
 
         let buildings_out = dspbptk_buildings_out
             .into_iter()

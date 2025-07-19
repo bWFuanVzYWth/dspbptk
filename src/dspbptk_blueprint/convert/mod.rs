@@ -104,4 +104,3 @@ impl TryFrom<blueprint::data::content::building::Building> for dspbptk_blueprint
         })
     }
 }
-

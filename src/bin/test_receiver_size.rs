@@ -1,6 +1,8 @@
 use dspbptk::{
     blueprint::data::{content::Content, header::Header},
-    dspbptk_blueprint::{Building, convert::fix_dspbptk_buildings_index, uuid::some_new_uuid},
+    dspbptk_blueprint::{
+        Building, editor::fix_uuid::fix_dspbptk_buildings_index, uuid::some_new_uuid,
+    },
     error::DspbptkError::{self},
     item::Item,
     workflow::{BlueprintKind, LegalBlueprintFileType, process::process_back_end},

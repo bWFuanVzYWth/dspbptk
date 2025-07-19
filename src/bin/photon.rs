@@ -4,8 +4,7 @@ use dspbptk::{
     blueprint::data::{content::Content, header::Header},
     dspbptk_blueprint::{
         Building,
-        convert::fix_dspbptk_buildings_index,
-        editor::belt::connect_belts,
+        editor::{belt::connect_belts, fix_uuid::fix_dspbptk_buildings_index},
         generator::tesselation::{Module, module::receiver_1i1o},
         uuid::some_new_uuid as new_some_uuid,
     },
