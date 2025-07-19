@@ -10,7 +10,8 @@ use clap::Parser;
 use dspbptk::{
     self,
     blueprint::Content,
-    io::{self, FileType, LegalBlueprintFileType},
+    dspbptk_blueprint::editor::offset::{self, linear_pattern},
+    io::{self, DspbptkMap, FileType, LegalBlueprintFileType, process_middle_layer},
 };
 use log::{error, warn};
 use nalgebra::Vector3;
@@ -54,21 +55,36 @@ fn generate_output_path(
     }
 }
 
-impl LinearPatternArgs {
+impl DspbptkMap for SubCommand {
     fn apply(&self, content_in: Content) -> Content {
         let dspbptk_buildings_in = content_in
             .buildings
             .into_iter()
             .map(|building| dspbptk::dspbptk_blueprint::Building::try_from(building).unwrap())
             .collect::<Vec<_>>();
-        let basis_vector = Vector3::<f64>::new(self.x, self.y, self.z);
-        let dspbptk_buildings_out = dspbptk::dspbptk_blueprint::convert::fix_dspbptk_buildings_index(
-            dspbptk::planet::dspbptk::offset::linear_pattern(
-                &dspbptk_buildings_in,
-                &basis_vector,
-                self.n,
-            ),
-        );
+
+        let dspbptk_buildings_out =
+            match self {
+                SubCommand::LinearPattern(linear_pattern_args) => {
+                    let basis_vector = Vector3::<f64>::new(
+                        linear_pattern_args.x,
+                        linear_pattern_args.y,
+                        linear_pattern_args.z,
+                    );
+
+                    dspbptk::dspbptk_blueprint::convert::fix_dspbptk_buildings_index(
+                        linear_pattern(&dspbptk_buildings_in, &basis_vector, linear_pattern_args.n),
+                    )
+                }
+                SubCommand::Offset(offset_args) => {
+                    let basis_vector =
+                        Vector3::<f64>::new(offset_args.x, offset_args.y, offset_args.z);
+                    dspbptk::dspbptk_blueprint::convert::fix_dspbptk_buildings_index(
+                        offset::offset(dspbptk_buildings_in, &basis_vector),
+                    )
+                }
+            };
+
         let buildings_out = dspbptk_buildings_out
             .into_iter()
             .map(|building| building.try_into().unwrap())
@@ -80,63 +96,6 @@ impl LinearPatternArgs {
             ..content_in
         }
     }
-}
-
-impl OffsetArgs {
-    fn apply(&self, content_in: Content) -> Content {
-        let dspbptk_buildings_in = content_in
-            .buildings
-            .into_iter()
-            .map(|building| dspbptk::dspbptk_blueprint::Building::try_from(building).unwrap())
-            .collect::<Vec<_>>();
-        let basis_vector = Vector3::<f64>::new(self.x, self.y, self.z);
-        let dspbptk_buildings_out = dspbptk::dspbptk_blueprint::convert::fix_dspbptk_buildings_index(
-            dspbptk::planet::dspbptk::offset::offset(dspbptk_buildings_in, &basis_vector),
-        );
-        let buildings_out = dspbptk_buildings_out
-            .into_iter()
-            .map(|building| building.try_into().unwrap())
-            .collect::<Vec<_>>();
-
-        Content {
-            buildings_length: u32::try_from(buildings_out.len()).unwrap(),
-            buildings: buildings_out,
-            ..content_in
-        }
-    }
-}
-
-fn process_middle_layer(
-    header_data_in: dspbptk::blueprint::Header,
-    content_data_in: Content,
-    sorting_buildings: bool,
-    rounding_local_offset: bool,
-    sub_command: &Option<SubCommand>,
-) -> (dspbptk::blueprint::Header, Content) {
-    let (header_data_out, mut content_data_out) = match sub_command {
-        Some(SubCommand::LinearPattern(linear_pattern_args)) => {
-            (header_data_in, linear_pattern_args.apply(content_data_in))
-        }
-        Some(SubCommand::Offset(offset_args)) => {
-            (header_data_in, offset_args.apply(content_data_in))
-        }
-        None => (header_data_in, content_data_in),
-    };
-
-    if rounding_local_offset {
-        content_data_out.buildings.iter_mut().for_each(|building| {
-            building.round_float();
-        });
-    }
-
-    if sorting_buildings {
-        content_data_out.buildings =
-            dspbptk::blueprint::editor::sort::sort_buildings(content_data_out.buildings, true);
-        content_data_out.buildings =
-            dspbptk::blueprint::editor::sort::fix_buildings_index(content_data_out.buildings);
-    }
-
-    (header_data_out, content_data_out)
 }
 
 // TODO 返回处理是否成功
@@ -170,13 +129,18 @@ fn process_one_file(
         }
     };
 
-    let (header_data_out, content_data_out) = process_middle_layer(
-        header_data_in,
-        content_data_in,
-        sorting_buildings,
-        rounding_local_offset,
-        sub_command,
-    );
+    let (header_data_out, content_data_out) = if let Some(command) = sub_command {
+        process_middle_layer(
+            header_data_in,
+            content_data_in,
+            sorting_buildings,
+            rounding_local_offset,
+            command.clone(),
+        )
+    } else {
+        (header_data_in, content_data_in)
+    };
+
     let blueprint_kind_out = match io::process_back_end(
         &header_data_out,
         &content_data_out,
@@ -271,7 +235,7 @@ struct OffsetArgs {
     z: f64,
 }
 
-#[derive(Parser, Debug)]
+#[derive(Parser, Debug, Clone)]
 enum SubCommand {
     /// Linear pattern blueprint with vector XYZ and count N
     LinearPattern(LinearPatternArgs),

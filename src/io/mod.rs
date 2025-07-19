@@ -4,7 +4,7 @@ use clap::ValueEnum;
 
 use crate::{
     blueprint::{
-        codec,
+        self, codec,
         data::{content::Content, header::Header},
     },
     error::{
@@ -147,6 +147,36 @@ pub fn process_front_end(
             Ok((header_data, content_data, warns_content))
         }
     }
+}
+
+pub trait DspbptkMap {
+    fn apply(&self, content_in: Content) -> Content;
+}
+
+pub fn process_middle_layer(
+    header_data_in: Header,
+    content_data_in: Content,
+    sorting_buildings: bool,
+    rounding_local_offset: bool,
+    func_args: impl DspbptkMap,
+) -> (blueprint::Header, Content) {
+    let (header_data_out, mut content_data_out) =
+        (header_data_in, func_args.apply(content_data_in));
+
+    if rounding_local_offset {
+        content_data_out.buildings.iter_mut().for_each(|building| {
+            building.round_float();
+        });
+    }
+
+    if sorting_buildings {
+        content_data_out.buildings =
+            blueprint::editor::sort::sort_buildings(content_data_out.buildings, true);
+        content_data_out.buildings =
+            blueprint::editor::sort::fix_buildings_index(content_data_out.buildings);
+    }
+
+    (header_data_out, content_data_out)
 }
 
 /// 蓝图工具的后端，可编码并输出多种格式的蓝图数据

@@ -5,16 +5,14 @@ use dspbptk::{
     dspbptk_blueprint::{
         Building,
         convert::fix_dspbptk_buildings_index,
+        editor::belt::connect_belts,
         generator::tesselation::{Module, module::receiver_1i1o},
         uuid::some_new_uuid as new_some_uuid,
-    },
-    planet::{
-        dspbptk::belt::connect_belts,
-        unit_conversion::{arc_from_grid, grid_from_arc, local_offset_to_direction},
     },
     error::DspbptkError::{self, UnexpectBuildingsCount},
     io::{BlueprintKind, LegalBlueprintFileType},
     item::Item,
+    planet::unit_conversion::{arc_from_grid, grid_from_arc, local_offset_to_direction},
 };
 
 // FIXME 改用tesselation::Row

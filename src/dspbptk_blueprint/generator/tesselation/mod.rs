@@ -3,7 +3,7 @@ use std::f64::consts::FRAC_PI_2;
 
 use arrayvec::ArrayVec;
 
-use crate::editor::unit_conversion::arc_from_grid;
+use crate::planet::unit_conversion::arc_from_grid;
 
 pub mod module;
 

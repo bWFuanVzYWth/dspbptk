@@ -31,10 +31,10 @@
 
 pub mod blueprint;
 pub mod dspbptk_blueprint;
-pub mod planet;
 pub mod error;
 pub mod io;
 pub mod item;
+pub mod planet;
 
 // TODO 给已经基本稳定下来的函数写文档
 // TODO cargo clippy --fix

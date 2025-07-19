@@ -1,8 +1,7 @@
 use nalgebra::Vector3;
 
 use crate::{
-    dspbptk_blueprint::{Building, uuid::some_new_uuid},
-    editor::dspbptk::belt::connect_belts,
+    dspbptk_blueprint::{Building, editor::belt::connect_belts, uuid::some_new_uuid},
     item::Item,
 };
 
