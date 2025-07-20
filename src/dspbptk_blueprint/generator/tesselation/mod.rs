@@ -5,12 +5,15 @@ use arrayvec::ArrayVec;
 use std::cmp::Ordering;
 use std::f64::consts::FRAC_PI_2;
 
-const MAX_ROW_COUNT: usize = 44;
-type ModuleArray = ArrayVec<u8, MAX_ROW_COUNT>;
-
 const MODULE_TYPE_COUNT: usize = 6;
-type TotalModule = [usize; MODULE_TYPE_COUNT];
-type NeedModule = [f64; MODULE_TYPE_COUNT];
+const MAX_ROW_COUNT: usize = 44;
+
+/// 列向量，表示了一组排列
+type ColumnVector = ArrayVec<u8, MAX_ROW_COUNT>;
+
+// const MODULE_TYPE_COUNT: usize = 6;
+// type TotalModule = [usize; MODULE_TYPE_COUNT];
+// type NeedModule = [f64; MODULE_TYPE_COUNT];
 
 // TODO 密铺排列计算
 // TODO 重构，为不同的模块impl对应的方法
@@ -62,7 +65,7 @@ impl Module {
 /// 状态空间中
 #[derive(Clone)]
 struct Node {
-    modules: ModuleArray,
+    rows: ColumnVector,
     score: f64,
     y_max: f64,
 }
@@ -85,21 +88,28 @@ impl Eq for Node {}
 
 impl PartialEq for Node {
     fn eq(&self, other: &Self) -> bool {
-        self.modules.cmp(&other.modules) == Ordering::Equal
+        self.rows.cmp(&other.rows) == Ordering::Equal
     }
 }
 
+/// 找出最缺的建筑，将其相对需求的倍率作为分数
+fn score(
+    each_type_module: &ArrayVec<f64, MODULE_TYPE_COUNT>,
+    need: &ArrayVec<f64, MODULE_TYPE_COUNT>,
+) -> Option<f64> {
+    // 除零将会产生`positive quiet NaN`，大于所有的数字
+    each_type_module
+        .iter()
+        .zip(need.iter())
+        .map(|(module, need)| module / need)
+        .min_by(f64::total_cmp)
+}
+
+
+
 impl Node {
-    // pub fn extend(&self, building: u8) -> Self {
-    //     let new = self.clone();
-    //     new.modules.push(building);
-
-    //     // TODO 更新分数和y
-
-    //     new
-    // }
-
-    pub fn score(modules: &ModuleArray) -> f64 {
-        0.0
+    /// 获取从起点到当前节点的准确距离
+    pub fn g(&self, need: &ArrayVec<f64, MODULE_TYPE_COUNT>) -> f64 {
+        self.
     }
 }
