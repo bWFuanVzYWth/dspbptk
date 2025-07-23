@@ -1,5 +1,7 @@
 use nalgebra::Vector3;
 
+// TODO 把建筑类型改成枚举
+
 #[derive(Debug, Clone)]
 pub struct Building {
     pub uuid: Option<u128>,

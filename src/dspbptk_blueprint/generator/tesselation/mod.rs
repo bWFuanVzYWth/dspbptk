@@ -4,6 +4,7 @@ use crate::planet::unit_conversion::arc_from_grid;
 use arrayvec::ArrayVec;
 use std::cmp::Ordering;
 use std::f64::consts::FRAC_PI_2;
+use enum_map::{Enum, EnumMap, enum_map};
 
 const MODULE_TYPE_COUNT: usize = 6;
 const MAX_ROW_COUNT: usize = 44;
@@ -17,6 +18,10 @@ type ColumnVector = ArrayVec<u8, MAX_ROW_COUNT>;
 
 // TODO 密铺排列计算
 // TODO 重构，为不同的模块impl对应的方法
+
+// enum TesselationUnit {
+    
+// }
 
 #[derive(Debug)]
 pub struct Module {
@@ -62,36 +67,7 @@ impl Module {
     }
 }
 
-/// 状态空间中
-#[derive(Clone)]
-struct Node {
-    rows: ColumnVector,
-    score: f64,
-    y_max: f64,
-}
-
-const _: () = assert!(std::mem::size_of::<Node>() == 64);
-
-impl Ord for Node {
-    fn cmp(&self, other: &Self) -> Ordering {
-        self.score.total_cmp(&other.score)
-    }
-}
-
-impl PartialOrd for Node {
-    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
-        Some(self.cmp(other))
-    }
-}
-
-impl Eq for Node {}
-
-impl PartialEq for Node {
-    fn eq(&self, other: &Self) -> bool {
-        self.rows.cmp(&other.rows) == Ordering::Equal
-    }
-}
-
+/// 这个函数不检查y是否超标
 /// 找出最缺的建筑，将其相对需求的倍率作为分数
 fn score(
     each_type_module: &ArrayVec<f64, MODULE_TYPE_COUNT>,
@@ -103,13 +79,4 @@ fn score(
         .zip(need.iter())
         .map(|(module, need)| module / need)
         .min_by(f64::total_cmp)
-}
-
-
-
-impl Node {
-    /// 获取从起点到当前节点的准确距离
-    pub fn g(&self, need: &ArrayVec<f64, MODULE_TYPE_COUNT>) -> f64 {
-        self.
-    }
 }
