@@ -93,18 +93,22 @@ const K_MD5FC: [u32; 64] = {
     arr
 };
 
-const S: &[u32; 64] = &[
-    7, 12, 17, 22, 7, 12, 17, 22, 7, 12, 17, 22, 7, 12, 17, 22, 5, 9, 14, 20, 5, 9, 14, 20, 5, 9,
-    14, 20, 5, 9, 14, 20, 4, 11, 16, 23, 4, 11, 16, 23, 4, 11, 16, 23, 4, 11, 16, 23, 6, 10, 15,
-    21, 6, 10, 15, 21, 6, 10, 15, 21, 6, 10, 15, 21,
-];
-
-// const S: &[u32; 64] = &[
-//     7, 12, 17, 22, 7, 12, 17, 22, 7, 12, 17, 22, 7, 12, 17, 22,
-//     5, 9, 14, 20, 5, 9, 14, 20, 5, 9, 14, 20, 5, 9, 14, 20,
-//     4, 11, 16, 23, 4, 11, 16, 23, 4, 11, 16, 23, 4, 11, 16, 23,
-//     6, 10, 15, 21, 6, 10, 15, 21, 6, 10, 15, 21, 6, 10, 15, 21,
-// ];
+const S11: u32 = 7;
+const S12: u32 = 12;
+const S13: u32 = 17;
+const S14: u32 = 22;
+const S21: u32 = 5;
+const S22: u32 = 9;
+const S23: u32 = 14;
+const S24: u32 = 20;
+const S31: u32 = 4;
+const S32: u32 = 11;
+const S33: u32 = 16;
+const S34: u32 = 23;
+const S41: u32 = 6;
+const S42: u32 = 10;
+const S43: u32 = 15;
+const S44: u32 = 21;
 
 const INIT_MD5: [u32; 4] = [
     u32::from_le_bytes([0x01, 0x23, 0x45, 0x67]),
@@ -128,7 +132,7 @@ pub enum Algo {
 }
 
 pub struct MD5 {
-    s: [u32; 4],
+    state: [u32; 4],
     k_table: &'static [u32; 64],
 }
 
@@ -151,6 +155,42 @@ impl MD5 {
         y ^ (x | !z)
     }
 
+    #[expect(clippy::many_single_char_names)]
+    const fn ff(a: u32, b: u32, c: u32, d: u32, x: u32, s: u32, ac: u32) -> u32 {
+        a.wrapping_add(Self::f(b, c, d))
+            .wrapping_add(x)
+            .wrapping_add(ac)
+            .rotate_left(s)
+            .wrapping_add(b)
+    }
+
+    #[expect(clippy::many_single_char_names)]
+    const fn gg(a: u32, b: u32, c: u32, d: u32, x: u32, s: u32, ac: u32) -> u32 {
+        a.wrapping_add(Self::g(b, c, d))
+            .wrapping_add(x)
+            .wrapping_add(ac)
+            .rotate_left(s)
+            .wrapping_add(b)
+    }
+
+    #[expect(clippy::many_single_char_names)]
+    const fn hh(a: u32, b: u32, c: u32, d: u32, x: u32, s: u32, ac: u32) -> u32 {
+        a.wrapping_add(Self::h(b, c, d))
+            .wrapping_add(x)
+            .wrapping_add(ac)
+            .rotate_left(s)
+            .wrapping_add(b)
+    }
+
+    #[expect(clippy::many_single_char_names)]
+    const fn ii(a: u32, b: u32, c: u32, d: u32, x: u32, s: u32, ac: u32) -> u32 {
+        a.wrapping_add(Self::i(b, c, d))
+            .wrapping_add(x)
+            .wrapping_add(ac)
+            .rotate_left(s)
+            .wrapping_add(b)
+    }
+
     const fn new(algo: Algo) -> Self {
         let (s, k_table) = match algo {
             Algo::MD5 => (INIT_MD5, &K_MD5),
@@ -158,68 +198,118 @@ impl MD5 {
             Algo::MD5FC => (INIT_MD5F, &K_MD5FC), // 注意此处用的仍然是INIT_MD5F
         };
 
-        Self { s, k_table }
+        Self { state: s, k_table }
     }
 
     #[expect(clippy::many_single_char_names)]
     fn update_block(&mut self, buf: &[u8; 64]) {
-        let mut buf_iter = buf.array_chunks::<4>();
-        let words: [u32; 16] = std::array::from_fn(|_| {
-            u32::from_le_bytes(*buf_iter.next().expect("unreachable: buf.len() < 64"))
+        let x: [u32; 16] = std::array::from_fn(|i| {
+            u32::from_le_bytes([buf[i * 4], buf[i * 4 + 1], buf[i * 4 + 2], buf[i * 4 + 3]])
         });
 
-        let mut a = self.s[0];
-        let mut b = self.s[1];
-        let mut c = self.s[2];
-        let mut d = self.s[3];
+        let mut a = self.state[0];
+        let mut b = self.state[1];
+        let mut c = self.state[2];
+        let mut d = self.state[3];
 
-        for (i, (s, k)) in S.iter().zip(self.k_table.iter()).enumerate() {
-            let (function_result, word_index) = match i {
-                0..=15 => (Self::f(b, c, d), i),
-                16..=31 => (Self::g(b, c, d), (5 * i + 1) % 16),
-                32..=47 => (Self::h(b, c, d), (3 * i + 5) % 16),
-                48..=63 => (Self::i(b, c, d), (7 * i) % 16),
-                _ => unreachable!(),
-            };
+        /* Round 1 */
+        a = Self::ff(a, b, c, d, x[0], S11, self.k_table[0]);
+        d = Self::ff(d, a, b, c, x[1], S12, self.k_table[1]);
+        c = Self::ff(c, d, a, b, x[2], S13, self.k_table[2]);
+        b = Self::ff(b, c, d, a, x[3], S14, self.k_table[3]);
+        a = Self::ff(a, b, c, d, x[4], S11, self.k_table[4]);
+        d = Self::ff(d, a, b, c, x[5], S12, self.k_table[5]);
+        c = Self::ff(c, d, a, b, x[6], S13, self.k_table[6]);
+        b = Self::ff(b, c, d, a, x[7], S14, self.k_table[7]);
+        a = Self::ff(a, b, c, d, x[8], S11, self.k_table[8]);
+        d = Self::ff(d, a, b, c, x[9], S12, self.k_table[9]);
+        c = Self::ff(c, d, a, b, x[10], S13, self.k_table[10]);
+        b = Self::ff(b, c, d, a, x[11], S14, self.k_table[11]);
+        a = Self::ff(a, b, c, d, x[12], S11, self.k_table[12]);
+        d = Self::ff(d, a, b, c, x[13], S12, self.k_table[13]);
+        c = Self::ff(c, d, a, b, x[14], S13, self.k_table[14]);
+        b = Self::ff(b, c, d, a, x[15], S14, self.k_table[15]);
 
-            let f = function_result
-                .wrapping_add(a)
-                .wrapping_add(*k)
-                .wrapping_add(words[word_index]);
+        /* Round 2 */
+        a = Self::gg(a, b, c, d, x[1], S21, self.k_table[16]);
+        d = Self::gg(d, a, b, c, x[6], S22, self.k_table[17]);
+        c = Self::gg(c, d, a, b, x[11], S23, self.k_table[18]);
+        b = Self::gg(b, c, d, a, x[0], S24, self.k_table[19]);
+        a = Self::gg(a, b, c, d, x[5], S21, self.k_table[20]);
+        d = Self::gg(d, a, b, c, x[10], S22, self.k_table[21]);
+        c = Self::gg(c, d, a, b, x[15], S23, self.k_table[22]);
+        b = Self::gg(b, c, d, a, x[4], S24, self.k_table[23]);
+        a = Self::gg(a, b, c, d, x[9], S21, self.k_table[24]);
+        d = Self::gg(d, a, b, c, x[14], S22, self.k_table[25]);
+        c = Self::gg(c, d, a, b, x[3], S23, self.k_table[26]);
+        b = Self::gg(b, c, d, a, x[8], S24, self.k_table[27]);
+        a = Self::gg(a, b, c, d, x[13], S21, self.k_table[28]);
+        d = Self::gg(d, a, b, c, x[2], S22, self.k_table[29]);
+        c = Self::gg(c, d, a, b, x[7], S23, self.k_table[30]);
+        b = Self::gg(b, c, d, a, x[12], S24, self.k_table[31]);
 
-            a = d;
-            d = c;
-            c = b;
-            b = b.wrapping_add(f.rotate_left(*s));
-        }
+        /* Round 3 */
+        a = Self::hh(a, b, c, d, x[5], S31, self.k_table[32]);
+        d = Self::hh(d, a, b, c, x[8], S32, self.k_table[33]);
+        c = Self::hh(c, d, a, b, x[11], S33, self.k_table[34]);
+        b = Self::hh(b, c, d, a, x[14], S34, self.k_table[35]);
+        a = Self::hh(a, b, c, d, x[1], S31, self.k_table[36]);
+        d = Self::hh(d, a, b, c, x[4], S32, self.k_table[37]);
+        c = Self::hh(c, d, a, b, x[7], S33, self.k_table[38]);
+        b = Self::hh(b, c, d, a, x[10], S34, self.k_table[39]);
+        a = Self::hh(a, b, c, d, x[13], S31, self.k_table[40]);
+        d = Self::hh(d, a, b, c, x[0], S32, self.k_table[41]);
+        c = Self::hh(c, d, a, b, x[3], S33, self.k_table[42]);
+        b = Self::hh(b, c, d, a, x[6], S34, self.k_table[43]);
+        a = Self::hh(a, b, c, d, x[9], S31, self.k_table[44]);
+        d = Self::hh(d, a, b, c, x[12], S32, self.k_table[45]);
+        c = Self::hh(c, d, a, b, x[15], S33, self.k_table[46]);
+        b = Self::hh(b, c, d, a, x[2], S34, self.k_table[47]);
 
-        self.s[0] = self.s[0].wrapping_add(a);
-        self.s[1] = self.s[1].wrapping_add(b);
-        self.s[2] = self.s[2].wrapping_add(c);
-        self.s[3] = self.s[3].wrapping_add(d);
+        /* Round 4 */
+        a = Self::ii(a, b, c, d, x[0], S41, self.k_table[48]);
+        d = Self::ii(d, a, b, c, x[7], S42, self.k_table[49]);
+        c = Self::ii(c, d, a, b, x[14], S43, self.k_table[50]);
+        b = Self::ii(b, c, d, a, x[5], S44, self.k_table[51]);
+        a = Self::ii(a, b, c, d, x[12], S41, self.k_table[52]);
+        d = Self::ii(d, a, b, c, x[3], S42, self.k_table[53]);
+        c = Self::ii(c, d, a, b, x[10], S43, self.k_table[54]);
+        b = Self::ii(b, c, d, a, x[1], S44, self.k_table[55]);
+        a = Self::ii(a, b, c, d, x[8], S41, self.k_table[56]);
+        d = Self::ii(d, a, b, c, x[15], S42, self.k_table[57]);
+        c = Self::ii(c, d, a, b, x[6], S43, self.k_table[58]);
+        b = Self::ii(b, c, d, a, x[13], S44, self.k_table[59]);
+        a = Self::ii(a, b, c, d, x[4], S41, self.k_table[60]);
+        d = Self::ii(d, a, b, c, x[11], S42, self.k_table[61]);
+        c = Self::ii(c, d, a, b, x[2], S43, self.k_table[62]);
+        b = Self::ii(b, c, d, a, x[9], S44, self.k_table[63]);
+
+        self.state[0] = self.state[0].wrapping_add(a);
+        self.state[1] = self.state[1].wrapping_add(b);
+        self.state[2] = self.state[2].wrapping_add(c);
+        self.state[3] = self.state[3].wrapping_add(d);
     }
 
     fn process(&mut self, data: &[u8]) -> MD5Hash {
         let chunks = data.array_chunks::<64>();
         let remainder = chunks.remainder();
-
         let remainder_len = remainder.len();
-        let pad_len = 55usize.wrapping_sub(remainder_len) % 64;
-        let bit_len = data.len() * 8;
-        let bit_start = remainder_len + 1 + pad_len;
+
+        let bit_len = (data.len() * 8).to_le_bytes();
+        let bit_len_offset = remainder_len + 1 + 55_usize.wrapping_sub(remainder_len) % 64;
 
         let last: [u8; 128] = std::array::from_fn(|idx| match idx {
             i if i < remainder_len => remainder[i],
             i if i == remainder_len => 0x80,
-            i if i >= bit_start && i < bit_start + 8 => bit_len.to_le_bytes()[i - bit_start],
-            _ => 0,
+            i if i >= bit_len_offset && i < bit_len_offset + 8 => bit_len[i - bit_len_offset],
+            _ /* i if i > remainder_len && i < bit_len_offset */ => 0x00,
         });
 
-        for chunk in chunks.chain(last[..bit_start + 8].array_chunks::<64>()) {
+        for chunk in chunks.chain(last[..bit_len_offset + 8].array_chunks::<64>()) {
             self.update_block(chunk);
         }
 
-        self.s
+        self.state
     }
 }
 
@@ -242,7 +332,7 @@ mod test {
     #[test]
     fn test_md5_empty() {
         let hash = MD5::new(Algo::MD5).process(&[]);
-        let expected: MD5Hash = [0xD98C_1DD4, 0x4B2008F, 0x980980E9, 0x7E42F8EC];
+        let expected: MD5Hash = [0xD98C_1DD4, 0x4B2_008F, 0x9809_80E9, 0x7E42_F8EC];
         assert_eq!(hash, expected);
     }
 
@@ -251,14 +341,14 @@ mod test {
         let text =
             "12345678901234567890123456789012345678901234567890123456789012345678901234567890";
         let hash = MD5::new(Algo::MD5).process(text.as_bytes());
-        let expected: MD5Hash = [0xA2F4ED57, 0x55C9E32B, 0x2EDA49AC, 0x7AB60721];
+        let expected: MD5Hash = [0xA2F4_ED57, 0x55C9_E32B, 0x2EDA_49AC, 0x7AB6_0721];
         assert_eq!(hash, expected);
     }
 
     #[test]
     fn test_md5f_empty() {
         let hash = MD5::new(Algo::MD5F).process(&[]);
-        let expected: MD5Hash = [0x3BCED184, 0xAB498FD6, 0x960FEB26, 0xCF176641];
+        let expected: MD5Hash = [0x3BCE_D184, 0xAB49_8FD6, 0x960F_EB26, 0xCF17_6641];
         assert_eq!(hash, expected);
     }
 
@@ -267,7 +357,7 @@ mod test {
         let text =
             "BLUEPRINT:0,0,0,0,0,0,0,0,0,0.0.0.0,,\"H4sIAAAAAAAAA2NkQAWMUMyARCMBANjTKTsvAAAA";
         let hash = MD5::new(Algo::MD5F).process(text.as_bytes());
-        let expected: MD5Hash = [0xCFA1E5E4, 0x61ECF128, 0x8C49331E, 0x2BF00DBD];
+        let expected: MD5Hash = [0xCFA1_E5E4, 0x61EC_F128, 0x8C49_331E, 0x2BF0_0DBD];
         assert_eq!(hash, expected);
     }
 }
