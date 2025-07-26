@@ -8,9 +8,9 @@ use nalgebra::Vector3;
 pub const GRID_A: f64 = 7.30726;
 pub const GRID_B: f64 = 4.19828;
 
-const RECEIVER_MODEL: i16 = Item::射线接收站.model()[0];
-const BELT_MODEL: i16 = Item::极速传送带.model()[0];
-const SORTER_MODEL: i16 = Item::分拣器.model()[0];
+const RECEIVER_MODEL: i16 = Item::射线接收站.model().default_value();
+const BELT_MODEL: i16 = Item::极速传送带.model().default_value();
+const SORTER_MODEL: i16 = Item::分拣器.model().default_value();
 
 #[must_use]
 pub fn new(
