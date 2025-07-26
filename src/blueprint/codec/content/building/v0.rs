@@ -102,8 +102,8 @@ pub fn serialization(bin: &mut Vec<u8>, data: &Building) {
 #[allow(clippy::unwrap_used)]
 #[cfg(test)]
 mod test {
-    use nom::Finish;
     use super::*;
+    use nom::Finish;
 
     #[test]
     fn test_serialization_version_0() {

@@ -1,14 +1,14 @@
-use nom::{
-    Finish, IResult, Parser,
-    bytes::complete::{tag, take_till},
-    sequence::preceded,
-};
 use crate::{
     blueprint::Header,
     error::{
         DspbptkError::{self, BrokenHeader},
         DspbptkWarn::{self, UnknownAfterHeader},
     },
+};
+use nom::{
+    Finish, IResult, Parser,
+    bytes::complete::{tag, take_till},
+    sequence::preceded,
 };
 
 fn tag_blueprint(string: &str) -> IResult<&str, &str> {
@@ -91,8 +91,8 @@ pub fn serialization(data: &Header) -> String {
 
 #[cfg(test)]
 mod test {
-    use crate::blueprint::Header;
     use super::*;
+    use crate::blueprint::Header;
 
     #[test]
     fn test_parse() {

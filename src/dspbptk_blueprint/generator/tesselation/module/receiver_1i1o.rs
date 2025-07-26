@@ -1,8 +1,8 @@
-use nalgebra::Vector3;
 use crate::{
     dspbptk_blueprint::{Building, editor::belt::connect_belts, uuid::some_new_uuid},
     item::Item,
 };
+use nalgebra::Vector3;
 
 // 模块尺寸即锅的尺寸，数据由src/bin/test_ray_receiver_size测出
 pub const GRID_A: f64 = 7.30726;

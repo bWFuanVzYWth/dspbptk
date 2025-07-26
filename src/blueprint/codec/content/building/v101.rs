@@ -236,8 +236,8 @@ fn parse_default(input: &[u8]) -> IResult<&[u8], F32x12> {
 #[allow(clippy::unwrap_used)]
 #[cfg(test)]
 mod test {
-    use nom::Finish;
     use super::*;
+    use nom::Finish;
 
     #[test]
     fn test_serialization_version_neg101_default() {
