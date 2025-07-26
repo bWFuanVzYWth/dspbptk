@@ -13,7 +13,7 @@ fn new_receiver(local_offset: Vector3<f64>) -> Building {
     Building {
         uuid: some_new_uuid(),
         item_id: Item::射线接收站 as i16,
-        model_index: Item::射线接收站.model()[0],
+        model_index: Item::射线接收站.model().default_value(),
         local_offset,
         parameters: vec![1208],
         ..Default::default()

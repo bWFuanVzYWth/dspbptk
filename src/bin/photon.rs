@@ -139,7 +139,7 @@ fn main_belts(row: &Row) -> Vec<Building> {
         .map(|i| Building {
             uuid: new_some_uuid(),
             item_id: Item::极速传送带 as i16,
-            model_index: Item::极速传送带.model()[0],
+            model_index: Item::极速传送带.model().default_value(),
             local_offset: Vector3::new(
                 grid_from_arc(x_arc.mul_add((i as f64) / (belts_count as f64), x_from)),
                 grid_from_arc(y),
