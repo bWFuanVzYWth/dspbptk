@@ -2,26 +2,12 @@ pub mod module;
 
 use crate::planet::unit_conversion::arc_from_grid;
 use arrayvec::ArrayVec;
-use std::cmp::Ordering;
 use std::f64::consts::FRAC_PI_2;
-use enum_map::{Enum, EnumMap, enum_map};
 
 const MODULE_TYPE_COUNT: usize = 6;
-const MAX_ROW_COUNT: usize = 44;
-
-/// 列向量，表示了一组排列
-type ColumnVector = ArrayVec<u8, MAX_ROW_COUNT>;
-
-// const MODULE_TYPE_COUNT: usize = 6;
-// type TotalModule = [usize; MODULE_TYPE_COUNT];
-// type NeedModule = [f64; MODULE_TYPE_COUNT];
 
 // TODO 密铺排列计算
 // TODO 重构，为不同的模块impl对应的方法
-
-// enum TesselationUnit {
-    
-// }
 
 #[derive(Debug)]
 pub struct Module {
@@ -30,6 +16,7 @@ pub struct Module {
 }
 
 impl Module {
+    #[expect(clippy::similar_names)]
     #[must_use]
     pub fn new(grid_a: f64, grid_b: f64) -> Self {
         let half_grid_a: f64 = grid_a / 2.0;
@@ -69,7 +56,7 @@ impl Module {
 
 /// 这个函数不检查y是否超标
 /// 找出最缺的建筑，将其相对需求的倍率作为分数
-fn score(
+pub fn score(
     each_type_module: &ArrayVec<f64, MODULE_TYPE_COUNT>,
     need: &ArrayVec<f64, MODULE_TYPE_COUNT>,
 ) -> Option<f64> {
