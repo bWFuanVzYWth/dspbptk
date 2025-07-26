@@ -99,6 +99,13 @@ const S: &[u32; 64] = &[
     21, 6, 10, 15, 21, 6, 10, 15, 21, 6, 10, 15, 21,
 ];
 
+// const S: &[u32; 64] = &[
+//     7, 12, 17, 22, 7, 12, 17, 22, 7, 12, 17, 22, 7, 12, 17, 22,
+//     5, 9, 14, 20, 5, 9, 14, 20, 5, 9, 14, 20, 5, 9, 14, 20,
+//     4, 11, 16, 23, 4, 11, 16, 23, 4, 11, 16, 23, 4, 11, 16, 23,
+//     6, 10, 15, 21, 6, 10, 15, 21, 6, 10, 15, 21, 6, 10, 15, 21,
+// ];
+
 const INIT_MD5: [u32; 4] = [
     u32::from_le_bytes([0x01, 0x23, 0x45, 0x67]),
     u32::from_le_bytes([0x89, 0xab, 0xcd, 0xef]),
@@ -125,7 +132,7 @@ pub struct MD5 {
     k_table: &'static [u32; 64],
 }
 
-pub type MD5Hash = [u8; 16];
+pub type MD5Hash = [u32; 4];
 
 impl MD5 {
     const fn f(x: u32, y: u32, z: u32) -> u32 {
@@ -167,7 +174,6 @@ impl MD5 {
         let mut d = self.s[3];
 
         for (i, (s, k)) in S.iter().zip(self.k_table.iter()).enumerate() {
-            // let s = S[i];
             let (function_result, word_index) = match i {
                 0..=15 => (Self::f(b, c, d), i),
                 16..=31 => (Self::g(b, c, d), (5 * i + 1) % 16),
@@ -180,6 +186,7 @@ impl MD5 {
                 .wrapping_add(a)
                 .wrapping_add(*k)
                 .wrapping_add(words[word_index]);
+
             a = d;
             d = c;
             c = b;
@@ -212,11 +219,7 @@ impl MD5 {
             self.update_block(chunk);
         }
 
-        std::array::from_fn(|i| {
-            let word_index = i / 4;
-            let byte_index = i % 4;
-            self.s[word_index].to_le_bytes()[byte_index]
-        })
+        self.s
     }
 }
 
@@ -224,23 +227,11 @@ impl MD5 {
 pub fn compute_md5f_string(header_content: &str) -> String {
     let md5f = MD5::new(Algo::MD5F).process(header_content.as_bytes());
     format!(
-        "{:02X}{:02X}{:02X}{:02X}{:02X}{:02X}{:02X}{:02X}{:02X}{:02X}{:02X}{:02X}{:02X}{:02X}{:02X}{:02X}",
-        md5f[0],
-        md5f[1],
-        md5f[2],
-        md5f[3],
-        md5f[4],
-        md5f[5],
-        md5f[6],
-        md5f[7],
-        md5f[8],
-        md5f[9],
-        md5f[10],
-        md5f[11],
-        md5f[12],
-        md5f[13],
-        md5f[14],
-        md5f[15]
+        "{:08X}{:08X}{:08X}{:08X}",
+        md5f[0].to_be(),
+        md5f[1].to_be(),
+        md5f[2].to_be(),
+        md5f[3].to_be(),
     )
 }
 
@@ -251,11 +242,8 @@ mod test {
     #[test]
     fn test_md5_empty() {
         let hash = MD5::new(Algo::MD5).process(&[]);
-        let expected: MD5Hash = [
-            0xd4, 0x1d, 0x8c, 0xd9, 0x8f, 0x00, 0xb2, 0x04, 0xe9, 0x80, 0x09, 0x98, 0xec, 0xf8,
-            0x42, 0x7e,
-        ];
-        assert!(hash == expected);
+        let expected: MD5Hash = [0xD98C_1DD4, 0x4B2008F, 0x980980E9, 0x7E42F8EC];
+        assert_eq!(hash, expected);
     }
 
     #[test]
@@ -263,21 +251,15 @@ mod test {
         let text =
             "12345678901234567890123456789012345678901234567890123456789012345678901234567890";
         let hash = MD5::new(Algo::MD5).process(text.as_bytes());
-        let expected: MD5Hash = [
-            0x57, 0xed, 0xf4, 0xa2, 0x2b, 0xe3, 0xc9, 0x55, 0xac, 0x49, 0xda, 0x2e, 0x21, 0x07,
-            0xb6, 0x7a,
-        ];
-        assert!(hash == expected);
+        let expected: MD5Hash = [0xA2F4ED57, 0x55C9E32B, 0x2EDA49AC, 0x7AB60721];
+        assert_eq!(hash, expected);
     }
 
     #[test]
     fn test_md5f_empty() {
         let hash = MD5::new(Algo::MD5F).process(&[]);
-        let expected: MD5Hash = [
-            0x84, 0xd1, 0xce, 0x3b, 0xd6, 0x8f, 0x49, 0xab, 0x26, 0xeb, 0x0f, 0x96, 0x41, 0x66,
-            0x17, 0xcf,
-        ];
-        assert!(hash == expected);
+        let expected: MD5Hash = [0x3BCED184, 0xAB498FD6, 0x960FEB26, 0xCF176641];
+        assert_eq!(hash, expected);
     }
 
     #[test]
@@ -285,10 +267,7 @@ mod test {
         let text =
             "BLUEPRINT:0,0,0,0,0,0,0,0,0,0.0.0.0,,\"H4sIAAAAAAAAA2NkQAWMUMyARCMBANjTKTsvAAAA";
         let hash = MD5::new(Algo::MD5F).process(text.as_bytes());
-        let expected: MD5Hash = [
-            0xe4, 0xe5, 0xa1, 0xcf, 0x28, 0xf1, 0xec, 0x61, 0x1e, 0x33, 0x49, 0x8c, 0xbd, 0x0d,
-            0xf0, 0x2b,
-        ];
-        assert!(hash == expected);
+        let expected: MD5Hash = [0xCFA1E5E4, 0x61ECF128, 0x8C49331E, 0x2BF00DBD];
+        assert_eq!(hash, expected);
     }
 }
