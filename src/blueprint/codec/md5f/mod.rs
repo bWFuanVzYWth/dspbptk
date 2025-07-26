@@ -1,4 +1,4 @@
-const K: [u32; 64] = [
+const K_MD5: [u32; 64] = [
     0xd76a_a478,
     0xe8c7_b756,
     0x2420_70db,
@@ -66,7 +66,7 @@ const K: [u32; 64] = [
 ];
 
 const K_MD5F: [u32; 64] = {
-    let mut arr = K;
+    let mut arr = K_MD5;
     arr[1] = 0xe8d7_b756;
     arr[6] = 0xa830_4623;
     arr[12] = 0x6b9f_1122;
@@ -79,7 +79,7 @@ const K_MD5F: [u32; 64] = {
 };
 
 const K_MD5FC: [u32; 64] = {
-    let mut arr = K;
+    let mut arr = K_MD5;
     arr[1] = 0xe8d7_b756;
     arr[3] = 0xc1bd_ceef;
     arr[6] = 0xa830_4623;
@@ -128,9 +128,25 @@ pub struct MD5 {
 pub type MD5Hash = [u8; 16];
 
 impl MD5 {
+    const fn f(x: u32, y: u32, z: u32) -> u32 {
+        (x & y) | (!x & z)
+    }
+
+    const fn g(x: u32, y: u32, z: u32) -> u32 {
+        (x & z) | (y & !z)
+    }
+
+    const fn h(x: u32, y: u32, z: u32) -> u32 {
+        x ^ y ^ z
+    }
+
+    const fn i(x: u32, y: u32, z: u32) -> u32 {
+        y ^ (x | !z)
+    }
+
     const fn new(algo: Algo) -> Self {
         let (s, k_table) = match algo {
-            Algo::MD5 => (INIT_MD5, &K),
+            Algo::MD5 => (INIT_MD5, &K_MD5),
             Algo::MD5F => (INIT_MD5F, &K_MD5F),
             Algo::MD5FC => (INIT_MD5F, &K_MD5FC), // 注意此处用的仍然是INIT_MD5F
         };
@@ -150,60 +166,24 @@ impl MD5 {
         let mut c = self.s[2];
         let mut d = self.s[3];
 
-        for (idx, &s) in S[0..16].iter().enumerate() {
-            let i = idx;
-            let function_result = (b & c) | (!b & d);
-            let word_index = i;
-            let f = function_result
-                .wrapping_add(a)
-                .wrapping_add(self.k_table[i])
-                .wrapping_add(words[word_index]);
-            a = d;
-            d = c;
-            c = b;
-            b = b.wrapping_add(f.rotate_left(s));
-        }
+        for (i, (s, k)) in S.iter().zip(self.k_table.iter()).enumerate() {
+            // let s = S[i];
+            let (function_result, word_index) = match i {
+                0..=15 => (Self::f(b, c, d), i),
+                16..=31 => (Self::g(b, c, d), (5 * i + 1) % 16),
+                32..=47 => (Self::h(b, c, d), (3 * i + 5) % 16),
+                48..=63 => (Self::i(b, c, d), (7 * i) % 16),
+                _ => unreachable!(),
+            };
 
-        for (idx, &s) in S[16..32].iter().enumerate() {
-            let i = 16 + idx;
-            let function_result = (d & b) | (!d & c);
-            let word_index = (5 * i + 1) % 16;
             let f = function_result
                 .wrapping_add(a)
-                .wrapping_add(self.k_table[i])
+                .wrapping_add(*k)
                 .wrapping_add(words[word_index]);
             a = d;
             d = c;
             c = b;
-            b = b.wrapping_add(f.rotate_left(s));
-        }
-
-        for (idx, &s) in S[32..48].iter().enumerate() {
-            let i = 32 + idx;
-            let function_result = b ^ c ^ d;
-            let word_index = (3 * i + 5) % 16;
-            let f = function_result
-                .wrapping_add(a)
-                .wrapping_add(self.k_table[i])
-                .wrapping_add(words[word_index]);
-            a = d;
-            d = c;
-            c = b;
-            b = b.wrapping_add(f.rotate_left(s));
-        }
-
-        for (idx, &s) in S[48..64].iter().enumerate() {
-            let i = 48 + idx;
-            let function_result = c ^ (b | !d);
-            let word_index = (7 * i) % 16;
-            let f = function_result
-                .wrapping_add(a)
-                .wrapping_add(self.k_table[i])
-                .wrapping_add(words[word_index]);
-            a = d;
-            d = c;
-            c = b;
-            b = b.wrapping_add(f.rotate_left(s));
+            b = b.wrapping_add(f.rotate_left(*s));
         }
 
         self.s[0] = self.s[0].wrapping_add(a);
