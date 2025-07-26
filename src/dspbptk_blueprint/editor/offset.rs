@@ -1,5 +1,5 @@
-use nalgebra::Vector3;
 use crate::dspbptk_blueprint::{Building, uuid::new_uuid};
+use nalgebra::Vector3;
 
 impl Building {
     #[must_use]
@@ -43,10 +43,11 @@ pub fn linear_pattern(
     basis_vector: &Vector3<f64>,
     count: u32,
 ) -> Vec<Building> {
+    let index_offset_0 = new_uuid();
     (0..count)
         .flat_map(|i| {
             let offset = f64::from(i) * basis_vector;
-            let index_offset = new_uuid();
+            let index_offset = index_offset_0 + u128::from(i);
             module
                 .iter()
                 .map(move |building| building.clone().offset(&offset, index_offset))
