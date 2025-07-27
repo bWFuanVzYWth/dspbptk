@@ -25,41 +25,41 @@ struct Row {
 // 考虑行星尺寸与IEEE754标准，至少要让ERROR > 2^-15 (约0.00003)
 const ERROR: f64 = 0.00019;
 // 锅的尺寸数据由src/bin/test_ray_receiver_size测出
-const GRID_A: f64 = receiver_1i1o::GRID_A + ERROR;
-const GRID_B: f64 = receiver_1i1o::GRID_B + ERROR;
-const HALF_GRID_A: f64 = GRID_A / 2.0;
-const HALF_GRID_B: f64 = GRID_B / 2.0;
+const GRID_Y: f64 = receiver_1i1o::GRID_Y + ERROR;
+const GRID_X: f64 = receiver_1i1o::GRID_X + ERROR;
+const HALF_GRID_Y: f64 = GRID_Y / 2.0;
+const HALF_GRID_X: f64 = GRID_X / 2.0;
 
-const ARC_A: f64 = arc_from_grid(GRID_A);
-const ARC_B: f64 = arc_from_grid(GRID_B);
-const HALF_ARC_A: f64 = arc_from_grid(HALF_GRID_A);
-const HALF_ARC_B: f64 = arc_from_grid(HALF_GRID_B);
+const ARC_Y: f64 = arc_from_grid(GRID_Y);
+const ARC_X: f64 = arc_from_grid(GRID_X);
+const HALF_ARC_Y: f64 = arc_from_grid(HALF_GRID_Y);
+const HALF_ARC_X: f64 = arc_from_grid(HALF_GRID_X);
 
 fn calculate_layout() -> Vec<Row> {
-    let module = Module::new(GRID_A, GRID_B);
+    let module = Module::new(GRID_X, GRID_Y);
 
     let mut rows = Vec::new();
 
     // 生成贴着赤道的一圈
     let row_0 = Row {
-        y: HALF_ARC_A,
-        n: (TAU / ARC_A).floor() as i64,
+        y: HALF_ARC_Y,
+        n: (TAU / ARC_Y).floor() as i64,
     };
     rows.push(row_0);
 
     loop {
         // 尝试直接偏移一行
         let row_try_offset = Row {
-            y: rows.last().unwrap().y + ARC_A,
+            y: rows.last().unwrap().y + ARC_Y,
             n: rows.last().unwrap().n,
         };
 
-        let row_next = if (row_try_offset.y + ARC_B / 2.0).cos() < row_try_offset.n as f64 * ARC_A {
+        let row_next = if (row_try_offset.y + ARC_X / 2.0).cos() < row_try_offset.n as f64 * ARC_Y {
             // 如果直接偏移太挤了
-            let Some(y_fixed) = module.calculate_next_y(rows.last().unwrap().y + HALF_ARC_A) else {
+            let Some(y_fixed) = module.calculate_next_y(rows.last().unwrap().y + HALF_ARC_Y) else {
                 break;
             };
-            let n = ((y_fixed + HALF_ARC_B).cos() * (TAU / ARC_A)).floor() as i64;
+            let n = ((y_fixed + HALF_ARC_X).cos() * (TAU / ARC_Y)).floor() as i64;
             Row { y: y_fixed, n }
         } else {
             // 如果直接偏移放得下
@@ -128,7 +128,7 @@ fn main_belts(row: &Row) -> Vec<Building> {
     const BELT_ARC: f64 = arc_from_grid(BELT_GRID);
 
     // 生成传送带点位
-    let y = row.y - HALF_ARC_A;
+    let y = row.y - HALF_ARC_Y;
     let x_protect = arc_from_grid(1.0);
     let x_from = x_protect / y.cos();
     let x_to = TAU - x_from;

@@ -13,6 +13,8 @@ const MAX_MODULE_TYPE_COUNT: usize = 6;
 
 #[derive(Debug)]
 pub struct Module {
+    pub arc_x: f64,
+    pub arc_y: f64,
     pub scale: f64,
     pub theta_down: f64,
 }
@@ -20,22 +22,27 @@ pub struct Module {
 impl Module {
     #[expect(clippy::similar_names)]
     #[must_use]
-    pub fn new(grid_a: f64, grid_b: f64) -> Self {
-        let half_grid_a: f64 = grid_a / 2.0;
-        let half_grid_b: f64 = grid_b / 2.0;
+    pub fn new(grid_x: f64, grid_y: f64) -> Self {
+        let arc_x = arc_from_grid(grid_x);
+        let arc_y = arc_from_grid(grid_y);
 
-        let half_arc_a: f64 = arc_from_grid(half_grid_a);
-        let half_arc_b: f64 = arc_from_grid(half_grid_b);
+        let half_arc_x: f64 = arc_x * 0.5;
+        let half_arc_y: f64 = arc_y * 0.5;
 
-        let half_arc_b_tan: f64 = half_arc_b.tan();
-        let half_arc_a_tan: f64 = half_arc_a.tan();
-        let half_arc_b_tan_pow2: f64 = half_arc_b_tan.powi(2);
-        let half_arc_a_tan_pow2: f64 = half_arc_a_tan.powi(2);
-        let norm_sq: f64 = half_arc_b_tan_pow2 + half_arc_a_tan_pow2 + 1.0;
-        let scale: f64 = (1.0 - (half_arc_b_tan_pow2 / norm_sq)).sqrt();
-        let theta_down: f64 = ((half_arc_a_tan / norm_sq.sqrt()).sin() / scale).asin();
+        let half_arc_x_tan: f64 = half_arc_x.tan();
+        let half_arc_y_tan: f64 = half_arc_y.tan();
+        let half_arc_x_tan_pow2: f64 = half_arc_x_tan.powi(2);
+        let half_arc_y_tan_pow2: f64 = half_arc_y_tan.powi(2);
+        let norm_sq: f64 = half_arc_x_tan_pow2 + half_arc_y_tan_pow2 + 1.0;
+        let scale: f64 = (1.0 - (half_arc_x_tan_pow2 / norm_sq)).sqrt();
+        let theta_down: f64 = ((half_arc_y_tan / norm_sq.sqrt()).sin() / scale).asin();
 
-        Self { scale, theta_down }
+        Self {
+            arc_x,
+            arc_y,
+            scale,
+            theta_down,
+        }
     }
 
     // TODO 补文档，越详细越好，包括背后的数学原理

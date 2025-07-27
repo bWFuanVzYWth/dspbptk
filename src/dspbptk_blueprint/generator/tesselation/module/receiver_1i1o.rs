@@ -5,8 +5,8 @@ use crate::{
 use nalgebra::Vector3;
 
 // 模块尺寸即锅的尺寸，数据由src/bin/test_ray_receiver_size测出
-pub const GRID_A: f64 = 7.30726;
-pub const GRID_B: f64 = 4.19828;
+pub const GRID_Y: f64 = 7.30726;
+pub const GRID_X: f64 = 4.19828;
 
 const RECEIVER_MODEL: i16 = Item::射线接收站.model().default_value();
 const BELT_MODEL: i16 = Item::极速传送带.model().default_value();
@@ -44,7 +44,7 @@ pub fn new(
         local_offset: Vector3::new(
             receiver.local_offset.x,
             // receiver.local_offset.y + y_scale * ((GRID_A / 2.0) * (2.0 / 3.0)),
-            y_scale.mul_add((GRID_A / 2.0) * (2.0 / 3.0), receiver.local_offset.y),
+            y_scale.mul_add((GRID_Y / 2.0) * (2.0 / 3.0), receiver.local_offset.y),
             receiver.local_offset.z,
         ),
         ..Default::default()
@@ -57,7 +57,7 @@ pub fn new(
         local_offset: Vector3::new(
             receiver.local_offset.x,
             // receiver.local_offset.y + y_scale * ((GRID_A / 2.0) * (1.0 / 3.0)),
-            y_scale.mul_add((GRID_A / 2.0) * (1.0 / 3.0), receiver.local_offset.y),
+            y_scale.mul_add((GRID_Y / 2.0) * (1.0 / 3.0), receiver.local_offset.y),
             receiver.local_offset.z,
         ),
         ..Default::default()
@@ -73,7 +73,7 @@ pub fn new(
         local_offset: Vector3::new(
             receiver.local_offset.x,
             // receiver.local_offset.y + y_scale * ((GRID_A / 2.0) - 0.25),
-            y_scale.mul_add((GRID_A / 2.0) - 0.25, receiver.local_offset.y),
+            y_scale.mul_add((GRID_Y / 2.0) - 0.25, receiver.local_offset.y),
             receiver.local_offset.z,
         ),
         local_offset_2: belt_lens_from_sorter.local_offset,
@@ -96,7 +96,7 @@ pub fn new(
         local_offset: Vector3::new(
             receiver.local_offset.x,
             // receiver.local_offset.y - y_scale * ((GRID_A / 2.0) * (1.0 / 3.0)),
-            (-y_scale).mul_add((GRID_A / 2.0) * (1.0 / 3.0), receiver.local_offset.y),
+            (-y_scale).mul_add((GRID_Y / 2.0) * (1.0 / 3.0), receiver.local_offset.y),
             receiver.local_offset.z,
         ),
         ..Default::default()
@@ -109,7 +109,7 @@ pub fn new(
         local_offset: Vector3::new(
             receiver.local_offset.x,
             // receiver.local_offset.y - y_scale * ((GRID_A / 2.0) * (2.0 / 3.0)),
-            (-y_scale).mul_add((GRID_A / 2.0) * (2.0 / 3.0), receiver.local_offset.y),
+            (-y_scale).mul_add((GRID_Y / 2.0) * (2.0 / 3.0), receiver.local_offset.y),
             receiver.local_offset.z,
         ),
         ..Default::default()
