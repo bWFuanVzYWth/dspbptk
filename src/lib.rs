@@ -13,7 +13,6 @@
     clippy::correctness,
     clippy::shadow_unrelated,
     clippy::shadow_same,
-    clippy::shadow_unrelated,
     clippy::complexity,
     clippy::perf,
     clippy::suspicious,

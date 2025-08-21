@@ -1,7 +1,6 @@
 pub mod module;
 
 use crate::planet::unit_conversion::arc_from_grid;
-use arrayvec::ArrayVec;
 use std::f64::consts::FRAC_PI_2;
 
 // TODO 考虑内存布局，在不牺牲性能的前提下尽量优化下面的几个值，如果有必要换成常规vec
@@ -78,8 +77,8 @@ struct Row<'a> {
 
 /// 代表了一个缓存了重要数据的中间布局
 struct Draft<'a> {
-    rows: ArrayVec<Row<'a>, MAX_ROW_COUNT>,
-    each_type_count: ArrayVec<f64, MAX_MODULE_TYPE_COUNT>,
+    rows: Vec<Row<'a>>,
+    each_type_count: Vec<f64>,
     score: Option<f64>,
 }
 
@@ -93,8 +92,8 @@ impl Draft<'_> {
 /// 这个函数不检查y是否超标，超标解应该放在流程控制中排除
 /// 找出最缺的建筑，将其相对需求的倍率作为分数
 pub fn score(
-    each_type_count: &ArrayVec<f64, MAX_MODULE_TYPE_COUNT>,
-    need: &ArrayVec<f64, MAX_MODULE_TYPE_COUNT>,
+    each_type_count: &Vec<f64>,
+    need: &Vec<f64>,
 ) -> Option<f64> {
     // 除零将会产生`positive quiet NaN`，大于所有的数字
     each_type_count
