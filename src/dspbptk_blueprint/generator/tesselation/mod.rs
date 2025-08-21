@@ -3,13 +3,6 @@ pub mod module;
 use crate::planet::unit_conversion::arc_from_grid;
 use std::f64::consts::FRAC_PI_2;
 
-// TODO 考虑内存布局，在不牺牲性能的前提下尽量优化下面的几个值，如果有必要换成常规vec
-/// 最多允许多少行建筑
-const MAX_ROW_COUNT: usize = 64;
-
-/// 最多允许计算多少种基础模块
-const MAX_MODULE_TYPE_COUNT: usize = 6;
-
 #[derive(Debug)]
 pub struct Module {
     pub arc_x: f64,
@@ -46,10 +39,10 @@ impl Module {
 
     // TODO 补文档，越详细越好，包括背后的数学原理
     // 不完整，用法参考photon.rs
-    /// 根据下一行模块尺寸计算中心y，使得模块的最低点高于`edge_y`\
-    /// 下一行可能已经超出了纬度限制，不一定存在
+    /// 根据当前模块尺寸计算下一个`edge_y`，使得当前模块的最低点高于上一个`edge_y`\
+    /// 结果可能已经超出了纬度限制，不一定存在
     #[must_use]
-    pub fn calculate_next_y(&self, edge_y: f64) -> Option<f64> {
+    pub fn calculate_next_edge_y(&self, edge_y: f64) -> Option<f64> {
         let z_max_of_this_row = edge_y.sin();
         let theta_up_sin = z_max_of_this_row / self.scale;
         if theta_up_sin >= 1.0 {
@@ -59,42 +52,51 @@ impl Module {
         if theta_up >= FRAC_PI_2 {
             return None;
         }
-        Some(theta_up + self.theta_down)
+        Some(theta_up)
     }
 }
 
 /// 代表了一行的建筑数据，
-struct Row<'a> {
+struct Row {
     /// 这一行的建筑类型，也就是建筑在输入数组中对应的下标
-    module_type: &'a Module,
+    module_type: Module,
 
     /// 这一行模块的数量，注意是浮点数。不过浮点数可以精确的表示整数所以不用担心误差
     count: f64,
 
-    /// 这一行模块的几何中心的高度，单位是弧度
-    center_y: f64,
+    /// 这一行模块最高点的纬度，单位是弧度
+    top_y: f64,
 }
 
 /// 代表了一个缓存了重要数据的中间布局
-struct Draft<'a> {
-    rows: Vec<Row<'a>>,
+struct Draft {
+    rows: Vec<Row>,
     each_type_count: Vec<f64>,
     score: Option<f64>,
 }
 
-impl Draft<'_> {
-    // TODO 推入一排建筑，包括计算新行的y，数量之类的，更新评分之类的
-    pub fn push(self, module_type: &Module) -> Self {
-        todo!()
+impl Draft {
+    // TODO 更新评分，可能要改数据结构，比如把所有的模块类型改成枚举
+    pub fn push(mut self, module_type: Module) -> bool {
+        let bottom_y = self.rows.last().map_or(0.0, |row| row.top_y);
+        if let Some(top_y) = module_type.calculate_next_edge_y(bottom_y) {
+            let count = (top_y.cos() / module_type.arc_x).floor();
+            let row = Row {
+                module_type,
+                count,
+                top_y
+            };
+            self.rows.push(row);
+            true
+        } else {
+            false
+        }
     }
 }
 
 /// 这个函数不检查y是否超标，超标解应该放在流程控制中排除
 /// 找出最缺的建筑，将其相对需求的倍率作为分数
-pub fn score(
-    each_type_count: &Vec<f64>,
-    need: &Vec<f64>,
-) -> Option<f64> {
+pub fn score(each_type_count: &[f64], need: &[f64]) -> Option<f64> {
     // 除零将会产生`positive quiet NaN`，大于所有的数字
     each_type_count
         .iter()

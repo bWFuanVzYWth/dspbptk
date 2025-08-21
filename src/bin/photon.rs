@@ -56,7 +56,7 @@ fn calculate_layout() -> Vec<Row> {
 
         let row_next = if (row_try_offset.y + ARC_X / 2.0).cos() < row_try_offset.n as f64 * ARC_Y {
             // 如果直接偏移太挤了
-            let Some(y_fixed) = module.calculate_next_y(rows.last().unwrap().y + HALF_ARC_Y) else {
+            let Some(y_fixed) = module.calculate_next_edge_y(rows.last().unwrap().y + HALF_ARC_Y) else {
                 break;
             };
             let n = ((y_fixed + HALF_ARC_X).cos() * (TAU / ARC_Y)).floor() as i64;
