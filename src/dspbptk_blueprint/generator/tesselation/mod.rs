@@ -65,9 +65,9 @@ impl Module {
 }
 
 /// 代表了一行的建筑数据，
-struct Row {
+struct Row<'a> {
     /// 这一行的建筑类型，也就是建筑在输入数组中对应的下标
-    module_type: usize,
+    module_type: &'a Module,
 
     /// 这一行模块的数量，注意是浮点数。不过浮点数可以精确的表示整数所以不用担心误差
     count: f64,
@@ -77,15 +77,15 @@ struct Row {
 }
 
 /// 代表了一个缓存了重要数据的中间布局
-struct Draft {
-    rows: ArrayVec<Row, MAX_ROW_COUNT>,
+struct Draft<'a> {
+    rows: ArrayVec<Row<'a>, MAX_ROW_COUNT>,
     each_type_count: ArrayVec<f64, MAX_MODULE_TYPE_COUNT>,
     score: Option<f64>,
 }
 
-impl Draft {
+impl Draft<'_> {
     // TODO 推入一排建筑，包括计算新行的y，数量之类的，更新评分之类的
-    pub fn push(self, module_type: usize) -> Self {
+    pub fn push(self, module_type: &Module) -> Self {
         todo!()
     }
 }

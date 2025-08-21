@@ -1,4 +1,3 @@
-#![feature(array_chunks)]
 // 潜在的panic风险
 #![warn(
     clippy::indexing_slicing,

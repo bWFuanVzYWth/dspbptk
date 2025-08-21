@@ -292,8 +292,7 @@ impl MD5 {
     }
 
     fn process(&mut self, input: &[u8]) -> MD5Hash {
-        let chunks = input.array_chunks::<64>();
-        let remainder = chunks.remainder();
+        let (chunks,remainder) = input.as_chunks::<64>();
         let remainder_len = remainder.len();
         let input_bit = (input.len() * 8).to_le_bytes();
         let input_bit_offset = remainder_len + 1 + 55_usize.wrapping_sub(remainder_len) % 64;
@@ -305,7 +304,8 @@ impl MD5 {
             _ /* i if i > remainder_len && i < bit_len_offset */ => 0x00,
         });
 
-        for chunk in chunks.chain(last[..input_bit_offset + 8].array_chunks::<64>()) {
+        let (remainder_chunks, _impossible) = last[..input_bit_offset + 8].as_chunks::<64>();
+        for chunk in chunks.iter().chain(remainder_chunks) {
             self.update_block(chunk);
         }
 
