@@ -84,7 +84,7 @@ impl Draft {
             let row = Row {
                 module_type,
                 count,
-                top_y
+                top_y,
             };
             self.rows.push(row);
             true
