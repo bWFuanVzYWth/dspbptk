@@ -27,7 +27,7 @@ path = "src/lib.rs"
 dspdb = { git = "https://github.com/bWFuanVzYWth/dspdb", branch = "master" }
 
 # Multi-threaded
-rayon = "1.10.0"
+rayon = "1.11.0"
 # Parser
 nom = { version = "8.0.0", features = ["alloc"] }
 # decode/encode base64
@@ -40,26 +40,26 @@ zopfli = "0.8.2"
 # Recursive directory traversal
 walkdir = "2.5.0"
 # Command Line Argument Parser
-clap = { version = "4.5.41", features = ["derive"] }
+clap = { version = "4.5.47", features = ["derive"] }
 # log
-log = "0.4.27"
+log = "0.4.28"
 # log >> stderr
 env_logger = "0.11.8"
 # test & debug
 nalgebra = "0.33.2"
 # error
-thiserror = "2.0.12"
+thiserror = "2.0.16"
 # DspbptkBuildingData.uuid
-uuid = { version = "1.17.0", features = [
+uuid = { version = "1.18.1", features = [
     "v4",
     "fast-rng",
     "macro-diagnostics",
 ] }
 # enum.iter()
-strum = "0.27.1"
-strum_macros = "0.27.1"
+strum = "0.27.2"
+strum_macros = "0.27.2"
 # alloc
-mimalloc = "0.1.47"
+mimalloc = "0.1.48"
 # graph
 petgraph = "0.8.2"
 num_enum = "0.7.4"
