@@ -40,12 +40,15 @@ fn calculate_layout() -> Vec<Row> {
     let GRID_PV = grid_from_arc(arc_from_m(3.5, -0.6)) + ERROR;
     let ARC_PV = arc_from_grid(GRID_PV);
 
+    let nn = 10.0; // 控制1/n球
+    let y_arc = TAU / nn;
+
     let module = Module::new(GRID_PV, GRID_PV);
     let mut rows = Vec::new();
 
     let row_0 = Row {
         y: ARC_PV / 2.0,
-        n: (TAU / ARC_PV).floor() as i64,
+        n: (y_arc / ARC_PV).floor() as i64,
     };
 
     rows.push(row_0);
@@ -57,14 +60,14 @@ fn calculate_layout() -> Vec<Row> {
             n: rows.last().unwrap().n,
         };
 
-        let row_next = if (row_try_offset.y + ARC_PV / 2.0).cos() < row_try_offset.n as f64 * ARC_PV
+        let row_next = if (row_try_offset.y + ARC_PV / 2.0).cos() / nn < row_try_offset.n as f64 * ARC_PV
         {
             // 如果直接偏移太挤了
             let Some(y_fixed) = module.calculate_next_edge_y(rows.last().unwrap().y + ARC_PV / 2.0)
             else {
                 break;
             };
-            let n = ((y_fixed + ARC_PV).cos() * (TAU / ARC_PV)).floor() as i64;
+            let n = ((y_fixed + ARC_PV).cos() * (y_arc / ARC_PV)).floor() as i64;
             Row { y: y_fixed + ARC_PV / 2.0, n }
         } else {
             // 如果直接偏移放得下
@@ -86,7 +89,7 @@ fn layout_to_buildings(rows: &[Row]) -> Vec<Building> {
     for row in rows {
         for i in 0..row.n {
             let local_offset = Vector3::new(
-                1000.0 * (i as f64 + 0.5) / (row.n as f64),
+                1000.0 / 10.0 * (i as f64 + 0.5) / (row.n as f64),
                 grid_from_arc(row.y),
                 0.0,
             );

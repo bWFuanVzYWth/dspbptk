@@ -1,7 +1,8 @@
 use crate::blueprint::Building;
 
 impl Building {
-    pub fn round_float(&mut self) {
+    #[must_use]
+    pub fn round_float(mut self) -> Self {
         const ROUND_SCALE_POSITION: f32 = 300.0;
         const ROUND_SCALE_ANGLE: f32 = 20.0;
 
@@ -21,5 +22,7 @@ impl Building {
         self.yaw2 = round_angle(self.yaw2);
         self.tilt2 = round_angle(self.tilt2);
         self.pitch2 = round_angle(self.pitch2);
+
+        self
     }
 }

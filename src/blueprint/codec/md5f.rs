@@ -202,7 +202,7 @@ impl MD5 {
     }
 
     #[expect(clippy::many_single_char_names)]
-    fn update_block(&mut self, block: &[u8; 64]) {
+    fn update_block(mut self, block: &[u8; 64]) -> Self {
         let x: [u32; 16] = std::array::from_fn(|i| {
             let i4 = i * 4;
             u32::from_le_bytes([block[i4], block[i4 + 1], block[i4 + 2], block[i4 + 3]])
@@ -289,9 +289,11 @@ impl MD5 {
         self.state[1] = self.state[1].wrapping_add(b);
         self.state[2] = self.state[2].wrapping_add(c);
         self.state[3] = self.state[3].wrapping_add(d);
+
+        self
     }
 
-    fn process(&mut self, input: &[u8]) -> MD5Hash {
+    fn process(mut self, input: &[u8]) -> Self {
         let (chunks, remainder) = input.as_chunks::<64>();
         let remainder_len = remainder.len();
         let input_bit = (input.len() * 8).to_le_bytes();
@@ -308,16 +310,18 @@ impl MD5 {
             panic!("unreachable: last.len() % 64 != 0")
         };
         for chunk in chunks.iter().chain(remainder_chunks) {
-            self.update_block(chunk);
+            self = self.update_block(chunk);
         }
 
-        self.state
+        self
     }
 }
 
 #[must_use]
 pub fn compute_md5f_string(header_content: &str) -> String {
-    let md5f = MD5::new(Algo::MD5F).process(header_content.as_bytes());
+    let md5f = MD5::new(Algo::MD5F)
+        .process(header_content.as_bytes())
+        .state;
     format!(
         "{:08X}{:08X}{:08X}{:08X}",
         md5f[0].to_be(),
@@ -333,7 +337,7 @@ mod test {
 
     #[test]
     fn test_md5_empty() {
-        let hash = MD5::new(Algo::MD5).process(&[]);
+        let hash = MD5::new(Algo::MD5).process(&[]).state;
         let expected: MD5Hash = [0xD98C_1DD4, 0x4B2_008F, 0x9809_80E9, 0x7E42_F8EC];
         assert_eq!(hash, expected);
     }
@@ -342,14 +346,14 @@ mod test {
     fn test_md5_reference() {
         let text =
             "12345678901234567890123456789012345678901234567890123456789012345678901234567890";
-        let hash = MD5::new(Algo::MD5).process(text.as_bytes());
+        let hash = MD5::new(Algo::MD5).process(text.as_bytes()).state;
         let expected: MD5Hash = [0xA2F4_ED57, 0x55C9_E32B, 0x2EDA_49AC, 0x7AB6_0721];
         assert_eq!(hash, expected);
     }
 
     #[test]
     fn test_md5f_empty() {
-        let hash = MD5::new(Algo::MD5F).process(&[]);
+        let hash = MD5::new(Algo::MD5F).process(&[]).state;
         let expected: MD5Hash = [0x3BCE_D184, 0xAB49_8FD6, 0x960F_EB26, 0xCF17_6641];
         assert_eq!(hash, expected);
     }
@@ -358,7 +362,7 @@ mod test {
     fn test_md5f_reference() {
         let text =
             "BLUEPRINT:0,0,0,0,0,0,0,0,0,0.0.0.0,,\"H4sIAAAAAAAAA2NkQAWMUMyARCMBANjTKTsvAAAA";
-        let hash = MD5::new(Algo::MD5F).process(text.as_bytes());
+        let hash = MD5::new(Algo::MD5F).process(text.as_bytes()).state;
         let expected: MD5Hash = [0xCFA1_E5E4, 0x61EC_F128, 0x8C49_331E, 0x2BF0_0DBD];
         assert_eq!(hash, expected);
     }

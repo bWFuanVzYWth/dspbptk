@@ -1,6 +1,6 @@
 use crate::{
     blueprint::{
-        self, codec,
+        self, Building, codec,
         data::{content::Content, header::Header},
         editor::{fix_index::fix_buildings_index, sort::sort_buildings},
     },
@@ -62,9 +62,11 @@ pub fn process_middle_layer(
         (header_data_in, func_args.apply(content_data_in));
 
     if rounding_local_offset {
-        content_data_out.buildings.iter_mut().for_each(|building| {
-            building.round_float();
-        });
+        content_data_out.buildings = content_data_out
+            .buildings
+            .into_iter()
+            .map(Building::round_float)
+            .collect();
     }
 
     if sorting_buildings {

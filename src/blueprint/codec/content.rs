@@ -46,12 +46,10 @@ impl Content {
         bin.extend_from_slice(&self.drag_box_size_y.to_le_bytes());
         bin.extend_from_slice(&self.primary_area_idx.to_le_bytes());
         bin.extend_from_slice(&self.areas_length.to_le_bytes());
-        self.areas
-            .iter()
-            .for_each(|area_data| area::serialization(&mut bin, area_data));
+        bin = self.areas.iter().fold(bin, area::serialization);
         bin.extend_from_slice(&self.buildings_length.to_le_bytes());
-        self.buildings.iter().for_each(|building_data| {
-            building::serialization(&mut bin, building_data, &Version::Neg101);
+        bin = self.buildings.iter().fold(bin, |bin, building_data| {
+            building::serialization(bin, building_data, &Version::Neg101)
         });
         bin
     }

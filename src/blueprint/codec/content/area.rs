@@ -34,7 +34,7 @@ pub fn deserialization(bin: &[u8]) -> IResult<&[u8], Area> {
     ))
 }
 
-pub fn serialization(bin: &mut Vec<u8>, data: &Area) {
+pub fn serialization(mut bin: Vec<u8>, data: &Area) -> Vec<u8> {
     bin.extend_from_slice(&data.index.to_le_bytes());
     bin.extend_from_slice(&data.parent_index.to_le_bytes());
     bin.extend_from_slice(&data.tropic_anchor.to_le_bytes());
@@ -43,4 +43,6 @@ pub fn serialization(bin: &mut Vec<u8>, data: &Area) {
     bin.extend_from_slice(&data.anchor_local_offset_y.to_le_bytes());
     bin.extend_from_slice(&data.width.to_le_bytes());
     bin.extend_from_slice(&data.height.to_le_bytes());
+
+    bin
 }

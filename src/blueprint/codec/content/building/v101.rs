@@ -94,7 +94,7 @@ pub fn deserialization(bin: &[u8]) -> IResult<&[u8], Building> {
     ))
 }
 
-pub fn serialization(bin: &mut Vec<u8>, data: &Building) {
+pub fn serialization(mut bin: Vec<u8>, data: &Building) -> Vec<u8> {
     bin.extend_from_slice(&i32::from(Neg101).to_le_bytes());
     bin.extend_from_slice(&data.index.to_le_bytes());
     bin.extend_from_slice(&data.item_id.to_le_bytes());
@@ -145,6 +145,8 @@ pub fn serialization(bin: &mut Vec<u8>, data: &Building) {
     data.parameters
         .iter()
         .for_each(|x| bin.extend_from_slice(&x.to_le_bytes()));
+
+    bin
 }
 
 #[expect(clippy::similar_names)]
@@ -278,8 +280,7 @@ mod test {
             parameters: vec![27, 28, 29, 30],
         };
 
-        let mut bin_test = Vec::new();
-        serialization(&mut bin_test, &data_test);
+        let bin_test = serialization(Vec::new(), &data_test);
 
         assert_eq!(bin_test, bin_expected);
     }
@@ -367,8 +368,7 @@ mod test {
             parameters: vec![27, 28, 29, 30],
         };
 
-        let mut bin_test = Vec::new();
-        serialization(&mut bin_test, &data_test);
+        let bin_test = serialization(Vec::new(), &data_test);
 
         assert_eq!(bin_test, bin_expected);
     }
@@ -458,8 +458,7 @@ mod test {
             parameters: vec![27, 28, 29, 30],
         };
 
-        let mut bin_test = Vec::new();
-        serialization(&mut bin_test, &data_test);
+        let bin_test = serialization(Vec::new(), &data_test);
 
         assert_eq!(bin_test, bin_expected);
     }
