@@ -16,9 +16,11 @@ pub const EARTH_R: f64 = 200.2;
 /// 蓝图高度抬高一格对应的距离(M)
 pub const UNIT_Z: f64 = 4.0 / 3.0;
 
+#[must_use]
 pub fn arc_from_m(m: f64, y_offset: f64) -> f64 {
     let r = EARTH_R + y_offset;
-    ((r * r + r * r - m * m) / (2.0 * r * r)).acos()
+    let rr2 = r * r * 2.0;
+    (m.mul_add(-m, rr2) / rr2).acos()
 }
 
 #[must_use]

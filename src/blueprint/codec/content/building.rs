@@ -21,6 +21,7 @@ pub fn deserialization(bin: &[u8]) -> IResult<&[u8], Building> {
     Ok((unknown, data))
 }
 
+#[must_use]
 pub fn serialization(bin: Vec<u8>, data: &Building, version: &Version) -> Vec<u8> {
     match version {
         Zero => v0::serialization(bin, data),

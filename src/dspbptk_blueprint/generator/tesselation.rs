@@ -110,6 +110,6 @@ pub fn score(each_type_count: &[f64], need: &[f64]) -> Option<f64> {
 
 // 输入每种模块的需求比例，纬度限制，输出排列
 #[must_use]
-pub fn tesselation(modules: &[Module], need: &[f64]) -> Vec<usize> {
+pub fn tesselation(_modules: &[Module], _need: &[f64]) -> Vec<usize> {
     todo!()
 }

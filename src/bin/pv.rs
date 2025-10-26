@@ -1,20 +1,16 @@
 use dspbptk::{
     blueprint::data::{content::Content, header::Header},
     dspbptk_blueprint::{
-        Building,
-        editor::{belt::connect_belts, fix_uuid::fix_dspbptk_buildings_index},
-        generator::tesselation::{Module, module::receiver_1i1o},
+        Building, editor::fix_uuid::fix_dspbptk_buildings_index, generator::tesselation::Module,
         uuid::some_new_uuid,
     },
     error::DspbptkError::{self, UnexpectBuildingsCount},
     item::Item,
-    planet::unit_conversion::{
-        arc_from_grid, arc_from_m, grid_from_arc, local_offset_to_direction,
-    },
+    planet::unit_conversion::{arc_from_grid, arc_from_m, grid_from_arc},
     workflow::{BlueprintKind, LegalBlueprintFileType, process::process_back_end},
 };
 use nalgebra::Vector3;
-use std::{cmp::Ordering::Equal, f64::consts::TAU};
+use std::f64::consts::TAU;
 
 // FIXME 改用tesselation::Row
 #[derive(Debug)]
@@ -37,18 +33,18 @@ fn new_pv(local_offset: Vector3<f64>) -> Building {
 const ERROR: f64 = 0.00000;
 
 fn calculate_layout() -> Vec<Row> {
-    let GRID_PV = grid_from_arc(arc_from_m(3.5, -0.6)) + ERROR;
-    let ARC_PV = arc_from_grid(GRID_PV);
+    let grid_pv = grid_from_arc(arc_from_m(3.5, -0.6)) + ERROR;
+    let arc_pv = arc_from_grid(grid_pv);
 
     let nn = 10.0; // 控制1/n球
     let y_arc = TAU / nn;
 
-    let module = Module::new(GRID_PV, GRID_PV);
+    let module = Module::new(grid_pv, grid_pv);
     let mut rows = Vec::new();
 
     let row_0 = Row {
-        y: ARC_PV / 2.0,
-        n: (y_arc / ARC_PV).floor() as i64,
+        y: arc_pv / 2.0,
+        n: (y_arc / arc_pv).floor() as i64,
     };
 
     rows.push(row_0);
@@ -56,19 +52,23 @@ fn calculate_layout() -> Vec<Row> {
     loop {
         // 尝试直接偏移一行
         let row_try_offset = Row {
-            y: rows.last().unwrap().y + ARC_PV,
+            y: rows.last().unwrap().y + arc_pv,
             n: rows.last().unwrap().n,
         };
 
-        let row_next = if (row_try_offset.y + ARC_PV / 2.0).cos() / nn < row_try_offset.n as f64 * ARC_PV
+        let row_next = if (row_try_offset.y + arc_pv / 2.0).cos() / nn
+            < row_try_offset.n as f64 * arc_pv
         {
             // 如果直接偏移太挤了
-            let Some(y_fixed) = module.calculate_next_edge_y(rows.last().unwrap().y + ARC_PV / 2.0)
+            let Some(y_fixed) = module.calculate_next_edge_y(rows.last().unwrap().y + arc_pv / 2.0)
             else {
                 break;
             };
-            let n = ((y_fixed + ARC_PV).cos() * (y_arc / ARC_PV)).floor() as i64;
-            Row { y: y_fixed + ARC_PV / 2.0, n }
+            let n = ((y_fixed + arc_pv).cos() * (y_arc / arc_pv)).floor() as i64;
+            Row {
+                y: y_fixed + arc_pv / 2.0,
+                n,
+            }
         } else {
             // 如果直接偏移放得下
             if row_try_offset.y > TAU {
