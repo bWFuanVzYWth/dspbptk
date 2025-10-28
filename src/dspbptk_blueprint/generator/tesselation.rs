@@ -1,9 +1,9 @@
 pub mod module;
 
 use crate::planet::unit_conversion::arc_from_grid;
-use std::f64::consts::FRAC_PI_2;
+use std::f64::consts::{FRAC_PI_2, TAU};
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy)]
 pub struct Module {
     pub arc_x: f64,
     pub arc_y: f64,
@@ -52,44 +52,57 @@ impl Module {
         if theta_up >= FRAC_PI_2 {
             return None;
         }
-        Some(theta_up)
+        Some(theta_up + self.arc_y)
     }
 }
 
 /// 代表了一行的建筑数据，
-struct Row {
+#[derive(Debug)]
+pub struct Row {
     /// 这一行的建筑类型，也就是建筑在输入数组中对应的下标
-    module_type: Module,
+    pub module_type: Module,
 
-    /// 这一行模块的数量，注意是浮点数。不过浮点数可以精确的表示整数所以不用担心误差
-    count: f64,
+    /// 这一行模块的数量
+    pub count: i64,
 
     /// 这一行模块最高点的纬度，单位是弧度
-    top_y: f64,
+    pub top_y: f64,
 }
 
 /// 代表了一个缓存了重要数据的中间布局
-struct Draft {
-    rows: Vec<Row>,
-    each_type_count: Vec<f64>,
-    score: Option<f64>,
+pub struct Draft {
+    pub pizza_count: f64,
+    pub rows: Vec<Row>,
+    pub each_type_count: Vec<f64>,
+    pub score: Option<f64>,
 }
 
 impl Draft {
+    #[must_use]
+    pub const fn new(pizza_count: f64) -> Self {
+        Self {
+            pizza_count,
+            rows: Vec::new(),
+            each_type_count: Vec::new(),
+            score: None,
+        }
+    }
+
+    // FIXME 没有考虑相邻行建筑相同的情况简化
     // TODO 更新评分，可能要改数据结构，比如把所有的模块类型改成枚举
-    pub fn push(mut self, module_type: Module) -> bool {
+    pub fn push(mut self, module_type: Module) -> (Self, bool) {
         let bottom_y = self.rows.last().map_or(0.0, |row| row.top_y);
         if let Some(top_y) = module_type.calculate_next_edge_y(bottom_y) {
-            let count = (top_y.cos() / module_type.arc_x).floor();
+            let count = (top_y.cos() * (TAU / self.pizza_count) / module_type.arc_x).floor() as i64;
             let row = Row {
                 module_type,
                 count,
                 top_y,
             };
             self.rows.push(row);
-            true
+            (self, true)
         } else {
-            false
+            (self, false)
         }
     }
 }

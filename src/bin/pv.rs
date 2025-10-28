@@ -1,7 +1,9 @@
 use dspbptk::{
     blueprint::data::{content::Content, header::Header},
     dspbptk_blueprint::{
-        Building, editor::fix_uuid::fix_dspbptk_buildings_index, generator::tesselation::Module,
+        Building,
+        editor::fix_uuid::fix_dspbptk_buildings_index,
+        generator::tesselation::{Draft, Module, Row},
         uuid::some_new_uuid,
     },
     error::DspbptkError::{self, UnexpectBuildingsCount},
@@ -11,13 +13,6 @@ use dspbptk::{
 };
 use nalgebra::Vector3;
 use std::f64::consts::TAU;
-
-// FIXME 改用tesselation::Row
-#[derive(Debug)]
-struct Row {
-    pub y: f64, // 这一行建筑坐标的中心
-    pub n: i64, // 这一行建筑的数量
-}
 
 fn new_pv(local_offset: Vector3<f64>) -> Building {
     Building {
@@ -32,65 +27,14 @@ fn new_pv(local_offset: Vector3<f64>) -> Building {
 
 const ERROR: f64 = 0.00000;
 
-fn calculate_layout() -> Vec<Row> {
-    let grid_pv = grid_from_arc(arc_from_m(3.5, -0.6)) + ERROR;
-    let arc_pv = arc_from_grid(grid_pv);
-
-    let nn = 10.0; // 控制1/n球
-    let y_arc = TAU / nn;
-
-    let module = Module::new(grid_pv, grid_pv);
-    let mut rows = Vec::new();
-
-    let row_0 = Row {
-        y: arc_pv / 2.0,
-        n: (y_arc / arc_pv).floor() as i64,
-    };
-
-    rows.push(row_0);
-
-    loop {
-        // 尝试直接偏移一行
-        let row_try_offset = Row {
-            y: rows.last().unwrap().y + arc_pv,
-            n: rows.last().unwrap().n,
-        };
-
-        let row_next = if (row_try_offset.y + arc_pv / 2.0).cos() / nn
-            < row_try_offset.n as f64 * arc_pv
-        {
-            // 如果直接偏移太挤了
-            let Some(y_fixed) = module.calculate_next_edge_y(rows.last().unwrap().y + arc_pv / 2.0)
-            else {
-                break;
-            };
-            let n = ((y_fixed + arc_pv).cos() * (y_arc / arc_pv)).floor() as i64;
-            Row {
-                y: y_fixed + arc_pv / 2.0,
-                n,
-            }
-        } else {
-            // 如果直接偏移放得下
-            if row_try_offset.y > TAU {
-                break;
-            }
-            row_try_offset
-        };
-
-        rows.push(row_next);
-    }
-
-    rows
-}
-
-fn layout_to_buildings(rows: &[Row]) -> Vec<Building> {
+fn layout_to_buildings(layout: &Draft) -> Vec<Building> {
     let mut buildings = Vec::new();
 
-    for row in rows {
-        for i in 0..row.n {
+    for row in &layout.rows {
+        for i in 0..row.count {
             let local_offset = Vector3::new(
-                1000.0 / 10.0 * (i as f64 + 0.5) / (row.n as f64),
-                grid_from_arc(row.y),
+                1000.0 / layout.pizza_count * (i as f64 + 0.5) / (row.count as f64),
+                grid_from_arc(row.top_y - 0.5 * row.module_type.arc_y),
                 0.0,
             );
             buildings.push(new_pv(local_offset));
@@ -104,9 +48,20 @@ fn main() -> Result<(), DspbptkError> {
     let header_data = Header::default();
     let zopfli_options = zopfli::Options::default();
 
-    let rows = calculate_layout();
+    let grid_pv = grid_from_arc(arc_from_m(3.5, -0.6)) + ERROR;
 
-    let buildings = fix_dspbptk_buildings_index(layout_to_buildings(&rows));
+    let module = Module::new(grid_pv, grid_pv);
+
+    let (mut layout, _) = Draft::new(10.0).push(module);
+    while {
+        let (layout_new, flag) = layout.push(module);
+        layout = layout_new;
+
+        flag
+    } {}
+    dbg!(layout.rows.len());
+
+    let buildings = fix_dspbptk_buildings_index(layout_to_buildings(&layout));
 
     let content_data = Content {
         buildings_length: u32::try_from(buildings.len()).map_err(UnexpectBuildingsCount)?,
