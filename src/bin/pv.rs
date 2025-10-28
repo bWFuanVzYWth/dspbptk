@@ -3,16 +3,15 @@ use dspbptk::{
     dspbptk_blueprint::{
         Building,
         editor::fix_uuid::fix_dspbptk_buildings_index,
-        generator::tesselation::{Draft, Module, Row},
+        generator::tesselation::{Draft, Module},
         uuid::some_new_uuid,
     },
     error::DspbptkError::{self, UnexpectBuildingsCount},
     item::Item,
-    planet::unit_conversion::{arc_from_grid, arc_from_m, grid_from_arc},
+    planet::unit_conversion::{arc_from_m, grid_from_arc},
     workflow::{BlueprintKind, LegalBlueprintFileType, process::process_back_end},
 };
 use nalgebra::Vector3;
-use std::f64::consts::TAU;
 
 fn new_pv(local_offset: Vector3<f64>) -> Building {
     Building {
