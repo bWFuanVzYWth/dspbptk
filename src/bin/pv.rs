@@ -51,9 +51,9 @@ fn main() -> Result<(), DspbptkError> {
 
     let module = Module::new(grid_pv, grid_pv);
 
-    let (mut layout, _) = Draft::new(10.0).push(module);
+    let mut layout = Draft::new(4.0);
     while {
-        let (layout_new, flag) = layout.push(module);
+        let (layout_new, flag) = layout.push(module.clone());
         layout = layout_new;
 
         flag

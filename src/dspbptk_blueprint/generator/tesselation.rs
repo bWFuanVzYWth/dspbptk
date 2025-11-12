@@ -3,7 +3,7 @@ pub mod module;
 use crate::planet::unit_conversion::arc_from_grid;
 use std::f64::consts::{FRAC_PI_2, TAU};
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone)]
 pub struct Module {
     pub arc_x: f64,
     pub arc_y: f64,
@@ -90,7 +90,7 @@ impl Draft {
 
     // FIXME 没有考虑相邻行建筑相同的情况简化
     // TODO 更新评分，可能要改数据结构，比如把所有的模块类型改成枚举
-    #[must_use] 
+    #[must_use]
     pub fn push(mut self, module_type: Module) -> (Self, bool) {
         let bottom_y = self.rows.last().map_or(0.0, |row| row.top_y);
         if let Some(top_y) = module_type.calculate_next_edge_y(bottom_y) {
