@@ -91,7 +91,7 @@ impl Draft {
     // FIXME 没有考虑相邻行建筑相同的情况简化
     // TODO 更新评分，可能要改数据结构，比如把所有的模块类型改成枚举
     #[must_use]
-    pub fn push(mut self, module_type: Module) -> (Self, bool) {
+    pub fn push(&mut self, module_type: Module) -> bool {
         let bottom_y = self.rows.last().map_or(0.0, |row| row.top_y);
         if let Some(top_y) = module_type.calculate_next_edge_y(bottom_y) {
             let count = (top_y.cos() * (TAU / self.pizza_count) / module_type.arc_x).floor() as i64;
@@ -101,9 +101,9 @@ impl Draft {
                 top_y,
             };
             self.rows.push(row);
-            (self, true)
+            true
         } else {
-            (self, false)
+            false
         }
     }
 }

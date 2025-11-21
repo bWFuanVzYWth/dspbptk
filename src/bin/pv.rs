@@ -52,12 +52,7 @@ fn main() -> Result<(), DspbptkError> {
     let module = Module::new(grid_pv, grid_pv);
 
     let mut layout = Draft::new(4.0);
-    while {
-        let (layout_new, flag) = layout.push(module.clone());
-        layout = layout_new;
-
-        flag
-    } {}
+    while layout.push(module.clone()) {}
     dbg!(layout.rows.len());
 
     let buildings = fix_dspbptk_buildings_index(layout_to_buildings(&layout));

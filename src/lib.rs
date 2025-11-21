@@ -1,5 +1,5 @@
-// 潜在的panic风险
-#![warn(
+// 可能崩溃
+#![deny(
     clippy::indexing_slicing,
     clippy::unwrap_used,
     clippy::expect_used,
@@ -8,19 +8,16 @@
     clippy::unreachable,
     clippy::unimplemented
 )]
-// 潜在的劣质代码
+// 疑似劣质代码
 #![warn(
-    clippy::correctness,
-    clippy::shadow_unrelated,
-    clippy::shadow_same,
-    clippy::complexity,
-    clippy::perf,
-    clippy::suspicious,
-    clippy::style,
-    clippy::pedantic,
-    clippy::nursery,
     clippy::cargo,
-    // clippy::restriction,
+    clippy::complexity,
+    clippy::correctness,
+    clippy::nursery,
+    clippy::pedantic,
+    clippy::perf,
+    clippy::style,
+    clippy::suspicious
 )]
 
 pub mod blueprint;
